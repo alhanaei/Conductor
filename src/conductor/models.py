@@ -18,7 +18,7 @@ migrate state written by this one.
 from __future__ import annotations
 
 import uuid
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import dataclass, field, fields
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -776,7 +776,7 @@ class TrackRecord(_Model):
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TrackRecord":
+    def from_dict(cls, data: Dict[str, Any]) -> TrackRecord:
         if not isinstance(data, dict):
             raise SchemaError("TrackRecord.from_dict expects a dict")
         track = Track.from_dict(data)  # ignores the extra plan keys

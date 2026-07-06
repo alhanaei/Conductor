@@ -1,7 +1,5 @@
 """State-root resolution, atomic IO, init layout, and reload-after-restart."""
 
-import json
-import os
 
 import pytest
 

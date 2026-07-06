@@ -7,13 +7,13 @@ from conductor.completion import CompletionEngine
 from conductor.dispatch import Dispatcher
 from conductor.intake import approve_plan, create_planned_track
 from conductor.lanes import LaneAdapter
+from conductor.models import TaskState
 from conductor.operator import (
     HEARTBEAT_CADENCE_SECONDS,
     OperatorError,
     OperatorView,
     heartbeat_due,
 )
-from conductor.models import TaskState
 from conductor.store import ConductorStore
 
 

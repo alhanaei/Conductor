@@ -21,7 +21,7 @@ import json
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Iterable, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 from .models import (
     SCHEMA_VERSION,
@@ -166,8 +166,7 @@ def read_jsonl(path: Path) -> List[Dict[str, Any]]:
 
 
 def iter_jsonl(path: Path) -> Iterator[Dict[str, Any]]:
-    for rec in read_jsonl(path):
-        yield rec
+    yield from read_jsonl(path)
 
 
 # --------------------------------------------------------------------------- #
@@ -210,7 +209,7 @@ class ConductorStore:
     # -- resolution helpers ------------------------------------------------- #
     @classmethod
     def resolve(cls, root: Optional[Path] = None, create: bool = False,
-                start: Optional[Path] = None) -> "ConductorStore":
+                start: Optional[Path] = None) -> ConductorStore:
         if root is not None:
             resolved = Path(root)
             if resolved.name != STATE_DIR_NAME:

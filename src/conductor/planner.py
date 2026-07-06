@@ -16,7 +16,7 @@ from __future__ import annotations
 from typing import Dict, List, Tuple
 
 from .methods import get_method
-from .models import AccessList, Task, TaskState, utc_now_iso
+from .models import AccessList, Task, TaskState
 
 # (slug, title, description-suffix, dependency-slugs, method_id)
 _TASK_TEMPLATE: List[Tuple[str, str, str, List[str], str]] = [

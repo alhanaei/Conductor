@@ -19,7 +19,6 @@ import fcntl
 import os
 import time
 from contextlib import contextmanager
-from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 
 from .models import FileLock, utc_now_iso
@@ -70,7 +69,7 @@ class LockManager:
                         raise TimeoutError(
                             f"could not acquire lock mutex for track {self.track_id!r} "
                             f"within {timeout}s"
-                        )
+                        ) from exc
                     time.sleep(poll)
             yield
         finally:

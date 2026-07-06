@@ -22,6 +22,7 @@ from .models import (
     DispatchState,
     LaneState,
     MessageType,
+    PlanStatus,
     RecipientType,
     RouteDecision,
     SenderType,
@@ -29,7 +30,6 @@ from .models import (
     Task,
     TaskState,
     TrackRecord,
-    PlanStatus,
     utc_now_iso,
 )
 from .store import ConductorStore, atomic_write_text

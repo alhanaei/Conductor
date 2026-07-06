@@ -171,8 +171,8 @@ def test_loop_auto_finalizes_when_all_planned_tasks_are_complete(tmp_path, capsy
 
     # Fixture shortcut: this test exercises loop-owned finalization after all
     # planned work is finalizable, not the entire five-task DAG.
-    from conductor.store import ConductorStore
     from conductor.models import TaskState
+    from conductor.store import ConductorStore
 
     store = ConductorStore.resolve(root=tmp_path, create=False)
     record = store.read_track_record(tid)

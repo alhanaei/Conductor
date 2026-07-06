@@ -20,7 +20,6 @@ from typing import Any, Dict, List, Optional, Tuple
 from .blocked_prompts import active_blocked_prompts
 from .models import (
     NotificationSeverity,
-    PlanStatus,
     TaskState,
     TrackState,
     VerificationStatus,
@@ -136,7 +135,7 @@ def _derive_signal(plan_approved: bool, dispatched: int, needs_fix: int,
 
 # next-action command per signal (exact CLI the operator/Hermes can run)
 def _next_command(signal: str, track_id: str) -> Optional[str]:
-    base = f"python -m conductor"
+    base = "python -m conductor"
     return {
         "needs_approval": f"{base} approve plan --track {track_id} --json",
         "needs_dispatch": f"{base} loop --track {track_id} --watch --json",
@@ -321,8 +320,8 @@ class OperatorView:
     # -- heartbeat (deliverable 3) ----------------------------------------- #
     def heartbeat(self, track_id: str, now: Optional[str] = None,
                   force: bool = False) -> Dict[str, Any]:
-        from .store import atomic_write_json
         from .models import utc_now_iso
+        from .store import atomic_write_json
 
         v = _track_view(self.store, track_id)
         now_iso = now or utc_now_iso()

@@ -15,8 +15,6 @@ newer message and re-projecting. This keeps causality auditable.
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .models import (

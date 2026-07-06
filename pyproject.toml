@@ -15,6 +15,7 @@ dependencies = []
 
 [project.optional-dependencies]
 test = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "ruff>=0.4"]
 
 [project.scripts]
 conductor = "conductor.cli:main"
@@ -25,3 +26,15 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "E501",  # long lines in rendered templates/docstrings are acceptable
+    "UP006", "UP007", "UP035", "UP045",  # keep typing.List/Optional style for py39 floor
+]

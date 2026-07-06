@@ -2,8 +2,6 @@
 
 import json
 
-import pytest
-
 import conductor.cli as climod
 from conductor.lanes import LaneAdapter
 

@@ -18,23 +18,22 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from .blocked_prompts import active_blocked_prompts
 from .completion import CompletionEngine, CompletionError
-from .dispatch import DispatchError, Dispatcher
+from .dispatch import Dispatcher, DispatchError
 from .doctor import run_doctor
 from .intake import PlanError, approve_plan, create_planned_track, review_plan
 from .lanes import LaneAdapter, LaneError
 from .locks import LockConflict, LockError, LockManager
-from .operator import OperatorError, OperatorView
 from .message_bus import MessageBus
 from .models import (
     MessageType,
     RecipientType,
     SenderType,
-    Track,
 )
+from .operator import OperatorError, OperatorView
 from .status import build_status
 from .store import ConductorStore, default_state_root, find_state_root
 
@@ -90,7 +89,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             {"dry_run": True, "state_root": str(target), "would_create": layout,
              "already_exists": store.exists()},
             args.json,
-            human="DRY RUN — would create state root at {}\n".format(target)
+            human=f"DRY RUN — would create state root at {target}\n"
             + "\n".join(f"  + {p}" for p in layout),
         )
         return 0
