@@ -149,7 +149,7 @@ PROVIDERS: Dict[str, ProviderProfile] = {
         busy_patterns=["esc to interrupt", "thinking", "working"],
         blocked_patterns=["allow command", "y/n", "do you want", "press enter to confirm"],
         launch_command=["codex"],
-        model_flag=None,  # model selection not wired for codex yet
+        model_flag="--model",
     ),
     "gemini": ProviderProfile(
         name="gemini",
@@ -157,7 +157,7 @@ PROVIDERS: Dict[str, ProviderProfile] = {
         busy_patterns=["esc to cancel", "thinking", "loading"],
         blocked_patterns=["y/n", "do you want", "authorize", "press enter to confirm"],
         launch_command=["gemini"],
-        model_flag=None,
+        model_flag="--model",
     ),
     "grok": ProviderProfile(
         name="grok",
@@ -165,37 +165,59 @@ PROVIDERS: Dict[str, ProviderProfile] = {
         busy_patterns=["thinking", "working", "esc to interrupt"],
         blocked_patterns=["y/n", "do you want", "press enter to confirm"],
         launch_command=["grok"],
-        model_flag=None,
+        model_flag="--model",
     ),
 }
 
-# Tiered lane-model policy for the claude provider, keyed by method id (see
-# methods.py). Demanding long-horizon work gets Fable 5; scoped/mechanical work
-# gets Sonnet. Override per project via conductor.json {"lane_models": {...}}.
-DEFAULT_LANE_MODELS: Dict[str, str] = {
-    "spec": "claude-sonnet-4-6",
-    "plan": "claude-fable-5",
-    "build": "claude-fable-5",
-    "test": "claude-sonnet-4-6",
-    "review": "claude-fable-5",
-    "ship": "claude-opus-4-8",
-    "default": "claude-opus-4-8",
+# Tiered lane-model policy, keyed by provider then method id (see methods.py).
+# Only claude ships defaults: demanding long-horizon work gets Fable 5,
+# scoped/mechanical work gets Sonnet. Codex/gemini/grok model lineups move
+# fast and their CLIs have their own configured defaults, so they launch bare
+# unless configured — set per-provider maps in conductor.json:
+#   {"lane_models": {"claude": {"build": "..."}, "codex": {"default": "..."}}}
+# (A flat map {"build": "..."} is also accepted and treated as the claude map.)
+DEFAULT_LANE_MODELS: Dict[str, Dict[str, str]] = {
+    "claude": {
+        "spec": "claude-sonnet-4-6",
+        "plan": "claude-fable-5",
+        "build": "claude-fable-5",
+        "test": "claude-sonnet-4-6",
+        "review": "claude-fable-5",
+        "ship": "claude-opus-4-8",
+        "default": "claude-opus-4-8",
+    },
 }
 
 
-def resolve_lane_model(method: Optional[str], config: Optional[Dict] = None) -> str:
-    """Resolve the model for a lane from the tier policy + config override.
+def resolve_lane_model(provider: Optional[str], method: Optional[str] = None,
+                       config: Optional[Dict] = None) -> Optional[str]:
+    """Resolve the launch model for ``provider`` from tier policy + config.
 
-    ``conductor.json`` may carry ``{"lane_models": {"build": "...", ...}}`` which
-    merges over :data:`DEFAULT_LANE_MODELS`.
+    Returns ``None`` when no policy applies (launch the provider CLI bare and
+    let it use its own configured default). Config overrides merge over the
+    defaults; a flat ``lane_models`` map is treated as the claude map for
+    backward compatibility.
     """
-    models = dict(DEFAULT_LANE_MODELS)
+    if not provider:
+        return None
+    provider = provider.lower()
+    models = dict(DEFAULT_LANE_MODELS.get(provider, {}))
+
     override = (config or {}).get("lane_models") or {}
     if isinstance(override, dict):
-        models.update({k: str(v) for k, v in override.items() if isinstance(v, str)})
+        if any(isinstance(v, dict) for v in override.values()):
+            # Nested per-provider form.
+            provider_override = override.get(provider) or {}
+        else:
+            # Legacy flat form applies to claude only.
+            provider_override = override if provider == "claude" else {}
+        if isinstance(provider_override, dict):
+            models.update({k: str(v) for k, v in provider_override.items()
+                           if isinstance(v, str)})
+
     if method and method in models:
         return models[method]
-    return models["default"]
+    return models.get("default")
 
 # Future extension points; not yet classified specially.
 FUTURE_PROVIDERS = ["cursor", "opencode"]

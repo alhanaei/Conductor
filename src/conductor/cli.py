@@ -228,11 +228,12 @@ def cmd_lane_ensure(args: argparse.Namespace) -> int:
             model = args.model
             if model is None:
                 # Tiered policy: --method picks the tier; bare --launch uses the
-                # policy default — but only for providers with a model flag.
+                # provider's policy default. Providers without a policy (and
+                # without config) launch bare and use their CLI's own default.
                 tgt = parse_target(args.target)
                 if provider_profile(tgt.provider).model_flag:
                     config = read_json(adapter.store.config_path, {}) or {}
-                    model = resolve_lane_model(args.method, config)
+                    model = resolve_lane_model(tgt.provider, args.method, config)
             result = adapter.launch(args.target, model=model,
                                     wait_seconds=args.launch_wait)
     except LaneError as exc:
