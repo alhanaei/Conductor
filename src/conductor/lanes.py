@@ -64,8 +64,23 @@ def parse_target(raw: str) -> LaneTarget:
         raise LaneError(
             f"invalid lane target {raw!r}; both session and window must be non-empty"
         )
-    provider = window.lower() if window.lower() in PROVIDERS else None
+    provider = _provider_from_window(window)
     return LaneTarget(raw=raw, session=session, window=window, provider=provider)
+
+
+def _provider_from_window(window: str) -> Optional[str]:
+    """Resolve the provider from a window name, honoring pool suffixes.
+
+    Lane-pool windows are named ``<provider>-<n>`` (``claude-2``, ``codex-3``);
+    they still classify with the base provider's profile.
+    """
+    name = window.lower()
+    if name in PROVIDERS:
+        return name
+    base, sep, suffix = name.rpartition("-")
+    if sep and suffix.isdigit() and base in PROVIDERS:
+        return base
+    return None
 
 
 _ESCAPE_RE = re.compile(r"[^A-Za-z0-9_.-]")

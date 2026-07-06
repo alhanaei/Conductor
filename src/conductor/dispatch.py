@@ -201,6 +201,13 @@ def render_task_artifact(record: TrackRecord, task: Task, kind: str,
 - write your result artifact to: {result_ref}
 - status/heartbeat projection: {status_ref}
 
+## Worker protocol (run these yourself)
+
+- heartbeat every few minutes:
+  `python -m conductor worker beat --track {task.track_id} --task {task.task_id} --worker <your-id> --note "<progress>"`
+- after writing your result artifact, record your completion claim:
+  `python -m conductor worker complete --track {task.track_id} --task {task.task_id} --worker <your-id>`
+
 ## Verification Requirements
 
 {verification}
@@ -253,7 +260,11 @@ class Dispatcher:
         for task in ready:
             dispatched.append(self._dispatch_task(record, task, session, force, create_worktree))
 
-        if dispatched:
+        # Retry earlier pending_lane tasks: a lane that was absent/busy at dispatch
+        # time may be provider_ready now (or a pool slot may have freed up).
+        resubmitted = self._retry_pending_lanes(record, session, force)
+
+        if dispatched or resubmitted:
             self.store.write_track_record(record)  # persist updated task states
 
         return {
@@ -261,15 +272,119 @@ class Dispatcher:
             "track_id": track_id,
             "dispatched_count": len(dispatched),
             "dispatched": dispatched,
-            "note": ("no ready tasks to dispatch" if not dispatched else None),
+            "resubmitted_count": len(resubmitted),
+            "resubmitted": resubmitted,
+            "note": ("no ready tasks to dispatch" if not (dispatched or resubmitted) else None),
         }
+
+    # -- lane pool ------------------------------------------------------------ #
+    _ACTIVE_LANE_STATES = (TaskState.DISPATCHED, TaskState.WORKING, TaskState.NEEDS_FIX)
+
+    def _lane_pool_size(self) -> int:
+        from .store import read_json
+        config = read_json(self.store.config_path, {}) or {}
+        try:
+            return max(1, int(config.get("lane_pool_size", 3)))
+        except (TypeError, ValueError):
+            return 3
+
+    def _occupied_lanes(self, exclude_task_id: Optional[str] = None) -> set:
+        """Lane targets held by active tasks across ALL tracks (lanes are global)."""
+        occupied = set()
+        for tid in self.store.list_track_ids():
+            for d in self.store.list_dispatch_records(tid):
+                if d.task_id == exclude_task_id:
+                    continue
+                if d.lane_target and d.task_state in self._ACTIVE_LANE_STATES:
+                    occupied.add(d.lane_target)
+        return occupied
+
+    def _allocate_lane(self, session: str, provider: str,
+                       exclude_task_id: Optional[str] = None):
+        """Pick the first free pool lane: provider, provider-2, ... provider-N.
+
+        Returns ``(lane_target, None)`` or ``(None, reason)`` when every pool
+        slot is held by another active task — the caller records the task as
+        ``pending_lane`` rather than double-submitting into an occupied pane.
+        """
+        occupied = self._occupied_lanes(exclude_task_id)
+        pool_size = self._lane_pool_size()
+        candidates = [f"{session}:{provider}" if i == 1 else f"{session}:{provider}-{i}"
+                      for i in range(1, pool_size + 1)]
+        for target in candidates:
+            if target not in occupied:
+                return target, None
+        return None, (f"lane pool exhausted: all {pool_size} '{provider}' lane(s) "
+                      f"hold active tasks")
+
+    def _retry_pending_lanes(self, record: TrackRecord, session: str,
+                             force: bool) -> List[Dict[str, Any]]:
+        """Re-attempt submission for tasks stuck in ``pending_lane``."""
+        resubmitted: List[Dict[str, Any]] = []
+        for drec in self.store.list_dispatch_records(record.track.track_id):
+            if drec.dispatch_state is not DispatchState.PENDING_LANE:
+                continue
+            if drec.task_state is not TaskState.DISPATCHED:
+                continue
+            result_path = self.store.task_result_path(record.track.track_id, drec.task_id)
+            if result_path.exists():
+                continue  # worker already produced a result; let verify handle it
+
+            # Reuse the assigned lane, or allocate one now if the pool was full.
+            lane_target = drec.lane_target
+            if not lane_target:
+                lane_target, note = self._allocate_lane(
+                    session, drec.provider or "claude", exclude_task_id=drec.task_id)
+                if lane_target is None:
+                    drec.blocker = note
+                    self.store.write_dispatch_record(drec)
+                    continue
+
+            lane_status = self.lane.status(lane_target)
+            lane_state = LaneState(lane_status["state"])
+            now = utc_now_iso()
+            drec.lane_target = lane_target
+            drec.lane_state = lane_state
+            drec.heartbeat_at = now
+
+            if lane_state is LaneState.PROVIDER_READY and drec.task_artifact_ref:
+                try:
+                    self.lane.submit(lane_target, drec.task_artifact_ref, force=force)
+                except LaneError as exc:
+                    drec.blocker = f"submit deferred: {exc}"
+                    self.store.write_dispatch_record(drec)
+                    continue
+                drec.dispatch_state = DispatchState.SUBMITTED
+                drec.task_state = TaskState.WORKING
+                drec.blocker = None
+                self.store.write_dispatch_record(drec)
+                for t in record.tasks:
+                    if t.task_id == drec.task_id:
+                        t.state = TaskState.WORKING
+                self.store.append_event({"event": "task_resubmitted",
+                                         "track_id": record.track.track_id,
+                                         "task_id": drec.task_id, "lane": lane_target})
+                resubmitted.append({"task_id": drec.task_id, "lane_target": lane_target,
+                                    "dispatch_state": drec.dispatch_state.value})
+            else:
+                if lane_state is LaneState.BLOCKED_PROMPT:
+                    drec.dispatch_state = DispatchState.BLOCKED_LANE
+                    drec.blocker = "lane shows an operator-action prompt (blocked_prompt)"
+                else:
+                    drec.blocker = f"lane not ready (state={lane_state.value})"
+                self.store.write_dispatch_record(drec)
+        return resubmitted
 
     def _dispatch_task(self, record: TrackRecord, task: Task, session: str,
                        force: bool, create_worktree: bool) -> Dict[str, Any]:
         now = utc_now_iso()
         kind = infer_kind(task.title)
         provider = provider_for_kind(kind)
-        lane_target = f"{session}:{provider}"
+        # Lane pool: parallel tasks of the same provider get distinct panes
+        # (provider, provider-2, ...) instead of colliding on one.
+        lane_target, pool_note = self._allocate_lane(session, provider,
+                                                     exclude_task_id=task.task_id)
+        base_lane = f"{session}:{provider}"
 
         # 1. Worktree allocation / branch policy (non-destructive by default).
         alloc = allocate_worktree(self.project_root, record.track.track_id, task.task_id,
@@ -286,33 +401,40 @@ class Dispatcher:
 
         # 4. Route decision record.
         decision = RouteDecision(
-            track_id=record.track.track_id, task_id=task.task_id, chosen_lane=lane_target,
-            candidates=[lane_target], reason=f"kind={kind} -> provider={provider}",
+            track_id=record.track.track_id, task_id=task.task_id,
+            chosen_lane=lane_target or base_lane,
+            candidates=[lane_target] if lane_target else [base_lane],
+            reason=(f"kind={kind} -> provider={provider}"
+                    + (f"; {pool_note}; queued" if lane_target is None else "")),
             task_type=kind, risk="normal",
         )
         self.store.write_route_decision(decision)
 
-        # 5. Lane readiness (Phase 3) — never assume the pane is ready.
-        lane_status = self.lane.status(lane_target)
-        lane_state = LaneState(lane_status["state"])
-
-        # 6. Safe submit decision.
+        # 5+6. Lane readiness + safe submit (never assume the pane is ready).
         dispatch_state = DispatchState.PENDING_LANE
         task_state = TaskState.DISPATCHED
         blocker: Optional[str] = None
-        if lane_state is LaneState.PROVIDER_READY:
-            try:
-                self.lane.submit(lane_target, str(task_md), force=force)
-                dispatch_state = DispatchState.SUBMITTED
-                task_state = TaskState.WORKING
-            except LaneError as exc:
-                dispatch_state = DispatchState.PENDING_LANE
-                blocker = f"submit deferred: {exc}"
-        elif lane_state is LaneState.BLOCKED_PROMPT:
-            dispatch_state = DispatchState.BLOCKED_LANE
-            blocker = "lane shows an operator-action prompt (blocked_prompt)"
+        lane_state: Optional[LaneState] = None
+        if lane_target is None:
+            # Every pool slot holds an active task: queue rather than
+            # double-submit into an occupied pane. Retried on later ticks.
+            blocker = pool_note
         else:
-            blocker = f"lane not ready (state={lane_state.value})"
+            lane_status = self.lane.status(lane_target)
+            lane_state = LaneState(lane_status["state"])
+            if lane_state is LaneState.PROVIDER_READY:
+                try:
+                    self.lane.submit(lane_target, str(task_md), force=force)
+                    dispatch_state = DispatchState.SUBMITTED
+                    task_state = TaskState.WORKING
+                except LaneError as exc:
+                    dispatch_state = DispatchState.PENDING_LANE
+                    blocker = f"submit deferred: {exc}"
+            elif lane_state is LaneState.BLOCKED_PROMPT:
+                dispatch_state = DispatchState.BLOCKED_LANE
+                blocker = "lane shows an operator-action prompt (blocked_prompt)"
+            else:
+                blocker = f"lane not ready (state={lane_state.value})"
 
         # 7. Persist task state in the plan record.
         task.state = task_state
@@ -343,8 +465,9 @@ class Dispatcher:
         bus = MessageBus(self.store, record.track.track_id)
         bus.send_simple(
             type=MessageType.ASSIGNMENT, sender_type=SenderType.CONDUCTOR, sender_id="conductor",
-            recipient_type=RecipientType.LANE, recipient_id=lane_target, task_id=task.task_id,
-            summary=f"dispatch {task.task_id} -> {lane_target} ({dispatch_state.value})",
+            recipient_type=RecipientType.LANE, recipient_id=lane_target or base_lane,
+            task_id=task.task_id,
+            summary=f"dispatch {task.task_id} -> {lane_target or 'queued'} ({dispatch_state.value})",
             body_ref=str(task_md),
         )
         self.store.append_event({"event": "task_dispatched", "track_id": record.track.track_id,

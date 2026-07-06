@@ -557,6 +557,102 @@ def cmd_loop(args: argparse.Namespace) -> int:
     return exit_code
 
 
+def cmd_worker_beat(args: argparse.Namespace) -> int:
+    """Structured worker heartbeat: message-bus HEARTBEAT + dispatch-record refresh.
+
+    Workers are CLI agents — they can call this themselves instead of the
+    conductor inferring liveness from pane scraping.
+    """
+    store = _resolve_or_emit_error(args)
+    if store is None:
+        return 2
+    drec = store.read_dispatch_record(args.track, args.task)
+    if drec is None:
+        _emit({"ok": False, "error": f"task {args.task} in track {args.track} "
+                                     "has not been dispatched"},
+              args.json, human="error: task not dispatched")
+        return 2
+
+    from .dispatch import classify_stale_risk
+    from .models import utc_now_iso as _now
+    now = _now()
+    bus = MessageBus(store, args.track)
+    msg = bus.send_simple(
+        type=MessageType.HEARTBEAT, sender_type=SenderType.WORKER,
+        sender_id=args.worker, recipient_type=RecipientType.TASK,
+        recipient_id=args.task, task_id=args.task,
+        summary=args.note or f"heartbeat from {args.worker}",
+    )
+    drec.heartbeat_at = now
+    if drec.task_state is not None:
+        drec.stale_risk = classify_stale_risk(now, now, drec.dispatch_state,
+                                              drec.lane_state, drec.task_state)
+    store.write_dispatch_record(drec)
+    _emit({"ok": True, "track_id": args.track, "task_id": args.task,
+           "worker_id": args.worker, "heartbeat_at": now, "message_id": msg.message_id},
+          args.json, human=f"heartbeat recorded for {args.task} at {now}")
+    return 0
+
+
+def cmd_worker_complete(args: argparse.Namespace) -> int:
+    """Structured completion *claim*: result must exist; verification still gates.
+
+    Sets the task to ready_for_review — never complete. `conductor verify`
+    remains the only path to ready_for_merge.
+    """
+    store = _resolve_or_emit_error(args)
+    if store is None:
+        return 2
+    drec = store.read_dispatch_record(args.track, args.task)
+    if drec is None:
+        _emit({"ok": False, "error": f"task {args.task} in track {args.track} "
+                                     "has not been dispatched"},
+              args.json, human="error: task not dispatched")
+        return 2
+
+    result_path = store.task_result_path(args.track, args.task)
+    if not (result_path.exists() and result_path.read_text(encoding="utf-8").strip()):
+        _emit({"ok": False,
+               "error": f"no result artifact at {result_path}; write your result "
+                        "there first, then run 'worker complete'"},
+              args.json, human=f"error: write your result to {result_path} first")
+        return 1
+
+    from .models import TaskState
+    from .models import utc_now_iso as _now
+    now = _now()
+    bus = MessageBus(store, args.track)
+    msg = bus.send_simple(
+        type=MessageType.TASK_COMPLETE, sender_type=SenderType.WORKER,
+        sender_id=args.worker, recipient_type=RecipientType.TASK,
+        recipient_id=args.task, task_id=args.task,
+        summary=args.summary or f"worker {args.worker} claims completion",
+        body_ref=str(result_path),
+    )
+    drec.task_state = TaskState.READY_FOR_REVIEW
+    drec.heartbeat_at = now
+    store.write_dispatch_record(drec)
+    try:
+        def _sync(record):
+            for t in record.tasks:
+                if t.task_id == args.task:
+                    t.state = TaskState.READY_FOR_REVIEW
+        store.update_track_record(args.track, _sync)
+    except KeyError:
+        pass
+    store.append_event({"event": "worker_complete_claim", "track_id": args.track,
+                        "task_id": args.task, "worker": args.worker})
+
+    _emit({"ok": True, "track_id": args.track, "task_id": args.task,
+           "worker_id": args.worker, "task_state": TaskState.READY_FOR_REVIEW.value,
+           "result_artifact_ref": str(result_path), "message_id": msg.message_id,
+           "note": "claim recorded; conductor verification still gates completion"},
+          args.json,
+          human=(f"Completion claim recorded for {args.task} (ready_for_review).\n"
+                 "Conductor verification still gates completion."))
+    return 0
+
+
 def cmd_task_set_verify(args: argparse.Namespace) -> int:
     store = _resolve_or_emit_error(args)
     if store is None:
@@ -1136,6 +1232,25 @@ def build_parser() -> argparse.ArgumentParser:
     p_op_arts = add("artifacts", op_sub, help="Bounded artifact links for a track.")
     p_op_arts.add_argument("--track", required=True)
     p_op_arts.set_defaults(func=cmd_operator_artifacts)
+
+    # worker (structured self-reporting protocol)
+    p_worker = add("worker", sub, help="Worker self-reporting (heartbeats, completion claims).")
+    worker_sub = p_worker.add_subparsers(dest="worker_command", required=True)
+
+    p_worker_beat = add("beat", worker_sub, help="Record a structured worker heartbeat.")
+    p_worker_beat.add_argument("--track", required=True)
+    p_worker_beat.add_argument("--task", required=True)
+    p_worker_beat.add_argument("--worker", required=True)
+    p_worker_beat.add_argument("--note", help="Short progress note for the heartbeat message.")
+    p_worker_beat.set_defaults(func=cmd_worker_beat)
+
+    p_worker_complete = add("complete", worker_sub,
+                            help="Record a completion claim (requires result artifact; verification still gates).")
+    p_worker_complete.add_argument("--track", required=True)
+    p_worker_complete.add_argument("--task", required=True)
+    p_worker_complete.add_argument("--worker", required=True)
+    p_worker_complete.add_argument("--summary", help="Short claim summary.")
+    p_worker_complete.set_defaults(func=cmd_worker_complete)
 
     # status
     p_status = add("status", sub, help="Operator status across all tracks.")
