@@ -642,6 +642,7 @@ class LaneRecord(_Model):
     session: str = ""             # session / project segment
     window: str = ""              # window / provider segment
     provider: Optional[str] = None
+    model: Optional[str] = None   # model the provider CLI was launched with (if known)
     state: LaneState = LaneState.UNKNOWN
     current_task_id: Optional[str] = None
     tmux_available: bool = True

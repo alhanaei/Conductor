@@ -100,6 +100,10 @@ class ProviderProfile:
     ready_patterns: List[str] = field(default_factory=list)
     busy_patterns: List[str] = field(default_factory=list)
     blocked_patterns: List[str] = field(default_factory=list)
+    # How to start this provider's CLI in a bare shell pane (argv, no shell string).
+    launch_command: List[str] = field(default_factory=list)
+    # CLI flag used to select a model, if the provider supports one.
+    model_flag: Optional[str] = None
 
 
 # Generic patterns shared across providers. Substring match on lowercased text.
@@ -136,26 +140,62 @@ PROVIDERS: Dict[str, ProviderProfile] = {
         busy_patterns=["esc to interrupt", "thinking"],
         blocked_patterns=["do you want to make this edit", "do you want to proceed",
                           "1. yes", "press enter to confirm"],
+        launch_command=["claude"],
+        model_flag="--model",
     ),
     "codex": ProviderProfile(
         name="codex",
         ready_patterns=["codex", "codex>", "/status", "send a message"],
         busy_patterns=["esc to interrupt", "thinking", "working"],
         blocked_patterns=["allow command", "y/n", "do you want", "press enter to confirm"],
+        launch_command=["codex"],
+        model_flag=None,  # model selection not wired for codex yet
     ),
     "gemini": ProviderProfile(
         name="gemini",
         ready_patterns=["gemini", "gemini>", "type your message"],
         busy_patterns=["esc to cancel", "thinking", "loading"],
         blocked_patterns=["y/n", "do you want", "authorize", "press enter to confirm"],
+        launch_command=["gemini"],
+        model_flag=None,
     ),
     "grok": ProviderProfile(
         name="grok",
         ready_patterns=["grok", "grok>", "ask grok"],
         busy_patterns=["thinking", "working", "esc to interrupt"],
         blocked_patterns=["y/n", "do you want", "press enter to confirm"],
+        launch_command=["grok"],
+        model_flag=None,
     ),
 }
+
+# Tiered lane-model policy for the claude provider, keyed by method id (see
+# methods.py). Demanding long-horizon work gets Fable 5; scoped/mechanical work
+# gets Sonnet. Override per project via conductor.json {"lane_models": {...}}.
+DEFAULT_LANE_MODELS: Dict[str, str] = {
+    "spec": "claude-sonnet-4-6",
+    "plan": "claude-fable-5",
+    "build": "claude-fable-5",
+    "test": "claude-sonnet-4-6",
+    "review": "claude-fable-5",
+    "ship": "claude-opus-4-8",
+    "default": "claude-opus-4-8",
+}
+
+
+def resolve_lane_model(method: Optional[str], config: Optional[Dict] = None) -> str:
+    """Resolve the model for a lane from the tier policy + config override.
+
+    ``conductor.json`` may carry ``{"lane_models": {"build": "...", ...}}`` which
+    merges over :data:`DEFAULT_LANE_MODELS`.
+    """
+    models = dict(DEFAULT_LANE_MODELS)
+    override = (config or {}).get("lane_models") or {}
+    if isinstance(override, dict):
+        models.update({k: str(v) for k, v in override.items() if isinstance(v, str)})
+    if method and method in models:
+        return models[method]
+    return models["default"]
 
 # Future extension points; not yet classified specially.
 FUTURE_PROVIDERS = ["cursor", "opencode"]
@@ -328,6 +368,86 @@ class LaneAdapter:
         self.store.append_event({"event": "lane_ensured", "target": tgt.raw,
                                  "state": state.value})
         return self._status_dict(record, note="lane ensured (shell window; provider not launched)")
+
+    def launch(self, target_raw: str, model: Optional[str] = None,
+               wait_seconds: float = 15.0, poll: float = 1.0) -> Dict[str, Any]:
+        """Start the provider CLI in a bare shell pane (e.g. ``claude --model ...``).
+
+        Safety gate mirrors submit: the launch command is only ever typed into a
+        pane classified ``shell``. A ``provider_ready`` lane returns success
+        without relaunching; ``busy``/``blocked_prompt``/``unknown``/``absent``
+        refuse — never inject text into a pane in an unknown state.
+        """
+        import shlex
+        import time
+
+        tgt = parse_target(target_raw)
+        profile = provider_profile(tgt.provider)
+        if not profile.launch_command:
+            raise LaneError(
+                f"no launch command known for provider {tgt.provider!r} "
+                f"(window {tgt.window!r}); launch it manually in the pane"
+            )
+        if model and not profile.model_flag:
+            raise LaneError(
+                f"provider {profile.name!r} does not support model selection via "
+                f"conductor; launch without --model or start it manually"
+            )
+
+        record = self._load_or_new(tgt)
+        now = utc_now_iso()
+        state, _, available = self._classify_live(tgt)
+        record.state = state
+        record.tmux_available = available
+        record.last_classified_at = now
+        record.last_heartbeat_at = now
+
+        if state is LaneState.PROVIDER_READY:
+            self._persist(record)
+            return {**self._status_dict(record), "launched": False,
+                    "note": "provider already running; not relaunching"}
+        if state is not LaneState.SHELL:
+            record.last_event = {"event": "launch_refused", "state": state.value, "at": now}
+            self._persist(record)
+            raise LaneError(
+                f"refusing to launch into lane {target_raw!r}: state is "
+                f"{state.value!r}, not 'shell'. Only a bare shell pane accepts a "
+                f"launch command."
+            )
+
+        argv = list(profile.launch_command)
+        if model:
+            argv += [profile.model_flag, model]
+        command = shlex.join(argv)
+        sent = self.tmux.send_text(tgt.raw, command) and self.tmux.send_enter(tgt.raw)
+        if not sent:
+            raise LaneError(f"failed to send launch command to lane {target_raw!r}")
+
+        record.model = model
+        record.last_event = {"event": "lane_launched", "command": command, "at": now}
+        self._persist(record)
+        self.store.append_event({"event": "lane_launched", "target": tgt.raw,
+                                 "command": command, "model": model})
+
+        # Wait for the provider UI to come up (bounded, classifier-driven).
+        deadline = time.monotonic() + max(0.0, wait_seconds)
+        final_state = state
+        while True:
+            final_state, _, _ = self._classify_live(tgt)
+            if final_state in (LaneState.PROVIDER_READY, LaneState.BLOCKED_PROMPT):
+                break
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(max(0.05, poll))
+        record.state = final_state
+        record.last_classified_at = utc_now_iso()
+        self._persist(record)
+
+        return {**self._status_dict(record), "launched": True, "command": command,
+                "model": model,
+                "note": ("provider ready" if final_state is LaneState.PROVIDER_READY
+                         else f"launched; lane state is {final_state.value} "
+                              "(may still be starting or waiting on a prompt)")}
 
     def status(self, target_raw: str) -> Dict[str, Any]:
         tgt = parse_target(target_raw)

@@ -246,7 +246,10 @@ def test_loop_watch_keeps_polling_when_worker_result_is_not_ready(tmp_path, caps
     assert data["watch"] is True
     assert data["stop_reason"] == "max_cycles"
     assert data["blocked"] == []
-    assert len(sleeps) == 2
+    # Patching cli.time.sleep patches the shared time module process-wide, so
+    # unrelated background threads can add stray entries — count only the
+    # loop's own poll-interval sleeps.
+    assert sleeps.count(0.01) == 2
 
 
 def test_loop_watch_stops_on_blocked_prompt_for_working_task_without_result(tmp_path, capsys, monkeypatch):

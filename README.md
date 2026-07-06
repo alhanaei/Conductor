@@ -72,6 +72,11 @@ pastes work into a bare shell, and sends only a short artifact reference.
 
 ```bash
 python -m conductor lane ensure  --target Conductor:claude --json   # create the tmux window (shell)
+python -m conductor lane ensure  --target Conductor:claude --launch --method build --json
+#   ^ also starts the provider CLI (only into a bare shell pane) with the tiered
+#     model policy: Fable 5 for plan/build/review, Sonnet 4.6 for spec/test,
+#     Opus 4.8 default. Override per task with --model <id>, or per project via
+#     conductor.json {"lane_models": {"build": "..."}}.
 python -m conductor lane status  --target Conductor:claude --json   # classify readiness
 python -m conductor lane capture --target Conductor:claude --json   # capture recent transcript
 python -m conductor lane submit  --target Conductor:claude --task-file <path> --json  # safe artifact-ref submit

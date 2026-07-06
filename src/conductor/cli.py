@@ -221,11 +221,29 @@ def cmd_lane_ensure(args: argparse.Namespace) -> int:
         return 2
     try:
         result = adapter.ensure(args.target)
+        if getattr(args, "launch", False):
+            from .lanes import parse_target, provider_profile, resolve_lane_model
+            from .store import read_json
+
+            model = args.model
+            if model is None:
+                # Tiered policy: --method picks the tier; bare --launch uses the
+                # policy default — but only for providers with a model flag.
+                tgt = parse_target(args.target)
+                if provider_profile(tgt.provider).model_flag:
+                    config = read_json(adapter.store.config_path, {}) or {}
+                    model = resolve_lane_model(args.method, config)
+            result = adapter.launch(args.target, model=model,
+                                    wait_seconds=args.launch_wait)
     except LaneError as exc:
         _emit({"ok": False, "error": str(exc)}, args.json, human=f"error: {exc}")
         return 1
-    _emit(result, args.json,
-          human=f"Lane {result['target']} ensured — state={result['state']}")
+    human = f"Lane {result['target']} ensured — state={result['state']}"
+    if result.get("launched"):
+        human += f"\n  launched: {result.get('command')}\n  note: {result.get('note')}"
+    elif result.get("note"):
+        human += f"\n  note: {result.get('note')}"
+    _emit(result, args.json, human=human)
     return 0
 
 
@@ -1077,8 +1095,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_lane = add("lane", sub, help="tmux lane operations.")
     lane_sub = p_lane.add_subparsers(dest="lane_command", required=True)
 
-    p_lane_ensure = add("ensure", lane_sub, help="Ensure a tmux lane exists.")
+    p_lane_ensure = add("ensure", lane_sub, help="Ensure a tmux lane exists (optionally launch the provider).")
     p_lane_ensure.add_argument("--target", required=True, help="Lane target 'session:window'.")
+    p_lane_ensure.add_argument("--launch", action="store_true",
+                               help="Start the provider CLI in the pane (only if it is a bare shell).")
+    p_lane_ensure.add_argument("--model",
+                               help="Model id for the provider CLI (e.g. claude-fable-5). "
+                                    "Overrides the tiered policy.")
+    p_lane_ensure.add_argument("--method", choices=["spec", "plan", "build", "test", "review", "ship"],
+                               help="Pick the model from the tiered policy for this task method "
+                                    "(Fable 5 for plan/build/review, Sonnet 4.6 for spec/test).")
+    p_lane_ensure.add_argument("--launch-wait", type=float, default=15.0,
+                               help="Seconds to wait for the provider UI after launching.")
     p_lane_ensure.set_defaults(func=cmd_lane_ensure)
 
     p_lane_status = add("status", lane_sub, help="Classify and report lane readiness.")
