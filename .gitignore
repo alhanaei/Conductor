@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+.env
+
+# Conductor runtime state
+.conductor/
+
+# Hermes/dispatcher runtime outputs, keep planning artifacts + phase task docs tracked
+.hermes/dispatcher/result.md
+.hermes/dispatcher/checkpoint.json
+.hermes/dispatcher/status.json
+.hermes/dispatcher/events.log
+.hermes/dispatcher/events.jsonl
+.hermes/dispatcher/usage.jsonl
+.hermes/dispatcher/active-run.json
+.hermes/dispatcher/index.json
+.hermes/dispatcher/current-task.md
+.hermes/dispatcher/lanes/
+.hermes/dispatcher/runs/

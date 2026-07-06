@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "conductor"
+version = "0.1.0"
+description = "Local-first, tmux-visible, artifact-driven control plane for coding-agent CLIs (Phase 1 kernel: state, tracks, message bus, locks)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Proprietary" }
+authors = [{ name = "Ahmed Alhanaei" }]
+# Phase 1 is intentionally dependency-light: stdlib only at runtime.
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
+[project.scripts]
+conductor = "conductor.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
