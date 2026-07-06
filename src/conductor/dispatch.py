@@ -146,6 +146,22 @@ def render_task_artifact(record: TrackRecord, task: Task, kind: str,
     verify_cmds = ("\n".join(f"- `{c}`" for c in task.verification_commands)
                    or "- _none configured; conductor checks artifacts only_")
     dod_refs = ", ".join(task.definition_of_done_refs) or "definition_of_done.md"
+    scope_files = ("\n".join(f"- `{p}`" for p in task.scope_paths)
+                   or "- _no file scope declared; keep changes minimal and task-relevant_")
+    verdict_section = ""
+    if task.method_id == "review":
+        verdict_section = f"""
+## Review Verdict (REQUIRED)
+
+Your verdict gates the final merge. After completing the review, record it:
+
+`python -m conductor worker verdict --track {task.track_id} --task {task.task_id} --worker <your-id> --verdict approve|reject [--blocker "..."]`
+
+(or write verdict.json next to your result: {{"verdict": "approve"|"reject", "blockers": [...], "notes": "..."}})
+
+A reject verdict blocks merge approval until the operator resolves the blockers.
+Verification fails without a valid verdict.
+"""
     return f"""# Task — {task.title}
 
 - task_id: {task.task_id}
@@ -190,6 +206,14 @@ def render_task_artifact(record: TrackRecord, task: Task, kind: str,
 - access_list.task_ids: {access}
 - access_list.artifact_refs: {', '.join(task.access_list.artifact_refs)}
 
+## File Scope (verification enforces this)
+
+Files you may modify (changes outside these globs fail verification when declared):
+
+{scope_files}
+
+Do not modify test files unless this task's method is `test` or the scope grants them.
+
 ## Source references
 
 - spec: ../../spec.md
@@ -215,7 +239,7 @@ def render_task_artifact(record: TrackRecord, task: Task, kind: str,
 ## Verification Commands (conductor runs these at verify time)
 
 {verify_cmds}
-
+{verdict_section}
 Do not self-mark complete. Conductor verification is the completion gate.
 """
 
@@ -390,6 +414,12 @@ class Dispatcher:
         alloc = allocate_worktree(self.project_root, record.track.track_id, task.task_id,
                                   task.title, git=self.git, create=create_worktree)
 
+        # 1b. Diff-scope baseline: HEAD of the workspace repo at dispatch time.
+        # None outside git — the integrity gates then skip rather than enforce.
+        baseline_commit = None
+        if hasattr(self.git, "head_commit"):
+            baseline_commit = self.git.head_commit(alloc.workspace)
+
         # 2. Paths.
         result_ref = str(self.store.task_result_path(record.track.track_id, task.task_id))
         status_ref = str(self.store.task_status_path(record.track.track_id, task.task_id))
@@ -455,6 +485,8 @@ class Dispatcher:
             definition_of_done_refs=list(task.definition_of_done_refs),
             verification_requirements=list(task.verification_requirements),
             verification_commands=list(task.verification_commands),
+            scope_paths=list(task.scope_paths),
+            baseline_commit=baseline_commit,
             autonomy_policy=task.autonomy_policy,
             risk_class=task.risk_class,
             stale_risk=stale, blocker=blocker, dispatched_at=now, heartbeat_at=now,
@@ -616,6 +648,8 @@ class Dispatcher:
             "definition_of_done_refs": drec.definition_of_done_refs,
             "verification_requirements": drec.verification_requirements,
             "verification_commands": drec.verification_commands,
+            "scope_paths": drec.scope_paths,
+            "baseline_commit": drec.baseline_commit,
             "task_state": drec.task_state.value,
             "dispatch_state": drec.dispatch_state.value if drec.dispatch_state else None,
             "provider": drec.provider,

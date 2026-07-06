@@ -471,6 +471,9 @@ class ConductorStore:
     def task_result_path(self, track_id: str, task_id: str) -> Path:
         return self.task_dir(track_id, task_id) / "result.md"
 
+    def task_verdict_path(self, track_id: str, task_id: str) -> Path:
+        return self.task_dir(track_id, task_id) / "verdict.json"
+
     def write_dispatch_record(self, record: DispatchRecord) -> None:
         record.updated_at = utc_now_iso()
         record.validate()

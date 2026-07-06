@@ -291,7 +291,11 @@ def test_loop_watch_stops_on_blocked_prompt_for_working_task_without_result(tmp_
     assert data["stop_reason"] == "blocked_prompt"
     assert data["blocked"][0]["task_id"] == task_id
     assert data["blocked"][0]["lane_state"] == "blocked_prompt"
-    assert sleeps == []
+    # Patching cli.time.sleep patches the shared time module process-wide, and
+    # subprocess.Popen.wait(timeout) inside the loop's git/tmux calls sleeps in
+    # an exponential-backoff pattern (0.008, 0.016, ... 0.05). Only the loop's
+    # own watch sleep uses exactly the poll interval — assert that one is absent.
+    assert 0.01 not in sleeps
 
 
 def test_lane_blocked_command_reports_active_blocked_prompts(tmp_path, capsys, monkeypatch):

@@ -672,6 +672,95 @@ def cmd_worker_complete(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_task_set_scope(args: argparse.Namespace) -> int:
+    """Declare the file globs a task may modify (enforced by the diff-scope gate)."""
+    store = _resolve_or_emit_error(args)
+    if store is None:
+        return 2
+    new_scope: list = []
+
+    def mutate(record):
+        task = next((t for t in record.tasks if t.task_id == args.task), None)
+        if task is None:
+            raise KeyError(f"unknown task {args.task} in track {args.track}")
+        if args.clear:
+            task.scope_paths = []
+        task.scope_paths.extend(args.path)
+        new_scope[:] = list(task.scope_paths)
+
+    try:
+        store.update_track_record(args.track, mutate)
+    except KeyError as exc:
+        _emit({"ok": False, "error": str(exc)}, args.json, human=f"error: {exc}")
+        return 2
+
+    # Keep an already-dispatched record in sync — verify reads scope from it.
+    drec = store.read_dispatch_record(args.track, args.task)
+    if drec is not None:
+        drec.scope_paths = list(new_scope)
+        store.write_dispatch_record(drec)
+
+    _emit(
+        {"ok": True, "track_id": args.track, "task_id": args.task,
+         "scope_paths": new_scope, "dispatch_record_updated": drec is not None},
+        args.json,
+        human=(f"File scope for {args.task}:\n"
+               + ("\n".join(f"  {p}" for p in new_scope) or "  (none — reporting only)")),
+    )
+    return 0
+
+
+def cmd_worker_verdict(args: argparse.Namespace) -> int:
+    """Record a review task's structured verdict (gates the merge)."""
+    store = _resolve_or_emit_error(args)
+    if store is None:
+        return 2
+    drec = store.read_dispatch_record(args.track, args.task)
+    if drec is None:
+        _emit({"ok": False, "error": f"task {args.task} in track {args.track} "
+                                     "has not been dispatched"},
+              args.json, human="error: task not dispatched")
+        return 2
+
+    from .models import utc_now_iso as _now
+    from .store import atomic_write_json
+    now = _now()
+    verdict = {
+        "verdict": args.verdict,
+        "blockers": list(args.blocker),
+        "notes": args.notes,
+        "worker_id": args.worker,
+        "recorded_at": now,
+    }
+    verdict_path = store.task_verdict_path(args.track, args.task)
+    atomic_write_json(verdict_path, verdict)
+
+    bus = MessageBus(store, args.track)
+    msg = bus.send_simple(
+        type=MessageType.VERIFICATION, sender_type=SenderType.WORKER,
+        sender_id=args.worker, recipient_type=RecipientType.TASK,
+        recipient_id=args.task, task_id=args.task,
+        summary=f"review verdict: {args.verdict}"
+                + (f" ({len(args.blocker)} blocker(s))" if args.blocker else ""),
+        body_ref=str(verdict_path),
+    )
+    drec.heartbeat_at = now
+    store.write_dispatch_record(drec)
+    store.append_event({"event": "review_verdict", "track_id": args.track,
+                        "task_id": args.task, "verdict": args.verdict,
+                        "worker": args.worker})
+
+    _emit({"ok": True, "track_id": args.track, "task_id": args.task,
+           "verdict": args.verdict, "blockers": list(args.blocker),
+           "verdict_ref": str(verdict_path), "message_id": msg.message_id,
+           "note": ("a reject verdict blocks merge approval"
+                    if args.verdict == "reject" else
+                    "verdict recorded; merge gate will accept it")},
+          args.json,
+          human=f"Verdict '{args.verdict}' recorded for {args.task} -> {verdict_path}")
+    return 0
+
+
 def cmd_task_set_verify(args: argparse.Namespace) -> int:
     store = _resolve_or_emit_error(args)
     if store is None:
@@ -1180,6 +1269,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_task_status.add_argument("--task", required=True)
     p_task_status.set_defaults(func=cmd_task_status)
 
+    p_task_scope = add("set-scope", task_sub,
+                       help="Declare file globs a task may modify (diff-scope gate enforces).")
+    p_task_scope.add_argument("--track", required=True)
+    p_task_scope.add_argument("--task", required=True)
+    p_task_scope.add_argument("--path", action="append", default=[],
+                              help="Glob of files the task may modify (repeatable), "
+                                   "e.g. 'src/conductor/**'.")
+    p_task_scope.add_argument("--clear", action="store_true",
+                              help="Clear existing scope before adding new paths.")
+    p_task_scope.set_defaults(func=cmd_task_set_scope)
+
     p_task_verify = add("set-verify", task_sub,
                         help="Configure executable verification commands for a task.")
     p_task_verify.add_argument("--track", required=True)
@@ -1280,6 +1380,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_worker_complete.add_argument("--worker", required=True)
     p_worker_complete.add_argument("--summary", help="Short claim summary.")
     p_worker_complete.set_defaults(func=cmd_worker_complete)
+
+    p_worker_verdict = add("verdict", worker_sub,
+                           help="Record a review task's verdict (approve/reject gates the merge).")
+    p_worker_verdict.add_argument("--track", required=True)
+    p_worker_verdict.add_argument("--task", required=True)
+    p_worker_verdict.add_argument("--worker", required=True)
+    p_worker_verdict.add_argument("--verdict", required=True, choices=["approve", "reject"])
+    p_worker_verdict.add_argument("--blocker", action="append", default=[],
+                                  help="Blocking issue (repeatable; expected with reject).")
+    p_worker_verdict.add_argument("--notes", help="Free-form review notes.")
+    p_worker_verdict.set_defaults(func=cmd_worker_verdict)
 
     # status
     p_status = add("status", sub, help="Operator status across all tracks.")

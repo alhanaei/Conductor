@@ -348,6 +348,9 @@ class Task(_Model):
     # verification_commands holds strictly executable strings the verifier runs.
     verification_requirements: List[str] = field(default_factory=list)
     verification_commands: List[str] = field(default_factory=list)
+    # Glob patterns of files this task may modify (empty = scope not declared;
+    # the diff-scope gate then reports changed files without enforcing).
+    scope_paths: List[str] = field(default_factory=list)
     autonomy_policy: str = "auto_ok"
     risk_class: str = "normal"
     created_at: str = field(default_factory=utc_now_iso)
@@ -707,10 +710,15 @@ class DispatchRecord(_Model):
     # verification_commands holds strictly executable strings the verifier runs.
     verification_requirements: List[str] = field(default_factory=list)
     verification_commands: List[str] = field(default_factory=list)
+    # Glob patterns of files this task may modify (empty = scope not declared;
+    # the diff-scope gate then reports changed files without enforcing).
+    scope_paths: List[str] = field(default_factory=list)
     autonomy_policy: str = "auto_ok"
     risk_class: str = "normal"
     stale_risk: StaleRisk = StaleRisk.NONE
     blocker: Optional[str] = None
+    # Diff-scope baseline: repo HEAD at dispatch time (None outside git).
+    baseline_commit: Optional[str] = None
     # Phase 5 verification / fix-loop fields.
     verification_status: Optional[VerificationStatus] = None
     verification_ref: Optional[str] = None

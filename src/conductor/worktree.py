@@ -46,6 +46,37 @@ class GitClient:
             return False
         return res.returncode == 0 and res.stdout.strip() == "true"
 
+    def head_commit(self, path: str) -> Optional[str]:
+        """Current HEAD sha of the repo at ``path``; None outside a repo."""
+        if not self.is_repo(path):
+            return None
+        try:
+            res = self._run(["rev-parse", "HEAD"], cwd=str(path))
+        except (OSError, subprocess.SubprocessError):
+            return None
+        return res.stdout.strip() if res.returncode == 0 else None
+
+    def changed_files(self, path: str, baseline: str) -> Optional[list]:
+        """Files changed since ``baseline`` (committed + working tree + untracked).
+
+        Returns repo-relative paths, or ``None`` when the diff cannot be
+        computed (not a repo, unknown baseline) — callers treat None as
+        "skip the gate", never as "no changes".
+        """
+        if not self.is_repo(path):
+            return None
+        try:
+            diff = self._run(["diff", "--name-only", baseline], cwd=str(path))
+            untracked = self._run(["ls-files", "--others", "--exclude-standard"],
+                                  cwd=str(path))
+        except (OSError, subprocess.SubprocessError):
+            return None
+        if diff.returncode != 0 or untracked.returncode != 0:
+            return None
+        files = [f for f in diff.stdout.splitlines() if f.strip()]
+        files += [f for f in untracked.stdout.splitlines() if f.strip()]
+        return sorted(set(files))
+
     def add_worktree(self, repo: str, worktree_path: str, branch: str) -> bool:
         """Create an isolated worktree on a new branch. Non-destructive.
 

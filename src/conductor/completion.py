@@ -27,6 +27,12 @@ import functools
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from .integrity import (
+    check_diff_scope,
+    check_review_verdict,
+    check_test_integrity,
+    read_verdict,
+)
 from .message_bus import MessageBus
 from .models import (
     ApprovalKind,
@@ -45,6 +51,7 @@ from .models import (
 )
 from .store import ConductorStore, atomic_write_text, read_json
 from .verify_commands import load_allowlist, run_verification_commands
+from .worktree import GitClient
 
 
 class CompletionError(RuntimeError):
@@ -155,8 +162,9 @@ def auto_fix_failed_tasks(engine: CompletionEngine, lane_adapter,
 
 
 class CompletionEngine:
-    def __init__(self, store: ConductorStore):
+    def __init__(self, store: ConductorStore, git: Optional[GitClient] = None):
         self.store = store
+        self.git = git if git is not None else GitClient()
 
     # -- helpers ------------------------------------------------------------ #
     def _require_track(self, track_id: str):
@@ -331,6 +339,30 @@ class CompletionEngine:
             atomic_write_text(out_path, "\n".join(blocks))
             command_evidence_ref = str(out_path)
 
+        # Integrity gates (deterministic; skip loudly when the diff is
+        # unmeasurable — non-git workspace or no baseline recorded).
+        workspace = drec.workspace or str(self.store.root.parent)
+        changed = None
+        if drec.baseline_commit and hasattr(self.git, "changed_files"):
+            changed = self.git.changed_files(workspace, drec.baseline_commit)
+        config = read_json(self.store.config_path, {}) or {}
+        checks.append(check_diff_scope(changed, drec.scope_paths))
+        checks.append(check_test_integrity(changed, drec.scope_paths,
+                                           drec.method_id, config))
+
+        # Review tasks must record a structured verdict; either verdict value
+        # passes verification (the reviewer did its job) — reject blocks at the
+        # merge gate, not here.
+        if drec.method_id == "review":
+            verdict_path = self.store.task_verdict_path(track_id, task_id)
+            checks.append(check_review_verdict(verdict_path))
+            if verdict_path.exists():
+                evidence_extra = str(verdict_path)
+            else:
+                evidence_extra = None
+        else:
+            evidence_extra = None
+
         passed = all(c["passed"] for c in checks)
         status = VerificationStatus.PASSED if passed else VerificationStatus.FAILED
         failed_names = [c["name"] for c in checks if not c["passed"]]
@@ -344,6 +376,8 @@ class CompletionEngine:
         evidence_refs = [str(result_path)] if has_result else []
         if command_evidence_ref:
             evidence_refs.append(command_evidence_ref)
+        if evidence_extra:
+            evidence_refs.append(evidence_extra)
         gate = VerificationGate(
             track_id=track_id, task_id=task_id, name="phase5_artifact_check",
             commands=list(drec.verification_commands), status=status,
@@ -482,6 +516,29 @@ class CompletionEngine:
                 "cannot approve final merge: plan still has uncompleted task(s); "
                 "run 'conductor advance' or 'conductor loop' to continue the DAG",
                 evidence={"unfinalized_tasks": unfinalized_plan_tasks},
+            )
+
+        # Review verdict gate: every dispatched review task must have recorded
+        # an explicit "approve". A reject (or missing/invalid verdict) blocks
+        # the merge — the reviewer's judgment is structural, not advisory.
+        verdict_problems = []
+        verdict_evidence = []
+        for d in drecs:
+            if d.method_id != "review":
+                continue
+            v = read_verdict(self.store.task_verdict_path(track_id, d.task_id))
+            verdict_evidence.append({"task_id": d.task_id, "verdict": v["verdict"],
+                                     "blockers": v["blockers"], "error": v["error"]})
+            if not v["valid"]:
+                verdict_problems.append(f"{d.task_id}: {v['error']}")
+            elif v["verdict"] != "approve":
+                blockers = "; ".join(v["blockers"]) or "no blockers listed"
+                verdict_problems.append(f"{d.task_id}: reviewer rejected ({blockers})")
+        if verdict_problems and not force:
+            raise CompletionError(
+                "cannot approve merge: review verdict gate failed — "
+                + " | ".join(verdict_problems),
+                evidence={"review_verdicts": verdict_evidence},
             )
 
         already = record.is_merge_approved()
