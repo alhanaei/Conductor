@@ -71,6 +71,89 @@ def _with_track_mutex(fn):
     return wrapper
 
 
+def auto_fix_failed_tasks(engine: CompletionEngine, lane_adapter,
+                          track_id: str, verify_results: Dict[str, Any]) -> Dict[str, Any]:
+    """Route freshly failed verifications into the bounded fix-loop (loop tick).
+
+    For each task that just failed verification:
+
+    1. **Archive** the failing ``result.md`` to ``result-attempt-N.md``. This is
+       what makes the loop convergent: ``verify_ready_results`` skips tasks with
+       no result, so the same stale failing result is never re-verified (which
+       would otherwise burn one fix attempt per tick). The worker must produce a
+       *fresh* result to re-enter verification.
+    2. Open a bounded fix via :meth:`CompletionEngine.fix` (writes ``fix-N.md`` +
+       FOLLOWUP message; refuses past ``max_fix_attempts``).
+    3. Best-effort **deliver** a short artifact-reference instruction to the lane
+       (readiness-gated; never pastes bodies; pending if the lane is not ready).
+    4. When attempts are exhausted, **escalate**: set a blocker on the dispatch
+       record and append a ``fix_attempts_exhausted`` event so the operator
+       surface flags it. No further fixes are attempted without ``--force``.
+
+    Called *outside* any track mutex (``fix`` acquires its own).
+    """
+    from .lanes import LaneError  # local import avoids a module cycle
+
+    store = engine.store
+    fixed: List[Dict[str, Any]] = []
+    exhausted: List[Dict[str, Any]] = []
+
+    for result in verify_results.get("results", []):
+        if result.get("passed"):
+            continue
+        task_id = result["task_id"]
+        drec = store.read_dispatch_record(track_id, task_id)
+        if drec is None or drec.task_state is not TaskState.NEEDS_FIX:
+            continue
+
+        if drec.fix_attempts >= drec.max_fix_attempts:
+            if not (drec.blocker or "").startswith("fix attempts exhausted"):
+                drec.blocker = ("fix attempts exhausted "
+                                f"({drec.fix_attempts}/{drec.max_fix_attempts}); "
+                                "operator intervention required")
+                store.write_dispatch_record(drec)
+                store.append_event({"event": "fix_attempts_exhausted",
+                                    "track_id": track_id, "task_id": task_id,
+                                    "attempts": drec.fix_attempts})
+            exhausted.append({"task_id": task_id, "attempts": drec.fix_attempts})
+            continue
+
+        # 1. Archive the failing result so only a fresh result re-enters verify.
+        attempt_n = drec.fix_attempts + 1
+        result_path = store.task_result_path(track_id, task_id)
+        archive_ref = None
+        if result_path.exists():
+            archive_path = result_path.with_name(f"result-attempt-{attempt_n}.md")
+            result_path.replace(archive_path)
+            archive_ref = str(archive_path)
+
+        # 2. Bounded fix (self-guarded by the track mutex).
+        fix_result = engine.fix(track_id, task_id)
+
+        # 3. Best-effort lane delivery of a short reference.
+        delivered = False
+        delivery_note = None
+        if lane_adapter is not None and drec.lane_target:
+            instruction = (f"Fix required for task {task_id}: read "
+                           f"{fix_result['artifact_ref']} and address the failing "
+                           f"checks, then write a fresh result to "
+                           f"{drec.result_artifact_ref}.")
+            try:
+                lane_adapter.send_instruction(drec.lane_target, instruction,
+                                              kind="task_fix_delivery")
+                delivered = True
+            except LaneError as exc:
+                delivery_note = f"pending: {exc}"
+
+        fixed.append({"task_id": task_id, "fix_attempt": fix_result["fix_attempt"],
+                      "archived_result_ref": archive_ref,
+                      "fix_artifact_ref": fix_result["artifact_ref"],
+                      "delivered": delivered, "delivery_note": delivery_note})
+
+    return {"ok": True, "track_id": track_id, "fixed_count": len(fixed),
+            "fixed": fixed, "exhausted_count": len(exhausted), "exhausted": exhausted}
+
+
 class CompletionEngine:
     def __init__(self, store: ConductorStore):
         self.store = store

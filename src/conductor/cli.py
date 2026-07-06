@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from .blocked_prompts import active_blocked_prompts
-from .completion import CompletionEngine, CompletionError
+from .completion import CompletionEngine, CompletionError, auto_fix_failed_tasks
 from .dispatch import Dispatcher, DispatchError
 from .doctor import run_doctor
 from .intake import PlanError, approve_plan, create_planned_track, review_plan
@@ -448,6 +448,10 @@ def cmd_loop(args: argparse.Namespace) -> int:
     for cycle in range(1, args.max_cycles + 1):
         try:
             verified = engine.verify_ready_results(args.track)
+            fixes = None
+            if verified.get("failed_count", 0) and not args.no_auto_fix:
+                fixes = auto_fix_failed_tasks(engine, dispatcher.lane,
+                                              args.track, verified)
             advanced = engine.advance_verified(args.track)
             dispatched = dispatcher.dispatch(
                 args.track,
@@ -460,7 +464,8 @@ def cmd_loop(args: argparse.Namespace) -> int:
                   human=f"error: {exc}")
             return 2
         cycle_result = {"cycle": cycle, "verified": verified,
-                        "advanced": advanced, "dispatched": dispatched}
+                        "fixes": fixes, "advanced": advanced,
+                        "dispatched": dispatched}
         cycles.append(cycle_result)
 
         if args.stop_on_blocked_prompt:
@@ -1037,6 +1042,9 @@ def build_parser() -> argparse.ArgumentParser:
                              "Without this flag the loop stops with awaiting_operator. "
                              "Tasks with autonomy_policy=requires_operator still refuse "
                              "unless --force is also given.")
+    p_loop.add_argument("--no-auto-fix", action="store_true",
+                        help="Do not route failed verifications into the bounded "
+                             "fix-loop automatically.")
     p_loop.set_defaults(func=cmd_loop)
 
     # task (status)
