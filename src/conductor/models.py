@@ -344,6 +344,9 @@ class Task(_Model):
     method_id: str = "build"
     acceptance_criteria: List[str] = field(default_factory=list)
     definition_of_done_refs: List[str] = field(default_factory=list)
+    # Prose expectations (worker guidance) vs. real executable commands.
+    # verification_commands holds strictly executable strings the verifier runs.
+    verification_requirements: List[str] = field(default_factory=list)
     verification_commands: List[str] = field(default_factory=list)
     autonomy_policy: str = "auto_ok"
     risk_class: str = "normal"
@@ -699,6 +702,9 @@ class DispatchRecord(_Model):
     method_id: str = "build"
     acceptance_criteria: List[str] = field(default_factory=list)
     definition_of_done_refs: List[str] = field(default_factory=list)
+    # Prose expectations (worker guidance) vs. real executable commands.
+    # verification_commands holds strictly executable strings the verifier runs.
+    verification_requirements: List[str] = field(default_factory=list)
     verification_commands: List[str] = field(default_factory=list)
     autonomy_policy: str = "auto_ok"
     risk_class: str = "normal"

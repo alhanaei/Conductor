@@ -20,8 +20,9 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Callable, Dict, Iterator, List, Optional
 
 from .models import (
     SCHEMA_VERSION,
@@ -169,6 +170,47 @@ def iter_jsonl(path: Path) -> Iterator[Dict[str, Any]]:
     yield from read_jsonl(path)
 
 
+@contextmanager
+def file_mutex(path: Path, timeout: float = 10.0, poll: float = 0.02) -> Iterator[None]:
+    """Hold an exclusive advisory ``flock`` on ``path`` for the block.
+
+    Same non-blocking poll-loop pattern as :class:`conductor.locks.LockManager`:
+    a wedged holder cannot pin us forever — we raise :class:`TimeoutError` after
+    ``timeout``. Used to serialize read-modify-write cycles on JSON projections
+    (the writes themselves are atomic; this prevents lost updates between two
+    concurrent RMW sequences, e.g. ``loop --watch`` vs. an operator command).
+    """
+    import errno
+    import fcntl
+    import time
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(str(path), os.O_CREAT | os.O_RDWR, 0o644)
+    deadline = time.monotonic() + timeout
+    acquired = False
+    try:
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                acquired = True
+                break
+            except OSError as exc:
+                if exc.errno not in (errno.EAGAIN, errno.EACCES):
+                    raise
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        f"could not acquire mutex {path} within {timeout}s"
+                    ) from exc
+                time.sleep(poll)
+        yield
+    finally:
+        if acquired:
+            import fcntl as _fcntl
+            _fcntl.flock(fd, _fcntl.LOCK_UN)
+        os.close(fd)
+
+
 # --------------------------------------------------------------------------- #
 # State-root resolution
 # --------------------------------------------------------------------------- #
@@ -269,6 +311,30 @@ class ConductorStore:
 
     def track_metadata_path(self, track_id: str) -> Path:
         return self.track_dir(track_id) / "metadata.json"
+
+    def track_mutex_path(self, track_id: str) -> Path:
+        return self.track_dir(track_id) / ".metadata_mutex"
+
+    def track_mutex(self, track_id: str, timeout: float = 10.0):
+        """Per-track mutex guarding TrackRecord read-modify-write cycles.
+
+        Hold this around any read → mutate → ``write_track_record`` sequence so a
+        concurrent ``loop --watch`` and an operator command cannot silently lose
+        each other's updates. Do NOT nest (flock on a second fd would deadlock);
+        acquire only at the outermost operation level.
+        """
+        return file_mutex(self.track_mutex_path(track_id), timeout=timeout)
+
+    def update_track_record(self, track_id: str,
+                            mutate: Callable[[TrackRecord], None]) -> TrackRecord:
+        """Atomically read-modify-write the track aggregate under the track mutex."""
+        with self.track_mutex(track_id):
+            record = self.read_track_record(track_id)
+            if record is None:
+                raise KeyError(f"unknown track: {track_id}")
+            mutate(record)
+            self.write_track_record(record)
+            return record
 
     def definition_of_done_path(self, track_id: str) -> Path:
         return self.track_dir(track_id) / "definition_of_done.md"

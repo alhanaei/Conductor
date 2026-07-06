@@ -30,7 +30,10 @@ def test_build_tasks_assigns_v2_method_metadata():
     assert [t.method_id for t in tasks] == ["spec", "plan", "build", "test", "review"]
     assert all(t.definition_of_done_refs == ["definition_of_done.md"] for t in tasks)
     assert all(t.acceptance_criteria for t in tasks)
-    assert all(t.verification_commands for t in tasks)
+    # Prose expectations live in verification_requirements; verification_commands
+    # is strictly for executable commands and starts empty (set via task set-verify).
+    assert all(t.verification_requirements for t in tasks)
+    assert all(t.verification_commands == [] for t in tasks)
     assert [t.autonomy_policy for t in tasks] == [
         "stop_on_ambiguity",
         "stop_on_ambiguity",

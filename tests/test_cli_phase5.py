@@ -164,13 +164,8 @@ def test_loop_tick_skips_working_without_result_then_advances_when_result_exists
     assert cycle["dispatched"]["dispatched_count"] == 1
 
 
-def test_loop_auto_finalizes_when_all_planned_tasks_are_complete(tmp_path, capsys):
-    root = ["--root", str(tmp_path)]
-    tid, task_id = _approved_dispatched(capsys, root, tmp_path)
-    _write_result(tmp_path, tid, task_id)
-
-    # Fixture shortcut: this test exercises loop-owned finalization after all
-    # planned work is finalizable, not the entire five-task DAG.
+def _complete_other_plan_tasks(tmp_path, tid, task_id):
+    """Fixture shortcut: mark all plan tasks except ``task_id`` complete."""
     from conductor.models import TaskState
     from conductor.store import ConductorStore
 
@@ -181,8 +176,45 @@ def test_loop_auto_finalizes_when_all_planned_tasks_are_complete(tmp_path, capsy
             task.state = TaskState.COMPLETE
     store.write_track_record(record)
 
-    code, data, raw = _run(capsys, *root, "loop", "--track", tid, "--json")
 
+def test_loop_default_awaits_operator_when_all_tasks_complete(tmp_path, capsys):
+    """Without --auto-finalize the loop must NOT approve merge/close itself."""
+    root = ["--root", str(tmp_path)]
+    tid, task_id = _approved_dispatched(capsys, root, tmp_path)
+    _write_result(tmp_path, tid, task_id)
+    _complete_other_plan_tasks(tmp_path, tid, task_id)
+
+    code, data, raw = _run(capsys, *root, "loop", "--track", tid, "--json")
+    assert code == 0, raw
+    assert data["stop_reason"] == "awaiting_operator"
+    assert data["finalized"]["attempted"] is False
+    assert data["finalized"]["closed"] is False
+    assert any("approve merge" in c for c in data["finalized"]["next_commands"])
+
+
+def test_loop_auto_finalize_refused_for_requires_operator_tasks(tmp_path, capsys):
+    """--auto-finalize still defers when a task's autonomy_policy requires an operator."""
+    root = ["--root", str(tmp_path)]
+    tid, task_id = _approved_dispatched(capsys, root, tmp_path)
+    _write_result(tmp_path, tid, task_id)
+    _complete_other_plan_tasks(tmp_path, tid, task_id)
+
+    # The default plan's review task carries autonomy_policy=requires_operator.
+    code, data, raw = _run(capsys, *root, "loop", "--track", tid, "--auto-finalize", "--json")
+    assert code == 0, raw
+    assert data["stop_reason"] == "awaiting_operator"
+    assert data["finalized"]["attempted"] is False
+    assert data["finalized"]["requires_operator_tasks"]
+
+
+def test_loop_auto_finalizes_with_flag_and_force(tmp_path, capsys):
+    root = ["--root", str(tmp_path)]
+    tid, task_id = _approved_dispatched(capsys, root, tmp_path)
+    _write_result(tmp_path, tid, task_id)
+    _complete_other_plan_tasks(tmp_path, tid, task_id)
+
+    code, data, raw = _run(capsys, *root, "loop", "--track", tid,
+                           "--auto-finalize", "--force", "--json")
     assert code == 0, raw
     assert data["finalized"]["closed"] is True
     assert data["finalized"]["merge_approved"] is True

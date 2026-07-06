@@ -142,7 +142,9 @@ def render_task_artifact(record: TrackRecord, task: Task, kind: str,
     if "Do not claim completion without command evidence." not in anti_items:
         anti_items.append("Do not claim completion without command evidence.")
     anti = "\n".join(f"- {item}" for item in anti_items)
-    verification = "\n".join(f"- [ ] {item}" for item in task.verification_commands) or "- [ ] Result artifact is present and non-empty."
+    verification = "\n".join(f"- [ ] {item}" for item in task.verification_requirements) or "- [ ] Result artifact is present and non-empty."
+    verify_cmds = ("\n".join(f"- `{c}`" for c in task.verification_commands)
+                   or "- _none configured; conductor checks artifacts only_")
     dod_refs = ", ".join(task.definition_of_done_refs) or "definition_of_done.md"
     return f"""# Task — {task.title}
 
@@ -203,6 +205,10 @@ def render_task_artifact(record: TrackRecord, task: Task, kind: str,
 
 {verification}
 
+## Verification Commands (conductor runs these at verify time)
+
+{verify_cmds}
+
 Do not self-mark complete. Conductor verification is the completion gate.
 """
 
@@ -226,6 +232,12 @@ class Dispatcher:
     # -- dispatch ----------------------------------------------------------- #
     def dispatch(self, track_id: str, lane_session: Optional[str] = None,
                  force: bool = False, create_worktree: bool = False) -> Dict[str, Any]:
+        # Serialize against concurrent loop/operator RMW on the same track record.
+        with self.store.track_mutex(track_id):
+            return self._dispatch_locked(track_id, lane_session, force, create_worktree)
+
+    def _dispatch_locked(self, track_id: str, lane_session: Optional[str],
+                         force: bool, create_worktree: bool) -> Dict[str, Any]:
         record = self.store.read_track_record(track_id)
         if record is None:
             raise DispatchError(f"unknown track: {track_id}")
@@ -319,6 +331,7 @@ class Dispatcher:
             method_id=task.method_id,
             acceptance_criteria=list(task.acceptance_criteria),
             definition_of_done_refs=list(task.definition_of_done_refs),
+            verification_requirements=list(task.verification_requirements),
             verification_commands=list(task.verification_commands),
             autonomy_policy=task.autonomy_policy,
             risk_class=task.risk_class,
@@ -478,6 +491,7 @@ class Dispatcher:
             "risk_class": drec.risk_class,
             "acceptance_criteria": drec.acceptance_criteria,
             "definition_of_done_refs": drec.definition_of_done_refs,
+            "verification_requirements": drec.verification_requirements,
             "verification_commands": drec.verification_commands,
             "task_state": drec.task_state.value,
             "dispatch_state": drec.dispatch_state.value if drec.dispatch_state else None,

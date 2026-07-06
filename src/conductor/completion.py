@@ -23,6 +23,8 @@ plus any safe configured commands; it is intentionally separate from worker clai
 
 from __future__ import annotations
 
+import functools
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .message_bus import MessageBus
@@ -41,7 +43,8 @@ from .models import (
     VerificationStatus,
     utc_now_iso,
 )
-from .store import ConductorStore, atomic_write_text
+from .store import ConductorStore, atomic_write_text, read_json
+from .verify_commands import load_allowlist, run_verification_commands
 
 
 class CompletionError(RuntimeError):
@@ -50,6 +53,22 @@ class CompletionError(RuntimeError):
     def __init__(self, message: str, evidence: Optional[Any] = None):
         super().__init__(message)
         self.evidence = evidence
+
+
+def _with_track_mutex(fn):
+    """Serialize a track-scoped read-modify-write operation under the track mutex.
+
+    Prevents lost updates when ``loop --watch`` and an operator command mutate the
+    same TrackRecord concurrently. Guarded methods must not call each other
+    (flock does not nest across fds in one process).
+    """
+
+    @functools.wraps(fn)
+    def wrapper(self, track_id: str, *args, **kwargs):
+        with self.store.track_mutex(track_id):
+            return fn(self, track_id, *args, **kwargs)
+
+    return wrapper
 
 
 class CompletionEngine:
@@ -70,6 +89,7 @@ class CompletionEngine:
                 return
 
     # -- verify ------------------------------------------------------------- #
+    @_with_track_mutex
     def verify(self, track_id: str) -> Dict[str, Any]:
         record = self._require_track(track_id)
         drecs = self.store.list_dispatch_records(track_id)
@@ -102,6 +122,7 @@ class CompletionEngine:
         return {"ok": True, "track_id": track_id, "verified_count": verified,
                 "failed_count": len(results) - verified, "results": results}
 
+    @_with_track_mutex
     def verify_ready_results(self, track_id: str) -> Dict[str, Any]:
         """Verify only dispatched tasks that have non-empty result artifacts.
 
@@ -134,6 +155,7 @@ class CompletionEngine:
                 "failed_count": len(results) - verified, "results": results,
                 "skipped": skipped}
 
+    @_with_track_mutex
     def advance_verified(self, track_id: str) -> Dict[str, Any]:
         """Advance verified tasks and release dependency successors.
 
@@ -204,18 +226,46 @@ class CompletionEngine:
                 "detail": str(dod_path),
             },
         ]
-        # Optional configured commands could be appended here (none in MVP);
-        # they would each become an additional deterministic check.
+        # Run configured verification commands (real, allowlisted, no shell).
+        # Each command is one deterministic check with exit-code + output evidence.
+        command_evidence_ref = None
+        if drec.verification_commands:
+            config = read_json(self.store.config_path, {}) or {}
+            allowlist = load_allowlist(config)
+            workspace = Path(drec.workspace) if drec.workspace else self.store.root.parent
+            if not workspace.is_dir():
+                workspace = self.store.root.parent
+            cmd_checks = run_verification_commands(
+                drec.verification_commands, workspace, allowlist=allowlist)
+            checks.extend(cmd_checks)
+            # Persist full command output as durable evidence.
+            out_path = self.store.task_dir(track_id, task_id) / "verification-output.txt"
+            blocks = []
+            for c in cmd_checks:
+                verdict = "PASS" if c["passed"] else "FAIL"
+                blocks.append(f"$ {c['command']}\n# {verdict} — {c['detail']}\n"
+                              f"{c.get('output_tail', '')}\n")
+            atomic_write_text(out_path, "\n".join(blocks))
+            command_evidence_ref = str(out_path)
 
         passed = all(c["passed"] for c in checks)
         status = VerificationStatus.PASSED if passed else VerificationStatus.FAILED
-        reason = ("result artifact and Definition of Done present; conductor-verified"
-                  if passed else "required completion evidence missing; cannot verify completion")
+        failed_names = [c["name"] for c in checks if not c["passed"]]
+        reason = ("all verification checks passed"
+                  + (f" including {len(drec.verification_commands)} command(s)"
+                     if drec.verification_commands else "")
+                  + "; conductor-verified"
+                  if passed else
+                  f"verification failed: {', '.join(failed_names)}")
 
+        evidence_refs = [str(result_path)] if has_result else []
+        if command_evidence_ref:
+            evidence_refs.append(command_evidence_ref)
         gate = VerificationGate(
             track_id=track_id, task_id=task_id, name="phase5_artifact_check",
-            commands=[], status=status, evidence_level=EvidenceLevel.TOOL_VERIFIED,
-            evidence_refs=[str(result_path)] if has_result else [],
+            commands=list(drec.verification_commands), status=status,
+            evidence_level=EvidenceLevel.TOOL_VERIFIED,
+            evidence_refs=evidence_refs,
             checks=checks, verifier="conductor", reason=reason,
         )
         self.store.write_verification(gate)
@@ -262,6 +312,7 @@ class CompletionEngine:
                           "\n".join(lines))
 
     # -- fix ---------------------------------------------------------------- #
+    @_with_track_mutex
     def fix(self, track_id: str, task_id: str, body_file: Optional[str] = None,
             force: bool = False) -> Dict[str, Any]:
         drec = self.store.read_dispatch_record(track_id, task_id)
@@ -315,6 +366,7 @@ class CompletionEngine:
                 "remaining_attempts": max(0, drec.max_fix_attempts - n)}
 
     # -- merge approval ----------------------------------------------------- #
+    @_with_track_mutex
     def approve_merge(self, track_id: str, decided_by: str = "operator",
                       rationale: str = "", force: bool = False) -> Dict[str, Any]:
         record = self._require_track(track_id)
@@ -368,6 +420,7 @@ class CompletionEngine:
                 "verified_task_count": len(drecs)}
 
     # -- close -------------------------------------------------------------- #
+    @_with_track_mutex
     def close(self, track_id: str, force: bool = False) -> Dict[str, Any]:
         record = self._require_track(track_id)
         if not record.is_merge_approved() and not force:

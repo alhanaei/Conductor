@@ -73,7 +73,10 @@ def build_tasks(track_id: str, goal: str, task_workflow_mode: str = "stage") -> 
             method_id=method.method_id,
             acceptance_criteria=list(method.acceptance_criteria),
             definition_of_done_refs=["definition_of_done.md"],
-            verification_commands=list(method.verification_requirements),
+            # Prose expectations from the method catalog; real executable
+            # commands are configured per task/track (see `task set-verify`).
+            verification_requirements=list(method.verification_requirements),
+            verification_commands=[],
             autonomy_policy=method.autonomy_policy,
             risk_class=method.risk_class,
         )

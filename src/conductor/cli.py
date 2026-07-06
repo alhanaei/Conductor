@@ -477,10 +477,44 @@ def cmd_loop(args: argparse.Namespace) -> int:
                 stop_reason = "idle"
                 break
         if advanced.get("all_tasks_complete"):
+            # Merge approval is an operator gate by default (Phase 0 decision
+            # lock). The loop only finalizes when explicitly told to, and even
+            # then it defers to any requires_operator task policy unless forced.
+            if not args.auto_finalize:
+                finalized = {
+                    "attempted": False, "merge_approved": False, "closed": False,
+                    "reason": "all tasks complete; merge/close awaiting operator "
+                              "(re-run with --auto-finalize to let the loop finalize)",
+                    "next_commands": [
+                        f"python -m conductor approve merge --track {args.track} --json",
+                        f"python -m conductor close --track {args.track} --json",
+                    ],
+                }
+                stop_reason = "awaiting_operator"
+                break
+            record = store.read_track_record(args.track)
+            requires_operator = [
+                t.task_id for t in (record.tasks if record else [])
+                if t.autonomy_policy == "requires_operator"
+            ]
+            if requires_operator and not args.force:
+                finalized = {
+                    "attempted": False, "merge_approved": False, "closed": False,
+                    "reason": ("auto-finalize refused: task(s) with "
+                               "autonomy_policy=requires_operator need an operator "
+                               "merge decision (use --force to override)"),
+                    "requires_operator_tasks": requires_operator,
+                    "next_commands": [
+                        f"python -m conductor approve merge --track {args.track} --json",
+                        f"python -m conductor close --track {args.track} --json",
+                    ],
+                }
+                stop_reason = "awaiting_operator"
+                break
             try:
                 merge_result = engine.approve_merge(
                     args.track,
-                    decided_by="conductor",
+                    decided_by="conductor:auto-finalize",
                     rationale="auto-finalized by conductor loop after all planned tasks completed",
                 )
                 close_result = engine.close(args.track)
@@ -516,6 +550,44 @@ def cmd_loop(args: argparse.Namespace) -> int:
              f"last dispatch={cycles[-1]['dispatched']['dispatched_count'] if cycles else 0}")
     _emit(result, args.json, human=human)
     return exit_code
+
+
+def cmd_task_set_verify(args: argparse.Namespace) -> int:
+    store = _resolve_or_emit_error(args)
+    if store is None:
+        return 2
+    new_commands: list = []
+
+    def mutate(record):
+        task = next((t for t in record.tasks if t.task_id == args.task), None)
+        if task is None:
+            raise KeyError(f"unknown task {args.task} in track {args.track}")
+        if args.clear:
+            task.verification_commands = []
+        task.verification_commands.extend(args.command)
+        new_commands[:] = list(task.verification_commands)
+
+    try:
+        store.update_track_record(args.track, mutate)
+    except KeyError as exc:
+        _emit({"ok": False, "error": str(exc)}, args.json, human=f"error: {exc}")
+        return 2
+
+    # Keep an already-dispatched record in sync — verify reads commands from it.
+    drec = store.read_dispatch_record(args.track, args.task)
+    if drec is not None:
+        drec.verification_commands = list(new_commands)
+        store.write_dispatch_record(drec)
+
+    _emit(
+        {"ok": True, "track_id": args.track, "task_id": args.task,
+         "verification_commands": new_commands,
+         "dispatch_record_updated": drec is not None},
+        args.json,
+        human=(f"Verification commands for {args.task}:\n"
+               + ("\n".join(f"  $ {c}" for c in new_commands) or "  (none)")),
+    )
+    return 0
 
 
 def cmd_fix(args: argparse.Namespace) -> int:
@@ -960,6 +1032,11 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Override lane readiness gate on submit (use with caution).")
     p_loop.add_argument("--create-worktree", action="store_true",
                         help="Actually create a git worktree (default: plan only).")
+    p_loop.add_argument("--auto-finalize", action="store_true",
+                        help="Let the loop approve merge + close once all tasks complete. "
+                             "Without this flag the loop stops with awaiting_operator. "
+                             "Tasks with autonomy_policy=requires_operator still refuse "
+                             "unless --force is also given.")
     p_loop.set_defaults(func=cmd_loop)
 
     # task (status)
@@ -969,6 +1046,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_task_status.add_argument("--track", required=True)
     p_task_status.add_argument("--task", required=True)
     p_task_status.set_defaults(func=cmd_task_status)
+
+    p_task_verify = add("set-verify", task_sub,
+                        help="Configure executable verification commands for a task.")
+    p_task_verify.add_argument("--track", required=True)
+    p_task_verify.add_argument("--task", required=True)
+    p_task_verify.add_argument("--command", action="append", default=[],
+                               help="Executable verification command (repeatable). "
+                                    "Must be allowlisted; no shell metacharacters.")
+    p_task_verify.add_argument("--clear", action="store_true",
+                               help="Clear existing commands before adding new ones.")
+    p_task_verify.set_defaults(func=cmd_task_set_verify)
 
     # followup
     p_followup = add("followup", sub, help="Write a follow-up artifact/message for a task.")

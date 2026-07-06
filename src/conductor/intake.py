@@ -124,6 +124,13 @@ def review_plan(store: ConductorStore, track_id: str) -> Dict[str, Any]:
 def approve_plan(store: ConductorStore, track_id: str,
                  decided_by: str = "operator", rationale: str = "") -> Dict[str, Any]:
     """`approve plan`: persist approval + timestamp. Idempotent if already approved."""
+    # Serialize against concurrent loop/operator RMW on the same track record.
+    with store.track_mutex(track_id):
+        return _approve_plan_locked(store, track_id, decided_by, rationale)
+
+
+def _approve_plan_locked(store: ConductorStore, track_id: str,
+                         decided_by: str, rationale: str) -> Dict[str, Any]:
     record = store.read_track_record(track_id)
     if record is None:
         raise PlanError(f"unknown track: {track_id}")
