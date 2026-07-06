@@ -1,7 +1,7 @@
 # Conductor User Guide
 
 **Project:** `/home/alhanaei/projects/Conductor`
-**Status:** Phases 1–6 implemented and verified, plus the hardening pass (real verification commands, closed fix loop, worker protocol, lane pool, provider launch). 245 tests passing.
+**Status:** Phases 1–6 implemented and verified, plus the hardening pass (real verification commands, closed fix loop, worker protocol, lane pool, provider launch). 267 tests passing.
 **Purpose:** Local-first control plane for coordinating tmux-backed coding-agent lanes through durable plans, task artifacts, approvals, verification gates, an autonomous loop, and operator-safe summaries.
 
 ---
@@ -177,14 +177,19 @@ python -m conductor approve plan --track "$TRACK" --json
 
 Plan approval is required before dispatch.
 
-### Step 4 — configure real verification commands (recommended)
+### Step 4 — configure verification commands and file scope (recommended)
 
 By default verification only checks that artifacts exist. Give it teeth:
 
 ```bash
 python -m conductor task set-verify --track "$TRACK" --task "$TASK" \
   --command "python -m pytest -q" --json
+
+python -m conductor task set-scope --track "$TRACK" --task "$TASK" \
+  --path 'src/**' --json
 ```
+
+**Commands** (`set-verify`):
 
 - `--command` is repeatable; `--clear` resets first.
 - Commands are **allowlisted by first token** (python, pytest, npm, node, go,
@@ -195,6 +200,23 @@ python -m conductor task set-verify --track "$TRACK" --task "$TASK" \
   (`python -c 'import sys; sys.exit(0)'`).
 - Each command becomes a check with exit code + output evidence, persisted to
   `tasks/<task_id>/verification-output.txt`.
+
+**File scope** (`set-scope`) — powers two deterministic integrity gates that run
+on every verify when the workspace is a git repo (dispatch records the HEAD
+commit as the diff baseline):
+
+- **Diff scope:** any file changed outside the declared globs fails
+  verification. With no scope declared, the changed-file list is still reported
+  as evidence (informational). `.conductor/` and `.hermes/` protocol writes are
+  always exempt.
+- **Test integrity:** a non-`test`-method task that modifies test files
+  (`tests/**`, `test_*`, `*_test.*`, `*.test.*`, `*.spec.*`; override via
+  `conductor.json {"test_file_patterns": [...]}`) fails verification unless its
+  scope explicitly grants those paths. This closes the "worker weakened the
+  tests so pytest passes" hole.
+- Non-git workspaces skip both gates with an explicit "skipped" note — a gate
+  that cannot measure says so rather than failing work it has no evidence
+  against.
 
 ### Step 5 — dispatch ready task(s)
 
@@ -239,6 +261,18 @@ python -m conductor worker complete --track "$TRACK" --task "$TASK" --worker w1
 `tasks/<task_id>/result.md`, sets the task to `ready_for_review`, and posts a
 structured `TASK_COMPLETE` message. **It never completes the task** —
 verification still gates.
+
+**Review tasks additionally record a verdict** (their `task.md` instructs this):
+
+```bash
+python -m conductor worker verdict --track "$TRACK" --task "$TASK" --worker w1 \
+  --verdict approve            # or: --verdict reject --blocker "missing error handling"
+```
+
+This writes `tasks/<task_id>/verdict.json`. A review task **fails verification
+without a valid verdict**, and a `reject` (or missing) verdict **blocks
+`approve merge`** with the blockers as evidence — the reviewer's judgment is
+structural, not advisory. `--force` on merge remains the operator override.
 
 For smoke testing you can simulate the worker:
 
@@ -513,11 +547,12 @@ loop with all tasks complete (no --auto-finalize): stop_reason awaiting_operator
         heartbeat.json            # operator-heartbeat dedupe memo
       tasks/
         <task_id>/
-          task.md                 # dispatched work spec (incl. worker protocol)
+          task.md                 # dispatched work spec (incl. worker protocol, file scope)
           route.json              # route decision record
-          status.json             # dispatch record (state, lane, verification, fixes)
+          status.json             # dispatch record (state, lane, scope, baseline, verification, fixes)
           result.md               # worker claim
           result-attempt-N.md     # archived failing results (auto-fix)
+          verdict.json            # review task's approve/reject (gates the merge)
           verification.json / verification.md
           verification-output.txt # command evidence
           fixes/fix-N.md
@@ -671,6 +706,29 @@ Add the tool to `conductor.json`:
 "verification_allowed_commands": ["mytool"]
 ```
 
+### `verification failed: diff_scope` / `test_integrity`
+
+The worker changed files outside its declared scope, or a non-test task
+modified test files. Inspect the evidence, then either fix the work or widen
+the scope deliberately:
+
+```bash
+cat ".conductor/tracks/$TRACK/tasks/$TASK/verification.md"
+python -m conductor task set-scope --track "$TRACK" --task "$TASK" --path 'tests/**' --json
+```
+
+### `cannot approve merge: review verdict gate failed`
+
+The reviewer rejected (blockers are listed in the error) or never recorded a
+verdict. Resolve the blockers and have the reviewer re-verdict, or override
+deliberately:
+
+```bash
+python -m conductor worker verdict --track "$TRACK" --task "$REVIEW_TASK" --worker w1 --verdict approve --json
+# or, operator override:
+python -m conductor approve merge --track "$TRACK" --force --json
+```
+
 ### `loop ... stop_reason: awaiting_operator`
 
 All tasks are complete; the loop is waiting for you (by design):
@@ -718,7 +776,7 @@ python -m ruff check src tests
 python -m pytest -q
 ```
 
-Current baseline: **245 tests passing**, lint clean. CI (GitHub Actions) runs
+Current baseline: **267 tests passing**, lint clean. CI (GitHub Actions) runs
 lint + tests on Python 3.9/3.11/3.12 when a remote is added. Use
 `git log --oneline` for the change history since the verified Phase 1–6
 baseline.
@@ -744,5 +802,8 @@ Trust boundaries, in one line each:
 - Plans don't dispatch until an operator approves them.
 - Lanes don't receive text unless the classifier proves they're ready for it.
 - Worker claims never advance state; conductor-run verification does.
+- Workers can't step outside their declared file scope or quietly rewrite the
+  tests that judge them (diff-scope + test-integrity gates).
+- A reviewer's reject is structural: merge approval refuses until it's resolved.
 - Merges and closes belong to the operator unless explicitly delegated
   (`--auto-finalize`), and even then `requires_operator` tasks refuse.
