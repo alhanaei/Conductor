@@ -49,14 +49,21 @@ def filter_enforceable(changed: List[str]) -> List[str]:
 # --------------------------------------------------------------------------- #
 # Gate 1: diff scope
 # --------------------------------------------------------------------------- #
-def check_diff_scope(changed: Optional[List[str]],
-                     scope_paths: List[str]) -> Dict[str, Any]:
+def check_diff_scope(changed: Optional[List[str]], scope_paths: List[str],
+                     prior_scopes: Optional[List[str]] = None) -> Dict[str, Any]:
     """Changed files must match the task's declared scope globs.
 
     - ``changed is None`` → diff unavailable → skip (pass, explicit note).
     - empty ``scope_paths`` → scope not declared → informational pass that
       still *reports* the changed files as evidence.
     - otherwise → fail listing every out-of-scope file.
+
+    ``prior_scopes`` are the declared scopes of *already completed* tasks in
+    the same track. Sequential tasks share the workspace and the same diff
+    baseline, so a predecessor's legitimate, verified changes still appear in
+    this task's diff (field-observed: a test task failed diff_scope because
+    the build task's src/ change was uncommitted). Files matching a prior
+    completed scope are attributed to that work, not this task's.
     """
     base = {"name": "diff_scope"}
     if changed is None:
@@ -69,16 +76,26 @@ def check_diff_scope(changed: Optional[List[str]],
                 "detail": (f"no scope declared; {len(enforceable)} changed file(s) "
                            "reported as evidence (set 'conductor task set-scope' to enforce)"),
                 "changed_files": enforceable}
-    out_of_scope = [f for f in enforceable if not _matches_any(f, scope_paths)]
+    prior = prior_scopes or []
+    attributed = [f for f in enforceable
+                  if not _matches_any(f, scope_paths) and _matches_any(f, prior)]
+    out_of_scope = [f for f in enforceable
+                    if not _matches_any(f, scope_paths) and not _matches_any(f, prior)]
     if out_of_scope:
         return {**base, "passed": False,
                 "detail": (f"{len(out_of_scope)} file(s) changed outside the task scope: "
                            + ", ".join(out_of_scope[:20])),
                 "changed_files": enforceable, "out_of_scope": out_of_scope,
+                "attributed_to_prior_tasks": attributed,
                 "scope_paths": scope_paths}
-    return {**base, "passed": True,
-            "detail": f"all {len(enforceable)} changed file(s) within declared scope",
-            "changed_files": enforceable, "scope_paths": scope_paths}
+    detail = f"all {len(enforceable)} changed file(s) within declared scope"
+    if attributed:
+        detail += (f" ({len(attributed)} attributed to prior completed tasks: "
+                   + ", ".join(attributed[:10]) + ")")
+    return {**base, "passed": True, "detail": detail,
+            "changed_files": enforceable,
+            "attributed_to_prior_tasks": attributed,
+            "scope_paths": scope_paths}
 
 
 # --------------------------------------------------------------------------- #
@@ -86,7 +103,8 @@ def check_diff_scope(changed: Optional[List[str]],
 # --------------------------------------------------------------------------- #
 def check_test_integrity(changed: Optional[List[str]], scope_paths: List[str],
                          method_id: str,
-                         config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                         config: Optional[Dict[str, Any]] = None,
+                         prior_scopes: Optional[List[str]] = None) -> Dict[str, Any]:
     """Non-test tasks must not modify test files (unless scope grants it).
 
     Closes the "worker weakened the tests so pytest passes" hole: a ``build``
@@ -105,9 +123,12 @@ def check_test_integrity(changed: Optional[List[str]], scope_paths: List[str],
     patterns = (config or {}).get("test_file_patterns") or DEFAULT_TEST_FILE_PATTERNS
     enforceable = filter_enforceable(changed)
     touched_tests = [f for f in enforceable if _matches_any(f, patterns)]
-    # Scope can explicitly grant test files to a non-test task.
+    # Scope can explicitly grant test files to a non-test task; files within a
+    # prior completed task's scope are that task's work (shared workspace).
+    prior = prior_scopes or []
     unauthorized = [f for f in touched_tests
-                    if not (scope_paths and _matches_any(f, scope_paths))]
+                    if not (scope_paths and _matches_any(f, scope_paths))
+                    and not _matches_any(f, prior)]
     if unauthorized:
         return {**base, "passed": False,
                 "detail": (f"non-test task (method={method_id}) modified test file(s) "

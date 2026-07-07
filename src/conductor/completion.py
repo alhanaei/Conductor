@@ -346,9 +346,19 @@ class CompletionEngine:
         if drec.baseline_commit and hasattr(self.git, "changed_files"):
             changed = self.git.changed_files(workspace, drec.baseline_commit)
         config = read_json(self.store.config_path, {}) or {}
-        checks.append(check_diff_scope(changed, drec.scope_paths))
+        # Scopes of verified/completed siblings: their uncommitted changes share
+        # this workspace and diff baseline, and must not count against this task.
+        prior_scopes: List[str] = []
+        for sibling in self.store.list_dispatch_records(track_id):
+            if sibling.task_id == task_id:
+                continue
+            if sibling.task_state in (TaskState.COMPLETE, TaskState.READY_FOR_MERGE):
+                prior_scopes.extend(sibling.scope_paths)
+        checks.append(check_diff_scope(changed, drec.scope_paths,
+                                       prior_scopes=prior_scopes))
         checks.append(check_test_integrity(changed, drec.scope_paths,
-                                           drec.method_id, config))
+                                           drec.method_id, config,
+                                           prior_scopes=prior_scopes))
 
         # Review tasks must record a structured verdict; either verdict value
         # passes verification (the reviewer did its job) — reject blocks at the

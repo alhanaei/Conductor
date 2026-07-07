@@ -338,3 +338,65 @@ def test_cli_set_scope_updates_both_records(tmp_path, capsys):
     record = store.read_track_record(tid)
     task = next(t for t in record.tasks if t.task_id == task_id)
     assert task.scope_paths == ["src/**", "docs/**"]
+
+
+# --------------------------------------------------------------------------- #
+# Field regression: cross-task diff pollution in a shared workspace (2026-07-07)
+# --------------------------------------------------------------------------- #
+def test_diff_scope_attributes_prior_completed_task_changes():
+    """A test task must not fail diff_scope because the build task's src/
+    change is still uncommitted in the shared workspace."""
+    changed = ["src/conductor_test/greetings.py", "tests/test_greetings.py"]
+    # Without attribution: fails.
+    bad = check_diff_scope(changed, ["tests/**"])
+    assert bad["passed"] is False
+    # With the completed build task's scope attributed: passes.
+    ok = check_diff_scope(changed, ["tests/**"], prior_scopes=["src/**"])
+    assert ok["passed"] is True
+    assert ok["attributed_to_prior_tasks"] == ["src/conductor_test/greetings.py"]
+
+
+def test_test_integrity_attributes_prior_test_task_changes():
+    """The mirror case: a build task must not fail test_integrity because a
+    prior test task's tests/ files sit in the shared diff."""
+    changed = ["src/app.py", "tests/test_app.py"]
+    bad = check_test_integrity(changed, ["src/**"], "build")
+    assert bad["passed"] is False
+    ok = check_test_integrity(changed, ["src/**"], "build", prior_scopes=["tests/**"])
+    assert ok["passed"] is True
+
+
+def test_prior_scope_does_not_hide_genuinely_rogue_files():
+    changed = ["src/a.py", "README.md"]
+    check = check_diff_scope(changed, ["tests/**"], prior_scopes=["src/**"])
+    assert check["passed"] is False
+    assert check["out_of_scope"] == ["README.md"]
+    assert check["attributed_to_prior_tasks"] == ["src/a.py"]
+
+
+def test_verify_uses_sibling_scopes_end_to_end(tmp_path):
+    """Full engine path: build task completes with src change uncommitted;
+    the test task's verification must pass its diff_scope gate."""
+    store, tid, build_id = _dispatched_in_repo(tmp_path)
+    # Configure + complete the build task with an in-scope change.
+    main(["--root", str(tmp_path), "task", "set-scope", "--track", tid,
+          "--task", build_id, "--path", "src/**", "--json"])
+    (tmp_path / "src" / "app.py").write_text("x = 42\n")
+    store.task_result_path(tid, build_id).write_text("built\n")
+    engine = CompletionEngine(store)
+    engine.verify(tid)
+    engine.advance_verified(tid)
+
+    # Dispatch the next task; give it tests/** scope; worker adds a test file.
+    disp = Dispatcher(store, lane_adapter=LaneAdapter(store, tmux=FakeTmux()),
+                      default_session="proj")
+    next_id = disp.dispatch(tid)["dispatched"][0]["task_id"]
+    main(["--root", str(tmp_path), "task", "set-scope", "--track", tid,
+          "--task", next_id, "--path", "tests/**", "--json"])
+    (tmp_path / "tests").mkdir(exist_ok=True)
+    (tmp_path / "tests" / "test_app.py").write_text("def test_x():\n    assert True\n")
+    store.task_result_path(tid, next_id).write_text("tested\n")
+
+    result = engine.verify(tid)
+    r = next(x for x in result["results"] if x["task_id"] == next_id)
+    assert r["passed"] is True, r["reason"]
