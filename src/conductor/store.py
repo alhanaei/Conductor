@@ -498,15 +498,27 @@ class ConductorStore:
         return RouteDecision.from_dict(data)
 
     def list_dispatch_records(self, track_id: str) -> List[DispatchRecord]:
-        """Every task that has a dispatch projection (status.json) for this track."""
+        """Every task that has a dispatch projection (status.json) for this track.
+
+        Tolerant listing: a record written by an older schema (e.g. a retired
+        task_state value) is skipped rather than raised — one legacy record in
+        one old track must not poison every cross-track scan (lane occupancy,
+        verify, status). Single-record reads stay strict.
+        """
+        from .models import SchemaError
+
         tdir = self.tasks_dir(track_id)
         if not tdir.exists():
             return []
         out: List[DispatchRecord] = []
         for status_file in sorted(tdir.glob("*/status.json")):
             data = read_json(status_file)
-            if data is not None:
+            if data is None:
+                continue
+            try:
                 out.append(DispatchRecord.from_dict(data))
+            except SchemaError:
+                continue  # legacy/corrupt projection; skip, don't blind the scan
         return out
 
     # -- verification (Phase 5) -------------------------------------------- #

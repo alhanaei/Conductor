@@ -243,3 +243,25 @@ def test_worker_beat_unknown_task_exits_2(tmp_path, capsys):
                       "--task", "task_nope", "--worker", "w1", "--json")
     assert code == 2
     assert data["ok"] is False
+
+
+def test_legacy_dispatch_record_does_not_poison_occupancy_scan(store):
+    """A status.json written by an older schema (retired task_state value) in
+    one track must not crash dispatch for every other track (found live:
+    'awaiting_verification' records from a pre-hardening soak test)."""
+    import json as _json
+
+    old = create_planned_track(store, "old soak track")
+    legacy_dir = store.task_dir(old.track.track_id, "task_legacy")
+    legacy_dir.mkdir(parents=True, exist_ok=True)
+    (legacy_dir / "status.json").write_text(_json.dumps({
+        "task_id": "task_legacy", "track_id": old.track.track_id,
+        "task_state": "awaiting_verification",  # retired enum value
+        "lane_target": "proj:claude",
+    }))
+
+    tid = _two_parallel_ready_tasks(store)
+    result = _dispatcher(store).dispatch(tid)  # must not raise
+    assert result["dispatched_count"] == 2
+    # The unreadable record is skipped by listing, not surfaced as occupancy.
+    assert store.list_dispatch_records(old.track.track_id) == []
