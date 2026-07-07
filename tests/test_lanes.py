@@ -333,3 +333,67 @@ def test_ensure_without_tmux_raises(store):
     adapter = LaneAdapter(store, tmux=FakeTmux(available=False))
     with pytest.raises(LaneError):
         adapter.ensure("Conductor:claude")
+
+
+# --------------------------------------------------------------------------- #
+# Field regressions: codex update-menu incident (2026-07-07)
+# --------------------------------------------------------------------------- #
+CODEX_UPDATE_MENU_T = (
+    "  ✨ Update available! 0.141.0 -> 0.142.4\n"
+    "› 1. Update now (runs `npm install -g @openai/codex`)\n"
+    "  2. Skip\n"
+    "  Press enter to continue"
+)
+CODEX_DEAD_SCROLLBACK_T = (
+    "Updating Codex via `npm install -g @openai/codex`...\n"
+    "changed 2 packages in 3s\n"
+    "\U0001f389 Update ran successfully! Please restart Codex.\n"
+    "user@host:~/projects/x$ "
+)
+CODEX_READY_T = (
+    "─ Worked for 3s ────\n"
+    "› Explain this codebase\n"
+    "  esc again to edit previous message"
+)
+
+
+def test_codex_update_menu_is_blocked_not_ready():
+    """The bare 'codex' ready-substring once classified an update menu as
+    provider_ready; the submitted instruction's Enter selected 'Update now'."""
+    state = classify(CODEX_UPDATE_MENU_T, provider_profile("codex"))
+    assert state is LaneState.BLOCKED_PROMPT
+
+
+def test_codex_dead_pane_with_scrollback_is_shell():
+    """Scrollback containing the word 'codex' must not read as provider_ready
+    once the CLI has exited back to a shell (this blocked relaunch recovery)."""
+    state = classify(CODEX_DEAD_SCROLLBACK_T, provider_profile("codex"))
+    assert state is LaneState.SHELL
+
+
+def test_codex_real_ready_ui_classifies_ready():
+    state = classify(CODEX_READY_T, provider_profile("codex"))
+    assert state is LaneState.PROVIDER_READY
+
+
+class DyingTmux(FakeTmux):
+    """Provider accepts the send but the pane reads shell right after —
+    reproduces codex exiting mid-submission."""
+
+    def send_text(self, target, text):
+        super().send_text(target, text)
+        self.transcript = SHELL_T
+        return True
+
+
+def test_submit_delivery_confirmation_catches_dead_provider(store, tmp_path):
+    task = tmp_path / "task.md"
+    task.write_text("body")
+    fake = DyingTmux(transcript=READY_CLAUDE_T)
+    adapter = LaneAdapter(store, tmux=fake)
+    with pytest.raises(LaneError, match="did not reach a provider"):
+        adapter.submit("Conductor:claude", str(task))
+    events = read_jsonl(store.events_path)
+    assert any(e.get("event") == "lane_submit_delivery_failed" for e in events)
+    # No lane_submit success event — the task stays retryable upstream.
+    assert not any(e.get("event") == "lane_submit" for e in events)

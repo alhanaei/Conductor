@@ -145,9 +145,14 @@ PROVIDERS: Dict[str, ProviderProfile] = {
     ),
     "codex": ProviderProfile(
         name="codex",
-        ready_patterns=["codex", "codex>", "/status", "send a message"],
+        # Field-verified from the live codex TUI. Never use a bare "codex"
+        # substring: the CLI's own banner/update text contains it, which once
+        # classified an update menu as provider_ready and cost a submission
+        # (the instruction's Enter selected "Update now" and codex exited).
+        ready_patterns=["› ", "esc again to edit", "⏎ send"],
         busy_patterns=["esc to interrupt", "thinking", "working"],
-        blocked_patterns=["allow command", "y/n", "do you want", "press enter to confirm"],
+        blocked_patterns=["allow command", "y/n", "do you want", "press enter to confirm",
+                          "update now", "press enter to continue"],
         launch_command=["codex"],
         model_flag="--model",
     ),
@@ -556,6 +561,11 @@ class LaneAdapter:
             self._persist(record)
             raise LaneError(f"failed to send instruction to lane {target_raw!r}")
 
+        if not force:
+            # --force means the operator overrode the readiness gate knowingly;
+            # a post-send shell reading would be expected there, not a failure.
+            self._confirm_delivery(tgt, record, kind="submit")
+
         event = {"event": "lane_submit", "target": tgt.raw, "task_file": str(task_path),
                  "instruction": instruction, "forced": force, "at": now}
         record.last_submit_at = now
@@ -572,6 +582,40 @@ class LaneAdapter:
             "instruction": instruction,
             "submitted_at": now,
         }
+
+    # Seconds to let a TUI consume sent input before the delivery check.
+    # Tests set this to 0 on the adapter instance.
+    delivery_settle_seconds = 0.4
+
+    def _confirm_delivery(self, tgt: LaneTarget, record: LaneRecord,
+                          kind: str, settle: Optional[float] = None) -> None:
+        """Verify the instruction actually reached a provider (post-send check).
+
+        Classification happens *before* sending, but a TUI can change state in
+        between — field-observed: codex's self-update menu swallowed a submitted
+        instruction and its Enter selected "Update now", killing the provider.
+        A pane that reads ``shell``/``absent`` right after a send means the text
+        went nowhere trustworthy: record the failure and raise so the caller
+        keeps the task retryable instead of marking it submitted.
+        """
+        if settle is None:
+            settle = self.delivery_settle_seconds
+        if settle > 0:
+            time.sleep(settle)  # let the TUI consume the input
+        state, _, _ = self._classify_live(tgt)
+        if state in (LaneState.SHELL, LaneState.ABSENT):
+            now = utc_now_iso()
+            record.state = state
+            record.last_event = {"event": f"{kind}_delivery_failed",
+                                 "state": state.value, "at": now}
+            self._persist(record)
+            self.store.append_event({"event": f"lane_{kind}_delivery_failed",
+                                     "target": tgt.raw, "state": state.value})
+            raise LaneError(
+                f"instruction did not reach a provider on {tgt.raw!r}: the pane "
+                f"reads {state.value!r} immediately after the send (provider "
+                f"exited or was never really ready)"
+            )
 
     def send_instruction(self, target_raw: str, instruction: str,
                          force: bool = False, kind: str = "lane_instruction") -> Dict[str, Any]:
@@ -602,6 +646,8 @@ class LaneAdapter:
         sent = self._send_instruction_to_tmux(tgt, instruction)
         if not sent:
             raise LaneError(f"failed to send instruction to lane {target_raw!r}")
+        if not force:
+            self._confirm_delivery(tgt, record, kind=kind)
         event = {"event": kind, "target": tgt.raw, "instruction": instruction, "at": now}
         record.last_event = event
         self._persist(record)

@@ -123,7 +123,10 @@ def classify_stale_risk(heartbeat_at: Optional[str], now: Optional[str] = None,
         if _RISK_ORDER[age_risk] > _RISK_ORDER[risk]:
             risk = age_risk
 
-    if lane_state is LaneState.ABSENT and dispatch_state is DispatchState.SUBMITTED:
+    # A submitted task whose lane later reads absent OR shell means the
+    # provider died (or was never really there) — nothing is working it.
+    if (lane_state in (LaneState.ABSENT, LaneState.SHELL)
+            and dispatch_state is DispatchState.SUBMITTED):
         risk = StaleRisk.HIGH
 
     return risk
