@@ -265,3 +265,29 @@ def test_legacy_dispatch_record_does_not_poison_occupancy_scan(store):
     assert result["dispatched_count"] == 2
     # The unreadable record is skipped by listing, not surfaced as occupancy.
     assert store.list_dispatch_records(old.track.track_id) == []
+
+
+def test_worker_complete_never_downgrades_verified_task(tmp_path, capsys):
+    """Field race: the loop verified+completed a task before the worker's late
+    claim arrived; the claim must not knock it back to ready_for_review."""
+    root, tid, task_id = _cli_dispatched(tmp_path, capsys)
+    store = ConductorStore.resolve(root=tmp_path, create=False)
+    store.task_result_path(tid, task_id).write_text("done\n")
+
+    # Verifier promotes the task all the way to complete.
+    from conductor.completion import CompletionEngine
+    engine = CompletionEngine(store)
+    engine.verify(tid)
+    engine.advance_verified(tid)
+    assert store.read_dispatch_record(tid, task_id).task_state is TaskState.COMPLETE
+
+    # Late claim arrives.
+    code, data = _run(capsys, *root, "worker", "complete", "--track", tid,
+                      "--task", task_id, "--worker", "w1", "--json")
+    assert code == 0
+    assert data["claim_applied"] is False
+    assert data["task_state"] == "complete"  # not downgraded
+    assert store.read_dispatch_record(tid, task_id).task_state is TaskState.COMPLETE
+    record = store.read_track_record(tid)
+    task = next(t for t in record.tasks if t.task_id == task_id)
+    assert task.state is TaskState.COMPLETE

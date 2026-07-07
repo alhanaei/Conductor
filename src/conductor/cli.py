@@ -648,26 +648,41 @@ def cmd_worker_complete(args: argparse.Namespace) -> int:
         summary=args.summary or f"worker {args.worker} claims completion",
         body_ref=str(result_path),
     )
-    drec.task_state = TaskState.READY_FOR_REVIEW
+    # A claim can only advance an ACTIVE task to ready_for_review. It must
+    # never downgrade a task the verifier already promoted — field-observed
+    # race: the loop verified+completed a task before the worker's late claim
+    # arrived, and the claim knocked it back to ready_for_review, blocking the
+    # merge gate on a finished DAG.
+    _CLAIMABLE = (TaskState.DISPATCHED, TaskState.WORKING, TaskState.NEEDS_FIX,
+                  TaskState.READY_FOR_REVIEW)
+    claim_applied = drec.task_state in _CLAIMABLE
+    if claim_applied:
+        drec.task_state = TaskState.READY_FOR_REVIEW
     drec.heartbeat_at = now
     store.write_dispatch_record(drec)
     try:
         def _sync(record):
             for t in record.tasks:
-                if t.task_id == args.task:
+                if t.task_id == args.task and t.state in _CLAIMABLE:
                     t.state = TaskState.READY_FOR_REVIEW
         store.update_track_record(args.track, _sync)
     except KeyError:
         pass
     store.append_event({"event": "worker_complete_claim", "track_id": args.track,
-                        "task_id": args.task, "worker": args.worker})
+                        "task_id": args.task, "worker": args.worker,
+                        "applied": claim_applied})
 
     _emit({"ok": True, "track_id": args.track, "task_id": args.task,
-           "worker_id": args.worker, "task_state": TaskState.READY_FOR_REVIEW.value,
+           "worker_id": args.worker, "task_state": drec.task_state.value,
+           "claim_applied": claim_applied,
            "result_artifact_ref": str(result_path), "message_id": msg.message_id,
-           "note": "claim recorded; conductor verification still gates completion"},
+           "note": ("claim recorded; conductor verification still gates completion"
+                    if claim_applied else
+                    f"claim recorded but task is already {drec.task_state.value}; "
+                    "state unchanged")},
           args.json,
-          human=(f"Completion claim recorded for {args.task} (ready_for_review).\n"
+          human=(f"Completion claim recorded for {args.task} "
+                 f"({drec.task_state.value}).\n"
                  "Conductor verification still gates completion."))
     return 0
 
