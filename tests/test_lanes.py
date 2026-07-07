@@ -345,10 +345,16 @@ CODEX_UPDATE_MENU_T = (
     "  Press enter to continue"
 )
 CODEX_DEAD_SCROLLBACK_T = (
+    # Real shape from the incident: the update MENU is still in scrollback
+    # (contains '\u203a ' and 'Press enter to continue'), followed by the
+    # update output, a bare shell prompt, and viewport-padding blank lines.
+    "\u203a 1. Update now (runs `npm install -g @openai/codex`)\n"
+    "  2. Skip\n"
+    "  Press enter to continue\n"
     "Updating Codex via `npm install -g @openai/codex`...\n"
     "changed 2 packages in 3s\n"
     "\U0001f389 Update ran successfully! Please restart Codex.\n"
-    "user@host:~/projects/x$ "
+    "user@host:~/projects/x$ \n" + "\n" * 39
 )
 CODEX_READY_T = (
     "─ Worked for 3s ────\n"

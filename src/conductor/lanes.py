@@ -251,8 +251,12 @@ def _tail_text(transcript: str, lines: int = 40) -> str:
     like blocker phrases even though the live provider prompt is ready. Prompt
     blockers/busy spinners should therefore be detected from the recent visible
     tail, not the full historical transcript.
+
+    Only NON-EMPTY lines count toward the tail: viewport captures pad the pane
+    bottom with blank lines, and a raw last-40-lines slice can be entirely
+    blank — blinding every pattern check (field-observed on a dead codex pane).
     """
-    parts = transcript.splitlines()
+    parts = [ln for ln in transcript.splitlines() if ln.strip()]
     return "\n".join(parts[-lines:]) if parts else ""
 
 
@@ -269,22 +273,32 @@ def _looks_like_shell(transcript: str) -> bool:
 
 def classify(transcript: str, profile: ProviderProfile,
              session_exists: bool = True) -> LaneState:
-    """Classify pane state. Precedence: absent > blocked > busy > ready > shell > unknown.
+    """Classify pane state. Precedence: absent > shell > blocked > busy > ready > unknown.
+
+    Shell is decided FIRST, from the last non-empty line only: a live TUI always
+    owns the bottom of the screen, so a bare shell prompt there means no provider
+    is running — regardless of stale menus/banners higher in the scrollback
+    (field-observed: a dead codex pane kept classifying ready/blocked from its
+    own update-menu scrollback, blocking relaunch recovery).
 
     Blocked is checked before busy/ready because an approval prompt often also
-    contains provider UI; an operator action must win.
+    contains provider UI; an operator action must win. Ready matches the recent
+    tail only — never the full transcript — so historical text cannot resurrect
+    a dead provider.
     """
     if not session_exists:
         return LaneState.ABSENT
 
-    text = transcript.lower()
+    if _looks_like_shell(transcript):
+        return LaneState.SHELL
+
     tail = _tail_text(transcript).lower()
 
     blocked = _GENERIC_BLOCKED + profile.blocked_patterns
     if _matches_any(tail, [p.lower() for p in blocked]):
         return LaneState.BLOCKED_PROMPT
 
-    ready = _matches_any(text, [p.lower() for p in profile.ready_patterns])
+    ready = _matches_any(tail, [p.lower() for p in profile.ready_patterns])
     auth_blocked = _matches_any(tail, [p.lower() for p in _AUTH_BLOCKED])
     if auth_blocked and not ready:
         return LaneState.BLOCKED_PROMPT
@@ -295,9 +309,6 @@ def classify(transcript: str, profile: ProviderProfile,
 
     if ready:
         return LaneState.PROVIDER_READY
-
-    if _looks_like_shell(transcript):
-        return LaneState.SHELL
 
     return LaneState.UNKNOWN
 
