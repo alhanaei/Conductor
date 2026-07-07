@@ -1,7 +1,7 @@
 # Conductor User Guide
 
 **Project:** `/home/alhanaei/projects/Conductor`
-**Status:** Phases 1–6 implemented and verified, plus the hardening pass (real verification commands, closed fix loop, worker protocol, lane pool, provider launch). 267 tests passing.
+**Status:** Phases 1–6 implemented and verified, plus the hardening pass (real verification commands, closed fix loop, worker protocol, lane pool, provider launch) and a **real-lane end-to-end validation** (2026-07-07: a full 5-task track closed with live Claude + codex lanes; the five field bugs it exposed are fixed below). 277 tests passing.
 **Purpose:** Local-first control plane for coordinating tmux-backed coding-agent lanes through durable plans, task artifacts, approvals, verification gates, an autonomous loop, and operator-safe summaries.
 
 ---
@@ -215,6 +215,13 @@ commit as the diff baseline):
   verification. With no scope declared, the changed-file list is still reported
   as evidence (informational). `.conductor/` and `.hermes/` protocol writes are
   always exempt.
+- **Prior-task attribution (shared workspaces):** sequential tasks share the
+  workspace and diff baseline, so a predecessor's legitimate uncommitted change
+  would otherwise appear in *this* task's diff (field-observed: a test task
+  failed `diff_scope` because the build task's `src/` change wasn't committed).
+  Files matching a **verified/completed sibling's declared scope** are
+  attributed to that work and exempt; genuinely rogue files still fail. The
+  same attribution applies to the test-integrity gate.
 - **Test integrity:** a non-`test`-method task that modifies test files
   (`tests/**`, `test_*`, `*_test.*`, `*.test.*`, `*.spec.*`; override via
   `conductor.json {"test_file_patterns": [...]}`) fails verification unless its
@@ -266,7 +273,10 @@ python -m conductor worker complete --track "$TRACK" --task "$TASK" --worker w1
 `worker complete` requires the result artifact at
 `tasks/<task_id>/result.md`, sets the task to `ready_for_review`, and posts a
 structured `TASK_COMPLETE` message. **It never completes the task** —
-verification still gates.
+verification still gates. Claims also **never downgrade**: if the loop already
+verified and completed the task before a late claim arrives, the claim is
+recorded with `claim_applied: false` and the state stays put (field-observed
+race that once knocked a finished task back and blocked the merge gate).
 
 **Review tasks additionally record a verdict** (their `task.md` instructs this):
 
@@ -384,6 +394,28 @@ loop stops with `stop_reason: awaiting_operator` and prints the exact
 refuses if any task has `autonomy_policy: requires_operator` (the default
 plan's review task does) unless `--force` is also given.
 
+**The operator rhythm with real lanes** (validated end-to-end 2026-07-07):
+
+```text
+loop --watch --stop-on-blocked-prompt   →  exits on a provider approval prompt
+capture the pane, approve it            →  tmux send-keys (e.g. "y"/"a"/"p")
+restart the same loop command           →  it re-verifies, advances, dispatches
+… repeat until stop_reason: awaiting_operator, then approve merge + close
+```
+
+Practical notes from that run:
+
+- Providers may prompt for command/edit approvals depending on their sandbox
+  and permission mode. For the worker protocol, prefer the provider's
+  "don't ask again for commands starting with `python -m conductor`" option
+  the first time it appears — beat/complete/verdict then flow unattended.
+- Provider CLIs can interrupt themselves (codex offered a self-update menu on
+  launch). The classifier treats such menus as `blocked_prompt`; approve or
+  dismiss them in the pane, then let the loop resume.
+- If a lane reading looks stale after a provider died (old menus in
+  scrollback), `tmux clear-history -t <session:window>` resets the capture to
+  the live screen.
+
 ---
 
 ## 7. tmux Lane Operations
@@ -442,6 +474,31 @@ python -m conductor lane submit  --target Conductor:claude --task-file /path/to/
 Readiness states: `absent`, `shell`, `provider_ready`, `busy`,
 `blocked_prompt`, `unknown`. Submission is refused unless `provider_ready`.
 Pool windows (`claude-2`, `codex-3`) classify with the base provider's profile.
+
+**How classification decides (field-hardened):**
+
+- **Shell wins first, from the bottom line.** A live TUI always owns the bottom
+  of the screen, so if the last non-empty line is a shell prompt, the lane is
+  `shell` — regardless of stale menus/banners higher in scrollback. (Before this
+  rule, a dead codex pane kept classifying `provider_ready` from its own
+  scrollback and blocked relaunch recovery.)
+- **Everything else reads the recent tail only** (last 40 *non-empty* lines —
+  blank viewport padding is skipped), in precedence order blocked > busy >
+  ready. Ready patterns never match the full transcript, so historical text
+  cannot resurrect a dead provider.
+- Codex ready patterns are field-verified (`› ` input marker, hint lines) —
+  never a bare provider-name substring, which matches the CLI's own
+  banners/update menus.
+
+**Post-send delivery confirmation.** After every submit/nudge/fix delivery,
+Conductor re-reads the pane: if it classifies `shell`/`absent` immediately
+after the send, the instruction went nowhere trustworthy (provider exited or
+was never really ready) — the send fails loudly with
+`instruction did not reach a provider`, a `*_delivery_failed` event is
+recorded, and the task stays retryable instead of being marked submitted.
+(Field incident: codex's self-update menu swallowed a submission and its Enter
+selected "Update now", killing the provider mid-dispatch.) `--force` skips the
+check, since a forced send into a non-ready pane is deliberate.
 
 ---
 
@@ -709,6 +766,29 @@ python -m conductor lane ensure --target Conductor:claude --launch --method buil
 Something is already running in the pane. Attach to tmux and check; launch only
 targets bare shells by design.
 
+### `instruction did not reach a provider on ...`
+
+The post-send delivery check found the pane reading `shell`/`absent` right
+after a submit/nudge — the provider exited (e.g. a CLI self-update) or was
+never really ready. The task stays retryable: relaunch the provider
+(`lane ensure --launch`) and let the loop resubmit, or `nudge` the task.
+
+### Lane reads `blocked_prompt`/`provider_ready` but the pane is a bare shell
+
+Stale scrollback (an old menu or banner) is inside the 40-line tail. Clear it
+and re-check:
+
+```bash
+tmux clear-history -t <session:window>
+python -m conductor lane status --target <session:window> --json
+```
+
+### `dispatch` crashes reading old tracks
+
+Should no longer happen: dispatch-record listing skips records written by
+older schemas. If you see schema errors from a *current* track, inspect the
+named `status.json` — that file was likely hand-edited.
+
 ### `cannot approve merge: task(s) not verified`
 
 ```bash
@@ -752,6 +832,13 @@ the scope deliberately:
 cat ".conductor/tracks/$TRACK/tasks/$TASK/verification.md"
 python -m conductor task set-scope --track "$TRACK" --task "$TASK" --path 'tests/**' --json
 ```
+
+Note: a *predecessor's* uncommitted changes no longer trip a later task's gate
+— files matching a completed sibling task's declared scope are attributed to
+that work (shown as `attributed_to_prior_tasks` in the check evidence). If you
+see this failure on files a prior task legitimately changed, ensure that prior
+task actually **declared a scope** covering them — attribution only follows
+declared scopes.
 
 ### `cannot approve merge: review verdict gate failed`
 
@@ -818,7 +905,7 @@ python -m ruff check src tests
 python -m pytest -q
 ```
 
-Current baseline: **267 tests passing**, lint clean. CI (GitHub Actions) runs
+Current baseline: **277 tests passing**, lint clean. CI (GitHub Actions) runs
 lint + tests on Python 3.9/3.11/3.12 when a remote is added. Use
 `git log --oneline` for the change history since the verified Phase 1–6
 baseline.
