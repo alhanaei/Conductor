@@ -22,6 +22,11 @@ It provides:
 - worktree/branch planning that degrades safely outside git
 - a worker self-reporting protocol (`worker beat` / `worker complete`)
 - independent verification gates that run **real, allowlisted commands**
+- deterministic integrity gates: **diff scope** (changes must stay inside the
+  task's declared file globs) and **test integrity** (non-test tasks can't
+  modify the tests that judge them)
+- a structural **review verdict gate**: reviewers record approve/reject in
+  `verdict.json`, and a reject blocks merge approval
 - a long-horizon loop (`conductor loop`) with a bounded auto-fix cycle
 - explicit merge approval (never auto-granted by default)
 - close/final-summary semantics
@@ -37,9 +42,10 @@ A task only moves through completion by evidence:
 
 ```text
 worker result.md (claim)
-→ conductor verify   (artifact checks + configured commands must pass)
+→ conductor verify   (artifacts + configured commands + diff-scope
+                      + test-integrity [+ review verdict] must pass)
 → ready_for_merge
-→ approve merge      (operator gate)
+→ approve merge      (operator gate; refuses on reviewer reject)
 → close
 ```
 
@@ -117,7 +123,7 @@ lane        tmux lane operations (ensure/launch/status/capture/submit)
 dispatch    Dispatch ready tasks; retry pending_lane tasks
 advance     Advance verified tasks; release dependency successors
 loop        One long-horizon loop tick: verify → auto-fix → advance → dispatch
-task        Task operations (status, set-verify)
+task        Task operations (status, set-verify, set-scope)
 followup    Write a follow-up artifact/message for a task
 nudge       Send/record a short nudge for a task
 verify      Run verification gates on dispatched tasks
@@ -125,7 +131,7 @@ fix         Open a bounded fix-loop attempt for a task
 close       Close a track; requires merge approval
 reconcile   Reconstruct/report track state from artifacts
 operator    Chat/operator summaries, notifications, hooks
-worker      Worker self-reporting: beat, complete
+worker      Worker self-reporting: beat, complete, verdict
 status      Operator status across all tracks
 message     Message bus operations
 lock        File lock operations
@@ -476,6 +482,11 @@ cd /tmp/conductor-user-full-test
 
 export PYTHONPATH=/home/alhanaei/projects/Conductor/src
 
+# Make the sandbox a git repo so the diff-scope/test-integrity gates engage
+# (outside git they skip with an explicit note).
+git init -q -b main && git config user.email t@t && git config user.name t
+mkdir -p src && echo "x = 1" > src/app.py && git add -A && git commit -qm init
+
 python -m conductor init
 
 TRACK=$(python -m conductor go --plan-only "Build a small dashboard" --json | python -c 'import json,sys; print(json.load(sys.stdin)["track_id"])')
@@ -492,6 +503,16 @@ echo "TASK=$TASK"
 python -m conductor task set-verify --track "$TRACK" --task "$TASK" \
   --command "python -c 'import sys; sys.exit(0)'" --json
 
+# Declare the file scope the task may touch (diff-scope gate enforces this)
+python -m conductor task set-scope --track "$TRACK" --task "$TASK" \
+  --path 'src/**' --json
+
+# Gate demo: an out-of-scope change fails verification until reverted
+echo rogue > UNRELATED.md
+printf 'claim\n' > ".conductor/tracks/$TRACK/tasks/$TASK/result.md"
+python -m conductor verify --track "$TRACK" --json | grep -o '"reason": "[^"]*"' | head -1
+rm UNRELATED.md
+
 # Simulate the worker: result + structured completion claim.
 printf 'TASK_COMPLETE\nworker says done\n' > ".conductor/tracks/$TRACK/tasks/$TASK/result.md"
 python -m conductor worker beat --track "$TRACK" --task "$TASK" --worker w1 --note "working" --json
@@ -504,7 +525,10 @@ python -m conductor approve merge --track "$TRACK" --json || echo "merge refused
 # One loop tick verifies + advances; without --auto-finalize it awaits the operator.
 python -m conductor loop --track "$TRACK" --max-cycles 10 --json | tail -40
 
-# Finish remaining tasks the same way, or finalize explicitly once complete:
+# Finish remaining tasks the same way, or finalize explicitly once complete.
+# Note: bare `verify` is STRICT — it fails any dispatched task that has no
+# result yet (→ needs_fix). The loop's verify step skips resultless tasks
+# instead, so prefer `loop` while workers are still in flight.
 python -m conductor verify --track "$TRACK" --json
 python -m conductor task status --track "$TRACK" --task "$TASK" --json
 python -m conductor operator notify --track "$TRACK" --json
@@ -515,9 +539,12 @@ Expected highlights:
 ```text
 summary before approval: signal needs_approval
 dispatch: first task pending_lane (no live lane in the sandbox) or submitted
+gate demo: verification failed: diff_scope (out-of-scope UNRELATED.md)
 worker complete: task_state ready_for_review, note "verification still gates"
 close/merge before verify: refused, exit 1
 verify with passing command: task_state ready_for_merge, verification-output.txt written
+review task without verdict: verification failed: review_verdict
+worker verdict reject: approve merge refused with blockers as evidence
 loop with all tasks complete (no --auto-finalize): stop_reason awaiting_operator
 ```
 
@@ -634,10 +661,19 @@ Operator surfaces render Telegram-safe payloads; delivery is Hermes-pull.
 
 ### Verification depth
 
-Verification = artifact checks (result present, definition-of-done present)
-**plus** whatever commands you configure per task via `task set-verify`. A task
-with no configured commands passes on artifacts alone — configure real commands
-for anything that matters.
+Verification is layered:
+
+1. artifact checks (result present, definition-of-done present)
+2. configured commands (`task set-verify`) — exit codes with output evidence
+3. diff-scope gate — changed files vs the task's declared globs (`task set-scope`)
+4. test-integrity gate — non-test tasks may not modify test files
+5. review verdict (review-method tasks only) — a valid `verdict.json` required
+
+A task with no configured commands and no declared scope passes on artifacts
+alone (gates 3–4 report changed files as evidence without enforcing, and skip
+entirely outside git). Configure commands **and** scope for anything that
+matters — commands prove the work runs; scope proves the worker stayed where it
+was asked to.
 
 ### Codex/gemini/grok model names
 
@@ -749,19 +785,25 @@ python -m conductor operator verify-hook --track "$TRACK" --json
 
 ## 15. Recommended Manual Test Order
 
-1. Run the Quick Start Sandbox.
+1. Run the Quick Start Sandbox (in a git repo, so the integrity gates engage).
 2. Approve plan; dispatch; confirm `pending_lane` (sandbox has no live lane).
-3. Set a real verification command with `task set-verify`.
-4. Simulate the worker: write `result.md`, run `worker complete` — confirm
+3. Set a real verification command with `task set-verify` and a file scope with
+   `task set-scope`.
+4. Make an out-of-scope change — confirm verification fails `diff_scope`;
+   revert it. Touch a test file from a non-test task — confirm `test_integrity`
+   fails; revert.
+5. Simulate the worker: write `result.md`, run `worker complete` — confirm
    `ready_for_review`, not complete.
-5. Confirm `close`/`approve merge` refuse before verification.
-6. Run one `loop` tick — confirm it verifies, advances, and dispatches the next
+6. Confirm `close`/`approve merge` refuse before verification.
+7. Run one `loop` tick — confirm it verifies, advances, and dispatches the next
    task.
-7. Break the verification command (exit 1) and confirm the auto-fix cycle:
+8. Break the verification command (exit 1) and confirm the auto-fix cycle:
    result archived, `fixes/fix-1.md` created, attempts bounded at 3.
-8. Complete all tasks; confirm the loop stops `awaiting_operator`.
-9. Approve merge; close; reconcile — confirm `consistent: true`.
-10. Check closed-track operator surfaces (`notify` → `closed`, heartbeat
+9. On the review task: verify without a verdict fails; `worker verdict reject`
+   blocks `approve merge` with blockers; `worker verdict approve` unblocks.
+10. Complete all tasks; confirm the loop stops `awaiting_operator`.
+11. Approve merge; close; reconcile — confirm `consistent: true`.
+12. Check closed-track operator surfaces (`notify` → `closed`, heartbeat
     suppressed).
 
 ---
