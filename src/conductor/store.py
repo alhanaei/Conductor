@@ -288,6 +288,28 @@ class ConductorStore:
     def lanes_dir(self) -> Path:
         return self.root / "lanes"
 
+    def runtime_dir(self) -> Path:
+        return self.root / "runtime"
+
+    def runtime_events_path(self) -> Path:
+        return self.runtime_dir() / "events.jsonl"
+
+    def runtime_cursor_path(self, source_id: str) -> Path:
+        if (
+            not source_id
+            or source_id in (".", "..")
+            or "/" in source_id
+            or "\\" in source_id
+        ):
+            raise ValueError("runtime cursor source_id must be a safe path component")
+        return self.runtime_dir() / "cursors" / f"{source_id}.json"
+
+    def runtime_unresolved_dir(self) -> Path:
+        return self.runtime_dir() / "unresolved"
+
+    def runtime_gaps_dir(self) -> Path:
+        return self.runtime_dir() / "gaps"
+
     def track_dir(self, track_id: str) -> Path:
         return self.tracks_dir / track_id
 
