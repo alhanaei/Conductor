@@ -646,6 +646,8 @@ class LaneRecord(_Model):
     window: str = ""              # window / provider segment
     provider: Optional[str] = None
     model: Optional[str] = None   # model the provider CLI was launched with (if known)
+    runtime: str = "tmux"
+    adapter_meta: Dict[str, Any] = field(default_factory=dict)
     state: LaneState = LaneState.UNKNOWN
     current_task_id: Optional[str] = None
     tmux_available: bool = True
@@ -668,6 +670,8 @@ class LaneRecord(_Model):
         _require(bool(self.target), "LaneRecord.target is required")
         _require(bool(self.session), "LaneRecord.session is required")
         _require(bool(self.window), "LaneRecord.window is required")
+        _require(isinstance(self.runtime, str) and bool(self.runtime), "LaneRecord.runtime must be non-empty")
+        _require(isinstance(self.adapter_meta, dict), "LaneRecord.adapter_meta must be a dict")
         _require(isinstance(self.state, LaneState), "LaneRecord.state must be a LaneState")
 
 
@@ -693,6 +697,8 @@ class DispatchRecord(_Model):
     provider: Optional[str] = None
     lane_target: Optional[str] = None
     lane_state: Optional[LaneState] = None
+    runtime: str = "tmux"
+    adapter_meta: Dict[str, Any] = field(default_factory=dict)
     worktree_mode: WorktreeMode = WorktreeMode.NOT_GIT_REPO
     branch: Optional[str] = None
     workspace: Optional[str] = None
@@ -751,6 +757,8 @@ class DispatchRecord(_Model):
         _require(bool(self.task_id), "DispatchRecord.task_id is required")
         _require(bool(self.track_id), "DispatchRecord.track_id is required")
         _require(isinstance(self.task_state, TaskState), "DispatchRecord.task_state invalid")
+        _require(isinstance(self.runtime, str) and bool(self.runtime), "DispatchRecord.runtime must be non-empty")
+        _require(isinstance(self.adapter_meta, dict), "DispatchRecord.adapter_meta must be a dict")
         _require(isinstance(self.worktree_mode, WorktreeMode), "DispatchRecord.worktree_mode invalid")
         _require(isinstance(self.method_id, str) and bool(self.method_id), "DispatchRecord.method_id must be non-empty")
         _require(isinstance(self.acceptance_criteria, list), "DispatchRecord.acceptance_criteria must be a list")
