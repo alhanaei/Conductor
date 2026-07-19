@@ -7,9 +7,10 @@ existing tmux adapter behavior behind a small internal interface.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Protocol
+from typing import Any, Dict, Optional, Protocol, runtime_checkable
 
 
+@runtime_checkable
 class LaneRuntime(Protocol):
     """Operations a Conductor lane runtime must provide."""
 
