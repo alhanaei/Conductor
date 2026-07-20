@@ -18,6 +18,34 @@ import subprocess
 from typing import List, Tuple
 
 
+def control_attach_args(session: str) -> List[str]:
+    """Return argument-array tokens for a read-only tmux control client."""
+    if not session or "\0" in session:
+        raise ValueError("tmux control session must be non-empty and contain no NUL")
+    return ["-C", "attach-session", "-t", f"={session}"]
+
+
+def control_mode_supported(binary: str = "tmux", timeout: float = 2.0) -> Tuple[bool, str]:
+    """Probe whether the configured tmux supports control mode."""
+    import re
+
+    if shutil.which(binary) is None:
+        return False, f"{binary} is not available"
+    try:
+        result = subprocess.run(
+            [binary, "-V"], capture_output=True, text=True, timeout=timeout, check=False
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return False, f"tmux version probe failed: {exc}"
+    detail = (result.stdout or result.stderr).strip()
+    if result.returncode != 0:
+        return False, detail or f"tmux version probe exited {result.returncode}"
+    match = re.search(r"tmux (\d+)\.(\d+)", detail)
+    if match and (int(match.group(1)), int(match.group(2))) < (1, 8):
+        return False, f"{detail}; control mode requires tmux >= 1.8"
+    return True, detail or "tmux control mode available"
+
+
 class TmuxClient:
     def __init__(self, binary: str = "tmux", timeout: float = 5.0):
         self.binary = binary
