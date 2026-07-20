@@ -138,10 +138,10 @@ def _next_command(signal: str, track_id: str) -> Optional[str]:
     base = "python -m conductor"
     return {
         "needs_approval": f"{base} approve plan --track {track_id} --json",
-        "needs_dispatch": f"{base} loop --track {track_id} --watch --json",
-        "needs_advance": f"{base} loop --track {track_id} --watch --json",
-        "waiting_on_dependencies": f"{base} loop --track {track_id} --watch --json",
-        "needs_verification": f"{base} loop --track {track_id} --watch --stop-on-blocked-prompt --json",
+        "needs_dispatch": f"{base} loop --track {track_id} --json",
+        "needs_advance": f"{base} loop --track {track_id} --json",
+        "waiting_on_dependencies": f"{base} monitor status --track {track_id} --json",
+        "needs_verification": f"{base} monitor status --track {track_id} --json",
         "blocked_prompt": f"{base} lane blocked --track {track_id} --json",
         "needs_fix": f"{base} fix --track {track_id} --task <task_id> --json",
         "blocked": f"{base} task status --track {track_id} --task <task_id> --json",
@@ -424,7 +424,7 @@ class OperatorView:
                 "ok": True, "kind": "merge", "track_id": tid, "needed": True,
                 "ready": False,
                 "reason": f"{len(unfinalized)} plan task(s) still not complete; continue the loop first",
-                "blocking_command": f"python -m conductor loop --track {tid} --watch --stop-on-blocked-prompt --json",
+                "blocking_command": f"python -m conductor loop --track {tid} --json",
                 "command": f"python -m conductor approve merge --track {tid} --json",
                 "verification_evidence": evidence,
                 "unfinalized_tasks": unfinalized,
@@ -457,18 +457,18 @@ class OperatorView:
             add(f"python -m conductor operator approval --track {tid} --kind plan --json",
                 "surface the plan-approval request", "needed=true", auto_run=True)
         elif c["dispatched"] == 0:
-            add(f"python -m conductor loop --track {tid} --watch --stop-on-blocked-prompt --json",
+            add(f"python -m conductor loop --track {tid} --json",
                 "run the supervised long-task loop until progress, finalization, or max cycles",
                 "progress, closure, or bounded no-op evidence")
         elif v["signal"] == "needs_advance":
-            add(f"python -m conductor loop --track {tid} --watch --stop-on-blocked-prompt --json",
+            add(f"python -m conductor loop --track {tid} --json",
                 "continue the supervised long-task loop without stopping at the advance gate",
                 "verified slices advance and dependent work dispatches when ready")
         elif c["ready"] > 0:
-            add(f"python -m conductor loop --track {tid} --watch --stop-on-blocked-prompt --json",
+            add(f"python -m conductor loop --track {tid} --json",
                 "continue the long-horizon engineering loop", "progress or no-op with evidence")
         elif c["unverified"] > 0 or c["needs_fix"] > 0:
-            add(f"python -m conductor loop --track {tid} --watch --stop-on-blocked-prompt --json",
+            add(f"python -m conductor loop --track {tid} --json",
                 "poll for worker results and verify available artifacts without marking active work failed",
                 "available results verified; missing results skipped until later poll")
         elif not v["merge_approved"]:

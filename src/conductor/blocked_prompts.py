@@ -1,55 +1,80 @@
-"""Fast blocked-prompt detection for active Conductor tasks.
-
-This module is intentionally small and side-effect-light: it refreshes lane
-status for already-dispatched/working tasks that do not yet have a result
-artifact, then returns first-class operator details when the provider pane is at
-an approval/input prompt.
-"""
+"""Blocked-prompt projection from fresh runtime event evidence."""
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from .lanes import LaneAdapter, LaneError
 from .models import LaneState, TaskState
+from .runtime.events import RuntimeEvent, RuntimeEventKind, RuntimeEventLedger
 from .store import ConductorStore
 
 _ACTIVE_TASK_STATES = {TaskState.DISPATCHED, TaskState.WORKING}
 
 
-def active_blocked_prompts(store: ConductorStore, track_id: str) -> List[Dict[str, Any]]:
-    """Return active dispatched/working tasks currently blocked in provider UI.
+def _parse_iso(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
 
-    Only tasks without an existing ``result.md`` are scanned. This preserves the
-    normal completion path and avoids reclassifying historical finished output.
-    ``LaneAdapter.status`` performs the live tmux capture and uses the lane
-    classifier's recent-tail semantics, so stale scrollback text does not become
-    a blocker.
+
+def _fresh(event: RuntimeEvent, updated_at: str) -> bool:
+    observed = _parse_iso(event.observed_at)
+    updated = _parse_iso(updated_at)
+    return observed is None or updated is None or observed >= updated
+
+
+def active_blocked_prompts(store: ConductorStore, track_id: str) -> List[Dict[str, Any]]:
+    """Return active tasks whose latest targeted observation is a live prompt.
+
+    The event monitor owns live lane classification. This projection reads its
+    durable observations and never captures every active pane during a status or
+    operator query.
     """
 
-    adapter = LaneAdapter(store)
+    latest: Dict[str, RuntimeEvent] = {}
+    for event in RuntimeEventLedger(store).iter_events():
+        if event.kind is not RuntimeEventKind.PANE_OUTPUT:
+            continue
+        if event.track_id != track_id or not event.task_id:
+            continue
+        if "lane_state" not in event.payload:
+            continue
+        latest[event.task_id] = event
+
     blocked: List[Dict[str, Any]] = []
-    for drec in store.list_dispatch_records(track_id):
-        if drec.task_state not in _ACTIVE_TASK_STATES:
+    for record in store.list_dispatch_records(track_id):
+        if record.task_state not in _ACTIVE_TASK_STATES:
             continue
-        if drec.result_artifact_ref and Path(drec.result_artifact_ref).exists():
+        if record.result_artifact_ref and Path(record.result_artifact_ref).exists():
             continue
-        if not drec.lane_target:
+        if not record.lane_target:
             continue
-        try:
-            lane = adapter.status(drec.lane_target)
-        except LaneError:
+        event = latest.get(record.task_id)
+        if event is None or event.lane_target != record.lane_target:
             continue
-        if lane.get("state") != LaneState.BLOCKED_PROMPT.value:
+        if not _fresh(event, record.updated_at):
             continue
-        blocked.append({
-            "task_id": drec.task_id,
-            "title": drec.title,
-            "lane_target": drec.lane_target,
-            "provider": drec.provider,
-            "lane_state": lane.get("state"),
-            "result_artifact_ref": drec.result_artifact_ref,
-            "operator_action": "approve the prompt in the tmux pane or move this lane to the project-root session",
-        })
+        if event.payload.get("lane_state") != LaneState.BLOCKED_PROMPT.value:
+            continue
+        blocked.append(
+            {
+                "task_id": record.task_id,
+                "title": record.title,
+                "lane_target": record.lane_target,
+                "provider": record.provider,
+                "lane_state": event.payload["lane_state"],
+                "result_artifact_ref": record.result_artifact_ref,
+                "event_id": event.event_id,
+                "observed_at": event.observed_at,
+                "operator_action": "approve the prompt in the tmux pane or move this lane to the project-root session",
+            }
+        )
     return blocked

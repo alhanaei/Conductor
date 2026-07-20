@@ -140,6 +140,8 @@ def test_notify_needs_verification_after_dispatch(store):
     n = OperatorView(store).notify(tid)
     assert n["signal"] == "needs_verification"
     assert n["task_id"] == task_id
+    assert "monitor status" in n["next_command"]
+    assert "--watch" not in n["next_command"]
 
 
 def test_notify_blocked_prompt_when_active_lane_needs_operator_action(store, monkeypatch):
@@ -256,7 +258,7 @@ def test_verify_hook_before_verification_includes_verify(store):
     _write_result(store, tid, task_id)
     hook = OperatorView(store).verify_hook(tid)
     cmds = [c["command"] for c in hook["commands"]]
-    assert any("conductor loop --track" in c and "--watch" in c for c in cmds)
+    assert any("conductor loop --track" in c and "--watch" not in c for c in cmds)
 
 
 def test_verify_hook_after_close_includes_reconcile_and_summary(store):
@@ -279,7 +281,7 @@ def test_verify_hook_merge_suggestion_is_auto_run_under_delegated_authority(stor
     CompletionEngine(store).verify(tid)  # verified but downstream tasks remain
     hook = OperatorView(store).verify_hook(tid)
     loop_cmd = next(c for c in hook["commands"] if "loop" in c["command"])
-    assert "--watch" in loop_cmd["command"]
+    assert "--watch" not in loop_cmd["command"]
     assert loop_cmd["auto_run"] is True
 
     _mark_remaining_tasks_complete(store, tid, task_id)
