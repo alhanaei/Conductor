@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import time
 from pathlib import Path
 from typing import Any, Optional
 
@@ -32,10 +31,16 @@ from .models import (
     MessageType,
     RecipientType,
     SenderType,
+    SchemaError,
 )
 from .operator import OperatorError, OperatorView
 from .status import build_status
+from .runtime.events import EventCursor, RuntimeEventKind, RuntimeEventLedger
+from .runtime.fs_events import ArtifactEventSource, InotifyWatcher
+from .runtime.monitor import EventMonitor
+from .runtime.tmux_control import TmuxControlClient
 from .store import ConductorStore, default_state_root, find_state_root
+from .tmux import control_mode_supported
 
 
 # --------------------------------------------------------------------------- #
@@ -436,24 +441,20 @@ def cmd_advance(args: argparse.Namespace) -> int:
     return 0
 
 
-def _sleep_with_prompt_scan(store: ConductorStore, track_id: str,
-                            poll_interval: float,
-                            prompt_poll_interval: float) -> list:
-    """Sleep up to poll_interval while checking for blocked prompts."""
-    if poll_interval <= 0:
-        return active_blocked_prompts(store, track_id)
-    prompt_interval = max(prompt_poll_interval, 0.01)
-    deadline = time.monotonic() + poll_interval
-    while time.monotonic() < deadline:
-        remaining = deadline - time.monotonic()
-        time.sleep(min(prompt_interval, max(0.0, remaining)))
-        blocked = active_blocked_prompts(store, track_id)
-        if blocked:
-            return blocked
-    return []
-
-
 def cmd_loop(args: argparse.Namespace) -> int:
+    if args.watch:
+        migration = f"python -m conductor monitor run --track {args.track} --json"
+        _emit(
+            {
+                "ok": False,
+                "error": "loop --watch has been removed",
+                "watch": False,
+                "migration_command": migration,
+            },
+            args.json,
+            human=f"REFUSED: loop --watch has been removed; use {migration}",
+        )
+        return 2
     store = _resolve_or_emit_error(args)
     if store is None:
         return 2
@@ -461,10 +462,10 @@ def cmd_loop(args: argparse.Namespace) -> int:
     dispatcher = Dispatcher(store)
     cycles = []
     finalized = {"attempted": False, "merge_approved": False, "closed": False}
-    stop_reason = "max_cycles"
+    stop_reason = "tick_complete"
     exit_code = 0
     blocked = []
-    for cycle in range(1, args.max_cycles + 1):
+    for cycle in range(1, 2):
         try:
             verified = engine.verify_ready_results(args.track)
             fixes = None
@@ -497,9 +498,8 @@ def cmd_loop(args: argparse.Namespace) -> int:
                 and advanced["advanced_count"] == 0
                 and advanced["newly_ready_count"] == 0
                 and dispatched["dispatched_count"] == 0):
-            if not args.watch:
-                stop_reason = "idle"
-                break
+            stop_reason = "idle"
+            break
         if advanced.get("all_tasks_complete"):
             # Merge approval is an operator gate by default (Phase 0 decision
             # lock). The loop only finalizes when explicitly told to, and even
@@ -557,23 +557,254 @@ def cmd_loop(args: argparse.Namespace) -> int:
                 break
             stop_reason = "closed"
             break
-        if args.watch and cycle < args.max_cycles:
-            if args.stop_on_blocked_prompt:
-                blocked = _sleep_with_prompt_scan(
-                    store, args.track, args.poll_interval, args.prompt_poll_interval)
-                if blocked:
-                    stop_reason = "blocked_prompt"
-                    break
-            else:
-                time.sleep(args.poll_interval)
     result = {"ok": True, "track_id": args.track, "cycles": cycles,
               "cycle_count": len(cycles), "finalized": finalized,
-              "watch": bool(args.watch), "stop_reason": stop_reason,
+              "watch": False, "stop_reason": stop_reason,
               "blocked": blocked}
     human = (f"Loop tick for {args.track}: {len(cycles)} cycle(s); "
              f"last dispatch={cycles[-1]['dispatched']['dispatched_count'] if cycles else 0}")
     _emit(result, args.json, human=human)
     return exit_code
+
+
+def _runtime_cursors(ledger: RuntimeEventLedger) -> dict:
+    cursor_dir = ledger.store.runtime_dir() / "cursors"
+    cursors = {}
+    if not cursor_dir.is_dir():
+        return cursors
+    for path in sorted(cursor_dir.glob("*.json")):
+        source_id = path.stem
+        try:
+            cursor = ledger.read_cursor(source_id)
+        except (OSError, SchemaError, ValueError):
+            continue
+        if cursor is not None:
+            cursors[source_id] = cursor.to_dict()
+    return cursors
+
+
+def _monitor_status(store: ConductorStore, track_id: Optional[str]) -> dict:
+    ledger = RuntimeEventLedger(store)
+    events = list(ledger.iter_events())
+    scoped = [
+        event
+        for event in events
+        if track_id is None or event.track_id in (None, track_id)
+    ]
+    gaps = [event for event in scoped if event.kind is RuntimeEventKind.EVENT_STREAM_GAP]
+    unresolved = [
+        event
+        for event in scoped
+        if event.kind
+        in {
+            RuntimeEventKind.UNRESOLVED_EVENT,
+            RuntimeEventKind.WORKSPACE_PROVENANCE_MISMATCH,
+        }
+    ]
+    latest = scoped[-1] if scoped else None
+    tmux_ok, tmux_detail = control_mode_supported()
+    fs_ok, fs_detail = InotifyWatcher.probe()
+    source_health = {
+        "tmux_control": {"ok": tmux_ok, "detail": tmux_detail},
+        "filesystem": {"ok": fs_ok, "detail": fs_detail},
+    }
+    return {
+        "ok": True,
+        "track_id": track_id,
+        "sources_healthy": all(item["ok"] for item in source_health.values()),
+        "source_health": source_health,
+        "cursors": _runtime_cursors(ledger),
+        "event_freshness": {
+            "event_count": len(scoped),
+            "last_event_at": latest.observed_at if latest else None,
+            "last_event_id": latest.event_id if latest else None,
+            "last_event_kind": latest.kind.value if latest else None,
+        },
+        "gaps": {
+            "count": len(gaps),
+            "latest": gaps[-1].to_dict() if gaps else None,
+        },
+        "unresolved_count": len(unresolved),
+    }
+
+
+def cmd_monitor_status(args: argparse.Namespace) -> int:
+    store = _resolve_or_emit_error(args)
+    if store is None:
+        return 2
+    result = _monitor_status(store, args.track)
+    _emit(
+        result,
+        args.json,
+        human=(
+            f"Monitor status: events={result['event_freshness']['event_count']} "
+            f"gaps={result['gaps']['count']} "
+            f"sources_healthy={result['sources_healthy']}"
+        ),
+    )
+    return 0
+
+
+def _build_monitor_sources(store: ConductorStore,
+                           track_id: Optional[str]) -> list:
+    watcher = InotifyWatcher()
+    sources = [ArtifactEventSource(store, watcher)]
+    track_ids = [track_id] if track_id else store.list_track_ids()
+    sessions = set()
+    for current_track in track_ids:
+        for record in store.list_dispatch_records(current_track):
+            if record.lane_target and ":" in record.lane_target:
+                sessions.add(record.lane_target.split(":", 1)[0])
+    sources.extend(TmuxControlClient(session) for session in sorted(sessions))
+    return sources
+
+
+def _start_monitor_source(source: Any) -> None:
+    source.start()
+
+
+def _close_monitor_source(source: Any) -> None:
+    close = getattr(source, "close", None)
+    if close is not None:
+        close()
+        return
+    stop = getattr(source, "stop", None)
+    if stop is not None:
+        stop()
+
+
+def cmd_monitor_run(args: argparse.Namespace) -> int:
+    store = _resolve_or_emit_error(args)
+    if store is None:
+        return 2
+    monitor = EventMonitor(store)
+    ledger = monitor.ledger
+    try:
+        sources = _build_monitor_sources(store, args.track)
+    except OSError as exc:
+        recovery = monitor.recover_gap("monitor:startup", f"source startup failed: {exc}")
+        _emit(
+            {"ok": False, "error": str(exc), "recovery": recovery},
+            args.json,
+            human=f"error: monitor source startup failed: {exc}",
+        )
+        return 1
+
+    active = []
+    startup_errors = []
+    missing_cursor_gaps = 0
+    processed_count = 0
+    batches = 0
+    interrupted = False
+    try:
+        for source in sources:
+            try:
+                _start_monitor_source(source)
+            except (OSError, RuntimeError) as exc:
+                startup_errors.append(
+                    {"source_id": source.source_id, "error": str(exc)}
+                )
+                monitor.recover_gap(
+                    source.source_id, f"source startup failed: {exc}"
+                )
+                _close_monitor_source(source)
+                continue
+            active.append(source)
+
+        if not active:
+            _emit(
+                {
+                    "ok": False,
+                    "error": "no runtime event sources started",
+                    "startup_errors": startup_errors,
+                },
+                args.json,
+                human="error: no runtime event sources started",
+            )
+            return 1
+
+        for source in active:
+            try:
+                cursor = ledger.read_cursor(source.source_id)
+            except (OSError, SchemaError, ValueError):
+                cursor = None
+            if cursor is None:
+                missing_cursor_gaps += 1
+                monitor.recover_gap(
+                    source.source_id, "runtime cursor missing at monitor start"
+                )
+
+        while True:
+            batches += 1
+            for source in active:
+                results = monitor.poll_source(source, timeout=args.event_timeout)
+                processed_count += sum(
+                    1
+                    for item in results
+                    if item.get("accepted") is True and item.get("event_id")
+                )
+                position = None
+                for item in reversed(results):
+                    position = item.get("event_id") or item.get("gap_event_id")
+                    if position:
+                        break
+                if position:
+                    ledger.write_cursor(
+                        EventCursor(source_id=source.source_id, position=position)
+                    )
+            if args.once:
+                break
+    except KeyboardInterrupt:
+        interrupted = True
+    finally:
+        for source in reversed(active):
+            _close_monitor_source(source)
+
+    result = {
+        "ok": True,
+        "foreground": True,
+        "track_id": args.track,
+        "source_count": len(active),
+        "sources": [source.source_id for source in active],
+        "startup_errors": startup_errors,
+        "missing_cursor_gaps": missing_cursor_gaps,
+        "processed_count": processed_count,
+        "batches": batches,
+        "interrupted": interrupted,
+    }
+    _emit(
+        result,
+        args.json,
+        human=(
+            f"Monitor stopped: sources={len(active)} "
+            f"events={processed_count} batches={batches}"
+        ),
+    )
+    return 0
+
+
+def cmd_monitor_recovery(args: argparse.Namespace) -> int:
+    store = _resolve_or_emit_error(args)
+    if store is None:
+        return 2
+    source_id = f"monitor:{args.monitor_command}"
+    result = EventMonitor(store).recover_gap(source_id, args.reason)
+    payload = {
+        "ok": True,
+        "track_id": args.track,
+        "operation": args.monitor_command,
+        "reason": args.reason,
+        **result,
+    }
+    _emit(
+        payload,
+        args.json,
+        human=(
+            f"Monitor {args.monitor_command}: reconciled={result['reconciled']} "
+            f"lanes={result['lanes_checked']}"
+        ),
+    )
+    return 0
 
 
 def cmd_worker_beat(args: argparse.Namespace) -> int:
@@ -1253,15 +1484,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_loop.add_argument("--track", required=True)
     p_loop.add_argument("--lane-session", help="Override the tmux session/project segment.")
     p_loop.add_argument("--max-cycles", type=int, default=1,
-                        help="Maximum loop cycles to run in this invocation.")
+                        help="Deprecated compatibility option; loop always runs one tick.")
     p_loop.add_argument("--watch", action="store_true",
-                        help="Keep polling idle/running tasks instead of exiting on the first no-progress cycle.")
+                        help="Removed; use monitor run. Supplying this flag exits 2.")
     p_loop.add_argument("--poll-interval", type=float, default=30.0,
-                        help="Seconds to sleep between --watch loop cycles.")
+                        help="Deprecated compatibility option used only by the --watch refusal path.")
     p_loop.add_argument("--prompt-poll-interval", type=float, default=3.0,
-                        help="Seconds between blocked-prompt scans during --watch sleeps when --stop-on-blocked-prompt is set.")
+                        help="Deprecated compatibility option; no recurring prompt scan is performed.")
     p_loop.add_argument("--stop-on-blocked-prompt", action="store_true",
-                        help="Stop --watch quickly when an active worker lane is waiting on a provider approval prompt.")
+                        help="Check event-backed blocked prompts during this one loop tick.")
     p_loop.add_argument("--force", action="store_true",
                         help="Override lane readiness gate on submit (use with caution).")
     p_loop.add_argument("--create-worktree", action="store_true",
@@ -1275,6 +1506,32 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Do not route failed verifications into the bounded "
                              "fix-loop automatically.")
     p_loop.set_defaults(func=cmd_loop)
+
+    # event-assisted runtime monitor
+    p_monitor = add("monitor", sub, help="Event-assisted runtime monitoring.")
+    monitor_sub = p_monitor.add_subparsers(dest="monitor_command", required=True)
+
+    p_monitor_status = add("status", monitor_sub, help="Report source health and event-ledger state.")
+    p_monitor_status.add_argument("--track", required=True)
+    p_monitor_status.set_defaults(func=cmd_monitor_status)
+
+    p_monitor_run = add("run", monitor_sub, help="Run event sources in the foreground.")
+    p_monitor_run.add_argument("--track")
+    p_monitor_run.add_argument("--once", action="store_true",
+                               help="Read one batch from each source and exit.")
+    p_monitor_run.add_argument("--event-timeout", type=float, default=0.5,
+                               help="Maximum seconds for each source event read.")
+    p_monitor_run.set_defaults(func=cmd_monitor_run)
+
+    p_monitor_refresh = add("refresh", monitor_sub, help="Audit a refresh gap and run one bounded reconciliation.")
+    p_monitor_refresh.add_argument("--track")
+    p_monitor_refresh.add_argument("--reason", default="explicit operator refresh")
+    p_monitor_refresh.set_defaults(func=cmd_monitor_recovery)
+
+    p_monitor_reconcile = add("reconcile", monitor_sub, help="Run one explicit audited reconciliation.")
+    p_monitor_reconcile.add_argument("--track")
+    p_monitor_reconcile.add_argument("--reason", default="explicit operator reconciliation")
+    p_monitor_reconcile.set_defaults(func=cmd_monitor_recovery)
 
     # task (status)
     p_task = add("task", sub, help="Task operations.")

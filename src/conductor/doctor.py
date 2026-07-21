@@ -11,7 +11,9 @@ import json
 import os
 from typing import Any, Dict, List
 
+from .runtime.fs_events import InotifyWatcher
 from .store import ConductorStore, read_json
+from .tmux import control_mode_supported
 
 
 def _check(name: str, ok: bool, detail: str) -> Dict[str, Any]:
@@ -47,7 +49,13 @@ def run_doctor(store: ConductorStore) -> Dict[str, Any]:
     writable = os.access(str(store.root), os.W_OK) if root_ok else False
     checks.append(_check("root_writable", writable, "W_OK on state root"))
 
-    # 6. per-track integrity: metadata + bus files parseable
+    # 6. native event-source capabilities
+    tmux_ok, tmux_detail = control_mode_supported()
+    checks.append(_check("tmux_control_mode", tmux_ok, tmux_detail))
+    fs_ok, fs_detail = InotifyWatcher.probe()
+    checks.append(_check("filesystem_notifications", fs_ok, fs_detail))
+
+    # 7. per-track integrity: metadata + bus files parseable
     track_reports: List[Dict[str, Any]] = []
     for tid in store.list_track_ids():
         issues: List[str] = []

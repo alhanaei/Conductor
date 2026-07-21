@@ -1,6 +1,7 @@
 """Phase 5 CLI: verify / fix / approve merge / close / reconcile via main()."""
 
 import json
+import time
 
 import conductor.cli as cli
 from conductor.cli import main
@@ -221,81 +222,42 @@ def test_loop_auto_finalizes_with_flag_and_force(tmp_path, capsys):
     assert data["finalized"]["closed_result"]["track_state"] == "complete"
 
 
-def test_loop_watch_keeps_polling_when_worker_result_is_not_ready(tmp_path, capsys, monkeypatch):
+def test_loop_watch_is_refused_without_sleep(tmp_path, capsys, monkeypatch):
     root = ["--root", str(tmp_path)]
     tid, _task_id = _approved_dispatched(capsys, root, tmp_path)
-    sleeps = []
-    monkeypatch.setattr(cli.time, "sleep", lambda seconds: sleeps.append(seconds))
 
+    def fail_sleep(_seconds):
+        raise AssertionError("loop --watch must be refused before sleeping")
+
+    monkeypatch.setattr(time, "sleep", fail_sleep)
     code, data, raw = _run(
-        capsys,
-        *root,
-        "loop",
-        "--track",
-        tid,
-        "--watch",
-        "--max-cycles",
-        "3",
-        "--poll-interval",
-        "0.01",
-        "--json",
+        capsys, *root, "loop", "--track", tid, "--watch",
+        "--max-cycles", "3", "--poll-interval", "0.01", "--json",
     )
 
-    assert code == 0, raw
-    assert data["cycle_count"] == 3
-    assert data["watch"] is True
-    assert data["stop_reason"] == "max_cycles"
-    assert data["blocked"] == []
-    # Patching cli.time.sleep patches the shared time module process-wide, so
-    # unrelated background threads can add stray entries — count only the
-    # loop's own poll-interval sleeps.
-    assert sleeps.count(0.01) == 2
+    assert code == 2, raw
+    assert data["ok"] is False
+    assert data["error"] == "loop --watch has been removed"
+    assert "monitor run" in data["migration_command"]
 
 
-def test_loop_watch_stops_on_blocked_prompt_for_working_task_without_result(tmp_path, capsys, monkeypatch):
+def test_loop_watch_refusal_does_not_scan_blocked_lanes(tmp_path, capsys, monkeypatch):
     root = ["--root", str(tmp_path)]
-    tid, task_id = _approved_dispatched(capsys, root, tmp_path)
-    sleeps = []
-    blocked = [{
-        "task_id": task_id,
-        "title": "Clarify requirements and constraints",
-        "lane_target": "test:codex",
-        "provider": "codex",
-        "lane_state": "blocked_prompt",
-        "result_artifact_ref": str(tmp_path / ".conductor" / "tracks" / tid / "tasks" / task_id / "result.md"),
-        "operator_action": "approve the prompt in the tmux pane or move this lane to the project-root session",
-    }]
-    monkeypatch.setattr(cli, "active_blocked_prompts", lambda store, track_id: blocked)
-    monkeypatch.setattr(cli.time, "sleep", lambda seconds: sleeps.append(seconds))
+    tid, _task_id = _approved_dispatched(capsys, root, tmp_path)
 
+    def fail_scan(_store, _track_id):
+        raise AssertionError("refused loop --watch must not scan lanes")
+
+    monkeypatch.setattr(cli, "active_blocked_prompts", fail_scan)
     code, data, raw = _run(
-        capsys,
-        *root,
-        "loop",
-        "--track",
-        tid,
-        "--watch",
-        "--max-cycles",
-        "3",
-        "--poll-interval",
-        "0.01",
-        "--prompt-poll-interval",
-        "0.005",
-        "--stop-on-blocked-prompt",
-        "--json",
+        capsys, *root, "loop", "--track", tid, "--watch",
+        "--stop-on-blocked-prompt", "--json",
     )
 
-    assert code == 0, raw
-    assert data["cycle_count"] == 1
-    assert data["watch"] is True
-    assert data["stop_reason"] == "blocked_prompt"
-    assert data["blocked"][0]["task_id"] == task_id
-    assert data["blocked"][0]["lane_state"] == "blocked_prompt"
-    # Patching cli.time.sleep patches the shared time module process-wide, and
-    # subprocess.Popen.wait(timeout) inside the loop's git/tmux calls sleeps in
-    # an exponential-backoff pattern (0.008, 0.016, ... 0.05). Only the loop's
-    # own watch sleep uses exactly the poll interval — assert that one is absent.
-    assert 0.01 not in sleeps
+    assert code == 2, raw
+    assert data["ok"] is False
+    assert data["watch"] is False
+    assert data["migration_command"].endswith(f"monitor run --track {tid} --json")
 
 
 def test_lane_blocked_command_reports_active_blocked_prompts(tmp_path, capsys, monkeypatch):
