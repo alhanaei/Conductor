@@ -4,10 +4,38 @@ Conductor is a dispatcher-style agent control plane for coordinating multiple tm
 
 ## Current Status
 
-- Project stage: Phase 6 implemented (Hermes/Telegram operator surface) — all 6 planned phases complete
+- Project stage: Phase 6 plus Phase B event-assisted runtime monitoring implemented
 - Implementation authorization: granted (Phases 1–6)
 - Primary runtime target: tmux-backed local agent lanes
 - Core concept: one top-level conductor manages task decomposition, routing, worker coordination, messaging, monitoring, and verification.
+
+## Event-Assisted Runtime Monitoring (implemented)
+
+Conductor observes active work through tmux control-mode output/lifecycle events
+and Linux filesystem notifications. Runtime events are deduplicated in
+`.conductor/runtime/events.jsonl`; source cursors, gaps, and unresolved
+provenance are retained beside the ledger.
+
+```bash
+python -m conductor monitor status    --track <id> --json
+python -m conductor monitor run       --track <id> --json
+python -m conductor monitor refresh   --track <id> --reason "operator refresh" --json
+python -m conductor monitor reconcile --track <id> --reason "controlled recovery" --json
+python -m conductor loop              --track <id> --json  # one verify/advance/dispatch tick
+```
+
+`monitor run` owns its event sources only for its foreground lifetime; it does
+not install a daemon. The recurring watch flag on `loop` is refused, and idle
+monitor reads do not capture panes or sleep-poll worker state. Reconciliation is
+reserved for startup gaps, missing cursors, source disconnects, watcher
+overflow, and explicit operator recovery.
+
+Events are telemetry, not task authority. Pane output can refresh the one
+correlated lane and surface a blocked prompt, but it cannot promote a task.
+Result events may invoke the existing verifier; only verification and the
+normal advance/merge/close gates change authoritative completion state. See
+[`docs/event-monitoring.md`](docs/event-monitoring.md) for correlation,
+recovery, and operator procedures.
 
 ## Phase 6 Operator Surface (implemented)
 
