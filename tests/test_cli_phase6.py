@@ -67,7 +67,8 @@ def test_operator_notify_and_verify_hook(tmp_path, capsys):
 
     code, hook, _ = _run(capsys, *root, "operator", "verify-hook", "--track", tid, "--json")
     assert code == 0
-    assert any("loop --track" in c["command"] and "--watch" in c["command"] for c in hook["commands"])
+    assert "monitor status" in data["next_command"]
+    assert all("--watch" not in c["command"] for c in hook["commands"])
 
 
 def test_operator_heartbeat_now_flag(tmp_path, capsys):
