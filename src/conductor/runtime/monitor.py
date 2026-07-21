@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from ..completion import CompletionEngine
 from ..lanes import LaneAdapter, LaneError
-from ..models import DispatchRecord, TaskState, utc_now_iso
+from ..models import DispatchRecord, TaskState, WorktreeMode, utc_now_iso
 from ..store import ConductorStore
 from .events import RuntimeEvent, RuntimeEventKind, RuntimeEventLedger
 
@@ -153,17 +153,40 @@ class EventMonitor:
                 event, RuntimeEventKind.UNRESOLVED_EVENT, reason
             )
 
+        if not record.lane_target:
+            return None, self._record_unresolved(
+                event,
+                RuntimeEventKind.UNRESOLVED_EVENT,
+                "dispatch has no stable lane target",
+            )
         if event.lane_target and record.lane_target != event.lane_target:
             return None, self._record_unresolved(
                 event,
                 RuntimeEventKind.UNRESOLVED_EVENT,
                 "lane/task provenance mismatch",
             )
-        expected_worktree = record.worktree_path or record.workspace
+
+        worktree_required = record.worktree_mode in {
+            WorktreeMode.GIT_PLANNED,
+            WorktreeMode.GIT_WORKTREE,
+        }
+        assigned_worktree = record.worktree_path
+        if worktree_required and not assigned_worktree:
+            return None, self._record_unresolved(
+                event,
+                RuntimeEventKind.UNRESOLVED_EVENT,
+                "dispatch has no assigned worktree",
+            )
+        if event.worktree_path and not assigned_worktree:
+            return None, self._record_unresolved(
+                event,
+                RuntimeEventKind.WORKSPACE_PROVENANCE_MISMATCH,
+                "event claims a worktree but dispatch has none",
+            )
         if (
             event.worktree_path
-            and expected_worktree
-            and not _same_path(event.worktree_path, expected_worktree)
+            and assigned_worktree
+            and not _same_path(event.worktree_path, assigned_worktree)
         ):
             return None, self._record_unresolved(
                 event,
@@ -171,10 +194,16 @@ class EventMonitor:
                 "event worktree does not match dispatch worktree",
             )
 
-        was_indirect = event.track_id is None or event.task_id is None
+        was_indirect = (
+            event.track_id is None
+            or event.task_id is None
+            or event.lane_target is None
+            or (worktree_required and event.worktree_path is None)
+        )
         event.track_id = record.track_id
         event.task_id = record.task_id
-        event.worktree_path = expected_worktree
+        event.lane_target = record.lane_target
+        event.worktree_path = assigned_worktree
         if was_indirect:
             event.confidence = "correlated"
         return record, None
@@ -200,7 +229,7 @@ class EventMonitor:
             lane_target=record.lane_target,
             track_id=record.track_id,
             task_id=record.task_id,
-            worktree_path=record.worktree_path or record.workspace,
+            worktree_path=record.worktree_path,
             evidence_ref=cause_event_id,
             confidence="correlated",
             payload={

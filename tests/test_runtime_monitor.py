@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from conductor.blocked_prompts import active_blocked_prompts
-from conductor.models import DispatchRecord, LaneState, TaskState
+from conductor.models import DispatchRecord, LaneState, TaskState, WorktreeMode
 from conductor.runtime.events import RuntimeEvent, RuntimeEventKind, RuntimeEventLedger
 from conductor.runtime.monitor import EventMonitor
 from conductor.store import ConductorStore
@@ -50,6 +50,7 @@ def _dispatch(store, track_id, task_id, lane_target, *, state=TaskState.DISPATCH
         provider=lane_target.split(":", 1)[1],
         workspace=str(worktree),
         worktree_path=str(worktree),
+        worktree_mode=WorktreeMode.GIT_WORKTREE,
         result_artifact_ref=str(store.task_result_path(track_id, task_id)),
     )
     store.write_dispatch_record(record)
@@ -233,3 +234,114 @@ def test_blocked_prompt_projection_uses_fresh_ledger_evidence(store):
     assert blocked[0]["lane_state"] == LaneState.BLOCKED_PROMPT.value
     assert blocked[0]["event_id"]
     assert lane.calls == [record.lane_target]
+
+
+def test_task_event_is_enriched_from_stable_dispatch_provenance(store):
+    record = _dispatch(store, "track_1", "task_1", "project:codex")
+    event = RuntimeEvent(
+        source="fs_artifact",
+        source_key="status:stable-provenance",
+        kind=RuntimeEventKind.ARTIFACT_MODIFIED,
+        track_id=record.track_id,
+        task_id=record.task_id,
+        payload={"artifact": "status.json"},
+    )
+
+    result = _monitor(store).process(event)
+
+    assert result["accepted"] is True
+    persisted = list(RuntimeEventLedger(store).iter_events())[0]
+    assert persisted.task_id == record.task_id
+    assert persisted.lane_target == record.lane_target
+    assert persisted.worktree_path == record.worktree_path
+
+
+def test_task_event_without_stable_dispatch_lane_is_unresolved(store):
+    worktree = store.root / "worktrees" / "task_1"
+    worktree.mkdir(parents=True)
+    store.write_dispatch_record(
+        DispatchRecord(
+            track_id="track_1",
+            task_id="task_1",
+            title="missing lane",
+            task_state=TaskState.DISPATCHED,
+            lane_target=None,
+            workspace=str(worktree),
+            worktree_path=str(worktree),
+            worktree_mode=WorktreeMode.GIT_WORKTREE,
+        )
+    )
+    completion = FakeCompletionEngine()
+    event = RuntimeEvent(
+        source="fs_artifact",
+        source_key="result:missing-lane",
+        kind=RuntimeEventKind.ARTIFACT_CREATED,
+        track_id="track_1",
+        task_id="task_1",
+        payload={"artifact": "result.md"},
+    )
+
+    result = _monitor(store, completion=completion).process(event)
+
+    assert result["unresolved"] == RuntimeEventKind.UNRESOLVED_EVENT.value
+    persisted = list(RuntimeEventLedger(store).iter_events())[0]
+    assert persisted.payload["reason"] == "dispatch has no stable lane target"
+    assert completion.calls == []
+
+
+def test_task_event_without_applicable_assigned_worktree_is_unresolved(store):
+    record = _dispatch(store, "track_1", "task_1", "project:codex")
+    record.worktree_path = None
+    store.write_dispatch_record(record)
+    event = RuntimeEvent(
+        source="fs_artifact",
+        source_key="result:missing-worktree",
+        kind=RuntimeEventKind.ARTIFACT_CREATED,
+        track_id=record.track_id,
+        task_id=record.task_id,
+        lane_target=record.lane_target,
+        payload={"artifact": "result.md"},
+    )
+
+    result = _monitor(store).process(event)
+
+    assert result["unresolved"] == RuntimeEventKind.UNRESOLVED_EVENT.value
+    persisted = list(RuntimeEventLedger(store).iter_events())[0]
+    assert persisted.payload["reason"] == "dispatch has no assigned worktree"
+
+
+def test_task_event_with_mismatched_lane_is_unresolved(store):
+    record = _dispatch(store, "track_1", "task_1", "project:codex")
+    event = RuntimeEvent(
+        source="fs_artifact",
+        source_key="result:wrong-lane",
+        kind=RuntimeEventKind.ARTIFACT_CREATED,
+        track_id=record.track_id,
+        task_id=record.task_id,
+        lane_target="project:claude",
+        worktree_path=record.worktree_path,
+        payload={"artifact": "result.md"},
+    )
+
+    result = _monitor(store).process(event)
+
+    assert result["unresolved"] == RuntimeEventKind.UNRESOLVED_EVENT.value
+    persisted = list(RuntimeEventLedger(store).iter_events())[0]
+    assert persisted.payload["reason"] == "lane/task provenance mismatch"
+
+
+def test_idle_source_batch_performs_no_lane_refresh_or_capture(store):
+    class EmptySource:
+        source_id = "empty"
+
+        def read_events(self, timeout):
+            return []
+
+        def gap_reason(self):
+            return None
+
+    lane = FakeLaneAdapter()
+    monitor = _monitor(store, lane=lane)
+
+    assert monitor.poll_source(EmptySource(), timeout=0) == []
+    assert lane.calls == []
