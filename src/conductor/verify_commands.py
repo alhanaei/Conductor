@@ -10,6 +10,8 @@ Safety posture:
 * **Allowlist** — only commands whose first token (basename) is on the allowlist
   run at all. Defaults cover common test/build tools; a project can extend the
   list via ``conductor.json`` → ``"verification_allowed_commands": [...]``.
+  The sole default exception is the exact read-only hygiene command
+  ``git diff --check``; other ``git`` argv remain rejected.
   A non-allowlisted command is a *failed check* with a clear reason, never a
   silent skip — refusing loudly keeps the gate honest.
 * **No shell** — commands are ``shlex.split`` into argument arrays and executed
@@ -33,6 +35,8 @@ DEFAULT_ALLOWED_COMMANDS = frozenset({
     "go", "cargo", "make",
     "ruff", "mypy", "tox", "black", "flake8",
 })
+
+DEFAULT_EXACT_COMMANDS = frozenset({("git", "diff", "--check")})
 
 DEFAULT_TIMEOUT_SECONDS = 120
 _OUTPUT_TAIL_CHARS = 2000
@@ -98,7 +102,8 @@ def run_verification_command(
                 "detail": "rejected: empty command", "output_tail": ""}
 
     program = Path(argv[0]).name
-    if program not in allowed:
+    normalized_argv = (program, *argv[1:])
+    if program not in allowed and normalized_argv not in DEFAULT_EXACT_COMMANDS:
         return {**base, "passed": False, "exit_code": None,
                 "detail": (f"rejected: {program!r} is not on the verification allowlist; "
                            f"add it to conductor.json 'verification_allowed_commands' if intended"),

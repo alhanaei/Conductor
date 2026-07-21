@@ -1,6 +1,7 @@
 """Safety trio: command-running verification, allowlist, track-write mutex."""
 
 import multiprocessing as mp
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -233,3 +234,22 @@ def test_file_mutex_times_out(tmp_path):
             # exercises the timeout path deterministically.
             with file_mutex(mutex_path, timeout=0.2, poll=0.05):
                 pass
+
+
+def test_exact_git_diff_check_policy_command_runs(tmp_path):
+    subprocess.run(
+        ["git", "init", "-q"], cwd=tmp_path, check=True, capture_output=True
+    )
+
+    check = run_verification_command("git diff --check", tmp_path)
+
+    assert check["passed"] is True
+    assert check["exit_code"] == 0
+
+
+def test_other_git_commands_remain_rejected(tmp_path):
+    check = run_verification_command("git status", tmp_path)
+
+    assert check["passed"] is False
+    assert check["exit_code"] is None
+    assert "allowlist" in check["detail"]
