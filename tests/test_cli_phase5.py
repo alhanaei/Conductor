@@ -279,3 +279,26 @@ def test_lane_blocked_command_reports_active_blocked_prompts(tmp_path, capsys, m
     assert code == 0, raw
     assert data["blocked_count"] == 1
     assert data["blocked"][0]["lane_target"] == "proj:claude"
+
+
+def test_loop_max_cycles_compatibility_option_still_runs_one_tick(
+    tmp_path, capsys
+):
+    root = ["--root", str(tmp_path)]
+    track_id, _task_id = _approved_dispatched(capsys, root, tmp_path)
+
+    code, data, raw = _run(
+        capsys,
+        *root,
+        "loop",
+        "--track",
+        track_id,
+        "--max-cycles",
+        "3",
+        "--json",
+    )
+
+    assert code == 0, raw
+    assert data["cycle_count"] == 1
+    assert data["watch"] is False
+    assert data["stop_reason"] == "idle"

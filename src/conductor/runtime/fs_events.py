@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Protocol, Tuple
 
+from ..models import utc_now_iso
 from ..store import ConductorStore
 from .events import RuntimeEvent, RuntimeEventKind
 
@@ -125,6 +126,7 @@ class InotifyWatcher:
         except BlockingIOError:
             return []
         events: List[WatcherEvent] = []
+        observed_at = utc_now_iso()
         offset = 0
         while offset + self._EVENT.size <= len(data):
             wd, mask, _, name_len = self._EVENT.unpack_from(data, offset)
@@ -132,7 +134,7 @@ class InotifyWatcher:
             raw_name = data[offset:offset + name_len]
             offset += name_len
             if mask & self._IN_Q_OVERFLOW:
-                events.append(WatcherEvent(Path(), "overflow", "inotify"))
+                events.append(WatcherEvent(Path(), "overflow", observed_at))
                 continue
             base = self._paths.get(wd)
             if base is None:
@@ -145,7 +147,7 @@ class InotifyWatcher:
                 kind = "modified"
             else:
                 continue
-            events.append(WatcherEvent(path, kind, "inotify"))
+            events.append(WatcherEvent(path, kind, observed_at))
         return events
 
     def close(self) -> None:

@@ -345,3 +345,61 @@ def test_idle_source_batch_performs_no_lane_refresh_or_capture(store):
 
     assert monitor.poll_source(EmptySource(), timeout=0) == []
     assert lane.calls == []
+
+
+def test_repeated_sticky_source_gap_recovers_only_once(store):
+    record = _dispatch(store, "track_1", "task_1", "project:codex")
+    lane = FakeLaneAdapter()
+    monitor = _monitor(store, lane=lane)
+
+    class StickyGapSource:
+        source_id = "sticky_gap"
+
+        def read_events(self, timeout):
+            return []
+
+        def gap_reason(self):
+            return "controlled disconnect"
+
+    source = StickyGapSource()
+    first = monitor.poll_source(source, timeout=0)
+    second = monitor.poll_source(source, timeout=0)
+
+    assert len(first) == 1
+    assert second == []
+    assert lane.calls == [record.lane_target]
+    events = list(RuntimeEventLedger(store).iter_events())
+    assert sum(e.kind is RuntimeEventKind.EVENT_STREAM_GAP for e in events) == 1
+    assert sum(e.kind is RuntimeEventKind.RECONCILIATION for e in events) == 1
+
+
+def test_non_git_dispatch_correlation_does_not_invent_worktree(store):
+    workspace = store.root / "project"
+    workspace.mkdir()
+    record = DispatchRecord(
+        track_id="track_1",
+        task_id="task_1",
+        title="non-git task",
+        task_state=TaskState.DISPATCHED,
+        lane_target="project:codex",
+        workspace=str(workspace),
+        worktree_path=None,
+        worktree_mode=WorktreeMode.NOT_GIT_REPO,
+    )
+    store.write_dispatch_record(record)
+    event = RuntimeEvent(
+        source="fs_artifact",
+        source_key="status:non-git",
+        kind=RuntimeEventKind.ARTIFACT_MODIFIED,
+        track_id=record.track_id,
+        task_id=record.task_id,
+        payload={"artifact": "status.json"},
+    )
+
+    result = _monitor(store).process(event)
+
+    assert result["accepted"] is True
+    persisted = list(RuntimeEventLedger(store).iter_events())[0]
+    assert persisted.lane_target == record.lane_target
+    assert persisted.worktree_path is None
+    assert persisted.confidence == "correlated"

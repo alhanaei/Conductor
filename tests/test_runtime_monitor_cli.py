@@ -196,3 +196,31 @@ def test_doctor_reports_tmux_control_and_filesystem_notification_health(
         "ok": True,
         "detail": "inotify available",
     }
+
+
+def test_monitor_status_without_runtime_events_is_read_only(
+    tmp_path, capsys, monkeypatch
+):
+    store = _store(tmp_path, capsys)
+    monkeypatch.setattr(cli, "control_mode_supported", lambda: (True, "tmux 3.4"))
+    monkeypatch.setattr(
+        cli.InotifyWatcher,
+        "probe",
+        classmethod(lambda cls: (True, "inotify available")),
+    )
+
+    code, data, raw = _run(
+        capsys,
+        "--root",
+        str(tmp_path),
+        "monitor",
+        "status",
+        "--track",
+        "track_missing",
+        "--json",
+    )
+
+    assert code == 0, raw
+    assert data["event_freshness"]["event_count"] == 0
+    assert data["gaps"]["count"] == 0
+    assert not store.runtime_dir().exists()

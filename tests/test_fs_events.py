@@ -1,10 +1,13 @@
 """T3 tests for filesystem-assisted Conductor artifact events."""
 
 import os
+from datetime import datetime
 import time
 from pathlib import Path
 
 import pytest
+
+import conductor.runtime.fs_events as fs_events_module
 
 from conductor.runtime.events import RuntimeEventKind, RuntimeEventLedger
 from conductor.runtime.fs_events import (
@@ -209,3 +212,26 @@ def test_live_inotify_observes_result_creation(store):
         )
     finally:
         source.close()
+
+
+def test_native_inotify_record_uses_iso_observation_timestamp(tmp_path, monkeypatch):
+    directory = tmp_path / "watched"
+    directory.mkdir()
+    watcher = object.__new__(InotifyWatcher)
+    watcher._fd = 42
+    watcher._paths = {7: directory}
+    watcher._closed = False
+    name = b"result.md\0"
+    record = watcher._EVENT.pack(7, watcher._IN_CREATE, 0, len(name)) + name
+    monkeypatch.setattr(
+        fs_events_module.select, "select", lambda *_args: ([watcher._fd], [], [])
+    )
+    monkeypatch.setattr(
+        fs_events_module.os, "read", lambda _fd, _size: record
+    )
+
+    event = watcher.read(timeout=0)[0]
+    observed = datetime.fromisoformat(event.at.replace("Z", "+00:00"))
+
+    assert observed.tzinfo is not None
+    assert event.path == directory / "result.md"
