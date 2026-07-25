@@ -440,23 +440,30 @@ Launch safety: the launch command is typed **only into a pane classified
 waits up to `--launch-wait` seconds (default 15) for `provider_ready` and
 records the model on the lane record.
 
-### Tiered model policy (claude lanes)
+### Tiered model policy
 
 | `--method` | Model launched |
 |---|---|
-| `plan`, `build`, `review` | `claude-fable-5` |
-| `spec`, `test` | `claude-sonnet-4-6` |
+| `plan`, `review` | `claude-fable-5` |
+| `spec`, `build`, `test` | `claude-sonnet-5` |
 | `ship` / no method | `claude-opus-4-8` |
 
-Codex/gemini/grok launch **bare** by default (their CLIs use their own
-configured default model) unless you set a per-provider map in
+| Provider | `spec`, `test` | `plan`, `ship` | `build`, `review`, default |
+|---|---|---|---|
+| Codex | `gpt-5.5` | `gpt-5.5` | `gpt-5.5` |
+| Gemini | `gemini-3.1-flash-lite` | `gemini-3.5-flash` | `gemini-3.5-flash` |
+| Grok | `grok-composer-2.5-fast` | `grok-4.5` | `grok-4.5` |
+
+Codex, Gemini, and Grok have explicit built-in policies. A project can
+override any provider map in
 `conductor.json`:
 
 ```json
 "lane_models": {
-  "claude": {"build": "claude-fable-5", "test": "claude-sonnet-4-6"},
-  "codex":  {"default": "gpt-5.1-codex"},
-  "grok":   {"default": "grok-4"}
+  "claude": {"build": "claude-sonnet-5", "plan": "claude-fable-5", "test": "claude-sonnet-5"},
+  "codex":  {"default": "gpt-5.5"},
+  "gemini": {"build": "gemini-3.5-flash", "plan": "gemini-3.5-flash", "test": "gemini-3.1-flash-lite"},
+  "grok":   {"build": "grok-4.5", "test": "grok-composer-2.5-fast"}
 }
 ```
 

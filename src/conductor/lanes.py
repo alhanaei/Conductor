@@ -175,21 +175,46 @@ PROVIDERS: Dict[str, ProviderProfile] = {
 }
 
 # Tiered lane-model policy, keyed by provider then method id (see methods.py).
-# Only claude ships defaults: demanding long-horizon work gets Fable 5,
-# scoped/mechanical work gets Sonnet. Codex/gemini/grok model lineups move
-# fast and their CLIs have their own configured defaults, so they launch bare
-# unless configured — set per-provider maps in conductor.json:
+# The pool is explicit for the provider CLIs we operate. Keep expensive
+# frontier models on planning/build/review/ship work and route scoped or
+# mechanical spec/test slices to the faster model where one is available.
+# Provider lineups still move quickly, so deployments can override this policy
+# per provider in conductor.json:
 #   {"lane_models": {"claude": {"build": "..."}, "codex": {"default": "..."}}}
 # (A flat map {"build": "..."} is also accepted and treated as the claude map.)
 DEFAULT_LANE_MODELS: Dict[str, Dict[str, str]] = {
     "claude": {
-        "spec": "claude-sonnet-4-6",
+        "spec": "claude-sonnet-5",
         "plan": "claude-fable-5",
-        "build": "claude-fable-5",
-        "test": "claude-sonnet-4-6",
+        "build": "claude-sonnet-5",
+        "test": "claude-sonnet-5",
         "review": "claude-fable-5",
         "ship": "claude-opus-4-8",
         "default": "claude-opus-4-8",
+    },
+    "codex": {
+        # gpt-5.6 aliases require a newer Codex CLI than the installed
+        # v0.142.5. Keep every method on the verified live model until the
+        # CLI is upgraded and the health probe passes for those aliases.
+        "default": "gpt-5.5",
+    },
+    "gemini": {
+        "spec": "gemini-3.1-flash-lite",
+        "plan": "gemini-3.5-flash",
+        "build": "gemini-3.5-flash",
+        "test": "gemini-3.1-flash-lite",
+        "review": "gemini-3.5-flash",
+        "ship": "gemini-3.5-flash",
+        "default": "gemini-3.5-flash",
+    },
+    "grok": {
+        "spec": "grok-composer-2.5-fast",
+        "plan": "grok-4.5",
+        "build": "grok-4.5",
+        "test": "grok-composer-2.5-fast",
+        "review": "grok-4.5",
+        "ship": "grok-4.5",
+        "default": "grok-4.5",
     },
 }
 

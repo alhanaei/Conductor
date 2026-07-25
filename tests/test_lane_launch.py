@@ -57,17 +57,24 @@ def store(tmp_path):
 # --------------------------------------------------------------------------- #
 def test_default_tier_map():
     claude = DEFAULT_LANE_MODELS["claude"]
-    assert claude["build"] == "claude-fable-5"
+    assert claude["build"] == "claude-sonnet-5"
     assert claude["plan"] == "claude-fable-5"
     assert claude["review"] == "claude-fable-5"
-    assert claude["test"] == "claude-sonnet-4-6"
-    assert claude["spec"] == "claude-sonnet-4-6"
-    # Other providers ship no defaults — their CLIs pick their own model.
-    assert "codex" not in DEFAULT_LANE_MODELS
+    assert claude["test"] == "claude-sonnet-5"
+    assert claude["spec"] == "claude-sonnet-5"
+    codex = DEFAULT_LANE_MODELS["codex"]
+    assert codex == {"default": "gpt-5.5"}
+    gemini = DEFAULT_LANE_MODELS["gemini"]
+    assert gemini["spec"] == "gemini-3.1-flash-lite"
+    assert gemini["build"] == "gemini-3.5-flash"
+    assert gemini["default"] == "gemini-3.5-flash"
+    grok = DEFAULT_LANE_MODELS["grok"]
+    assert grok["build"] == "grok-4.5"
+    assert grok["test"] == "grok-composer-2.5-fast"
 
 
 def test_resolve_lane_model_defaults_and_override():
-    assert resolve_lane_model("claude", "build") == "claude-fable-5"
+    assert resolve_lane_model("claude", "build") == "claude-sonnet-5"
     assert resolve_lane_model("claude", None) == DEFAULT_LANE_MODELS["claude"]["default"]
     assert resolve_lane_model("claude", "nonexistent") == DEFAULT_LANE_MODELS["claude"]["default"]
     # Flat (legacy) override applies to claude only
@@ -78,24 +85,29 @@ def test_resolve_lane_model_defaults_and_override():
 
 def test_resolve_lane_model_never_leaks_claude_models_to_other_providers():
     """The tier map is provider-scoped: codex/grok must never get a claude id."""
-    assert resolve_lane_model("codex", "build") is None
-    assert resolve_lane_model("grok", "review") is None
+    assert resolve_lane_model("codex", "spec") == "gpt-5.5"
+    assert resolve_lane_model("codex", "plan") == "gpt-5.5"
+    assert resolve_lane_model("codex", "build") == "gpt-5.5"
+    assert resolve_lane_model("grok", "review") == "grok-4.5"
+    assert resolve_lane_model("gemini", "test") == "gemini-3.1-flash-lite"
+    assert resolve_lane_model("gemini", "build") == "gemini-3.5-flash"
     # Even with a flat (claude) config override present:
     cfg = {"lane_models": {"build": "claude-fable-5"}}
-    assert resolve_lane_model("codex", "build", cfg) is None
+    assert resolve_lane_model("codex", "build", cfg) == "gpt-5.5"
 
 
 def test_resolve_lane_model_nested_provider_config():
     cfg = {"lane_models": {
         "claude": {"test": "claude-haiku-4-5"},
-        "codex": {"default": "gpt-5.1-codex"},
-        "grok": {"build": "grok-4"},
+        "codex": {"default": "gpt-5.5"},
+        "grok": {"build": "grok-4.5"},
     }}
     assert resolve_lane_model("claude", "test", cfg) == "claude-haiku-4-5"
-    assert resolve_lane_model("claude", "build", cfg) == "claude-fable-5"  # defaults kept
-    assert resolve_lane_model("codex", "build", cfg) == "gpt-5.1-codex"    # falls to default
-    assert resolve_lane_model("grok", "build", cfg) == "grok-4"
-    assert resolve_lane_model("grok", "test", cfg) is None                 # no default set
+    assert resolve_lane_model("claude", "build", cfg) == "claude-sonnet-5"  # defaults kept
+    assert resolve_lane_model("codex", "build", cfg) == "gpt-5.5"          # falls to override default
+    assert resolve_lane_model("codex", "nonexistent", cfg) == "gpt-5.5"    # override default
+    assert resolve_lane_model("grok", "build", cfg) == "grok-4.5"
+    assert resolve_lane_model("grok", "test", cfg) == "grok-composer-2.5-fast"
 
 
 # --------------------------------------------------------------------------- #
@@ -136,13 +148,18 @@ def test_launch_noop_when_provider_already_ready(store):
 def test_launch_codex_and_grok_with_explicit_model(store):
     tmux = FakeTmux(transcript=SHELL_T)
     adapter = LaneAdapter(store, tmux=tmux)
-    result = adapter.launch("Conductor:codex", model="gpt-5.1-codex", wait_seconds=0)
-    assert result["command"] == "codex --model gpt-5.1-codex"
+    result = adapter.launch("Conductor:codex", model="gpt-5.5", wait_seconds=0)
+    assert result["command"] == "codex --model gpt-5.5"
 
     tmux2 = FakeTmux(transcript=SHELL_T)
     adapter2 = LaneAdapter(store, tmux=tmux2)
-    result2 = adapter2.launch("Conductor:grok", model="grok-4", wait_seconds=0)
-    assert result2["command"] == "grok --model grok-4"
+    result2 = adapter2.launch("Conductor:grok", model="grok-4.5", wait_seconds=0)
+    assert result2["command"] == "grok --model grok-4.5"
+
+    tmux3 = FakeTmux(transcript=SHELL_T)
+    adapter3 = LaneAdapter(store, tmux=tmux3)
+    result3 = adapter3.launch("Conductor:gemini", model="gemini-3.5-flash", wait_seconds=0)
+    assert result3["command"] == "gemini --model gemini-3.5-flash"
 
 
 def test_launch_bare_command_when_no_model(store):
@@ -186,8 +203,8 @@ def test_cli_ensure_launch_with_method_tier(tmp_path, capsys, monkeypatch):
                       "--launch", "--method", "build", "--launch-wait", "0", "--json")
     assert code == 0
     assert data["launched"] is True
-    assert data["model"] == "claude-fable-5"
-    assert "claude --model claude-fable-5" in data["command"]
+    assert data["model"] == "claude-sonnet-5"
+    assert "claude --model claude-sonnet-5" in data["command"]
 
 
 def test_cli_ensure_launch_explicit_model_wins(tmp_path, capsys, monkeypatch):
@@ -218,8 +235,8 @@ def test_cli_ensure_launch_config_override(tmp_path, capsys, monkeypatch):
     assert data["model"] == "claude-haiku-4-5"
 
 
-def test_cli_ensure_launch_codex_ignores_claude_tiers(tmp_path, capsys, monkeypatch):
-    """--method build on a codex lane launches bare — never `codex --model claude-*`."""
+def test_cli_ensure_launch_codex_uses_its_own_default_tier(tmp_path, capsys, monkeypatch):
+    """--method build on Codex uses the Codex policy, never a Claude id."""
     tmux = FakeTmux(transcript=SHELL_T)
     _patched_adapter(monkeypatch, tmux)
     root = ["--root", str(tmp_path)]
@@ -228,8 +245,8 @@ def test_cli_ensure_launch_codex_ignores_claude_tiers(tmp_path, capsys, monkeypa
                       "--launch", "--method", "build", "--launch-wait", "0", "--json")
     assert code == 0
     assert data["launched"] is True
-    assert data["command"] == "codex"
-    assert data["model"] is None
+    assert data["command"] == "codex --model gpt-5.5"
+    assert data["model"] == "gpt-5.5"
     assert "claude" not in tmux.sent[-1][1]
 
 
@@ -239,14 +256,14 @@ def test_cli_ensure_launch_codex_config_default(tmp_path, capsys, monkeypatch):
     _run(capsys, *root, "init")
     config_path = tmp_path / ".conductor" / "conductor.json"
     cfg = json.loads(config_path.read_text())
-    cfg["lane_models"] = {"codex": {"default": "gpt-5.1-codex"},
+    cfg["lane_models"] = {"codex": {"default": "gpt-5.5"},
                           "claude": {"build": "claude-fable-5"}}
     config_path.write_text(json.dumps(cfg))
 
     code, data = _run(capsys, *root, "lane", "ensure", "--target", "Conductor:codex",
                       "--launch", "--launch-wait", "0", "--json")
     assert code == 0
-    assert data["command"] == "codex --model gpt-5.1-codex"
+    assert data["command"] == "codex --model gpt-5.5"
 
 
 def test_cli_ensure_without_launch_unchanged(tmp_path, capsys, monkeypatch):
