@@ -5,10 +5,9 @@ description: Verify code or analytics changes using this project's filled verifi
 
 # Project verification
 
-1. Read the active project instructions (`AGENTS.md`, imported by `CLAUDE.md`) for the
-   verification contract and pinned shared practice. Confirm the project identity, changed
-   scope, acceptance criteria, and evidence location. Treat this skill as a template until
-   the project contract is filled and reviewed.
+1. Read the active project AGENTS.md verification contract and pinned shared practice.
+   Confirm the project identity, changed scope, acceptance criteria, and evidence location.
+   Treat this skill as a template until the project contract is filled and reviewed.
 2. Select applicable checks from the project's verified commands, working directories,
    prerequisites, and expected results. Inspect their source scripts/configuration before
    execution. If commands or paths are missing or contain placeholders, report the exact
