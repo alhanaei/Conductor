@@ -30,7 +30,7 @@ Keep the selected source fixed; avoid symlinks to a moving checkout.
 
 | Source under this kit | Destination |
 | --- | --- |
-| `shared/PRACTICE.md` | A fixed readable snapshot chosen by the user, or project-vendored snapshot |
+| `shared/PRACTICE.md` plus referenced root `shared/` files | Fixed snapshot preserving relative layout, or bind directly to root `shared/WORKFLOW.md` |
 | `global/AGENTS.md` | `${CODEX_HOME:-$HOME/.codex}/AGENTS.md` (merge and fill) |
 | `global/skills/conductor-handoff/` | `$HOME/.agents/skills/conductor-handoff/` (whole directory) |
 | `project/AGENTS.md` | Actual project repository root `AGENTS.md` (merge and fill) |
@@ -66,3 +66,7 @@ Adopt upgrades as reviewed changes between tasks: compare source diffs, update s
 digests and installation records together, then start a fresh session. For rollback,
 restore the backed-up files or prior pinned snapshot and restart. Do not discard unrelated
 edits made since installation. No GitHub publication is implied by local installation.
+
+The compatibility entrypoint links to the repository-root shared workflow. Do not copy
+it alone. Verify the root MANIFEST.json and preserve all referenced shared files at the
+same reviewed revision; the entrypoint digest alone does not verify the workflow.
