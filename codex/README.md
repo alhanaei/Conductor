@@ -16,6 +16,7 @@ The former application is retired to Git history.
 | [shared/PRACTICE.md](shared/PRACTICE.md) | Thin entrypoint to the assistant-neutral shared workflow |
 | [global/AGENTS.md](global/AGENTS.md) | Small universal adapter → Codex home `AGENTS.md` |
 | [project/AGENTS.md](project/AGENTS.md) | Fillable project adapter → target repository `AGENTS.md` |
+| [conductor-init](global/skills/conductor-init/SKILL.md) | Generate a native project initializer; optional personal installation only within that scope |
 | [conductor-handoff](global/skills/conductor-handoff/SKILL.md) | General skill → user `.agents/skills/conductor-handoff/` |
 | [project-verification](project/skills/project-verification/SKILL.md) | Project skill → repository `.agents/skills/project-verification/` |
 | [LOCAL-SETUP.md](LOCAL-SETUP.md) | Local installation and rollback procedure |
@@ -25,6 +26,11 @@ The former application is retired to Git history.
 These directories are distribution sources. They do not install themselves. Avoid launching
 project work from inside template directories: an `AGENTS.md` there may be discovered as
 directory-scoped instructions. They are not active global or project-root configuration.
+
+For repeatable project setup, use [conductor-init](global/skills/conductor-init/SKILL.md).
+Its recipe is generated from the [portable procedure](../shared/workflows/project-init.md);
+see [usage and validation](../docs/project-initialization.md). Existing projects retain their
+policy pin until an authorized upgrade.
 
 ## Adoption contract
 

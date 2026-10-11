@@ -32,6 +32,7 @@ Keep the selected source fixed; avoid symlinks to a moving checkout.
 | --- | --- |
 | `shared/PRACTICE.md` plus referenced root `shared/` files | Fixed snapshot preserving relative layout, or bind directly to root `shared/WORKFLOW.md` |
 | `global/AGENTS.md` | `${CODEX_HOME:-$HOME/.codex}/AGENTS.md` (merge and fill) |
+| `global/skills/conductor-init/` | `$HOME/.agents/skills/conductor-init/` (whole directory, including bundled recipe) |
 | `global/skills/conductor-handoff/` | `$HOME/.agents/skills/conductor-handoff/` (whole directory) |
 | `project/AGENTS.md` | Actual project repository root `AGENTS.md` (merge and fill) |
 | `project/skills/project-verification/` | Actual project `.agents/skills/project-verification/` (whole directory) |
@@ -54,6 +55,11 @@ User skills live under `.agents/skills`, independently of `CODEX_HOME`. Check fo
 skill names across scopes; same-name skills do not override each other. Rename intentionally
 and update references, or remove a superseded installation only with authorization.
 See the [official skills guide](https://learn.chatgpt.com/docs/build-skills).
+
+Use the reviewed initializer source directly, or invoke `$conductor-init` after a separately
+authorized personal installation. It generates the target's `$conductor-project-init` skill,
+which then onboards the project from observed facts. Setup does not upgrade existing policy
+pins or prove native discovery. See [initialization usage](../docs/project-initialization.md).
 
 ## Confirm and maintain
 

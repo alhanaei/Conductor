@@ -2,6 +2,7 @@
 
 Setup draft only. Use [shared policy](../../shared/WORKFLOW.md); current jobs belong in project issues.
 
+- Initialization: [conductor-init](../../codex/global/skills/conductor-init/SKILL.md) generates a project-specific native initializer, which then onboards the project. Read the source folder directly or install it personally only when that scope is requested. [Usage and validation](../../docs/project-initialization.md).
 - Shared entrypoint: root `AGENTS.md`; global local preferences can live in `~/.codex/AGENTS.md`. Inspect narrower instructions and override files.
 - Project skills: `.agents/skills/<name>/SKILL.md`; personal skills: `~/.agents/skills/<name>/SKILL.md`. Keep required project skills in the repository snapshot; local home files should not be assumed present in a cloud task.
 - Native long-running mode: current docs show `/goal` in desktop, interactive Codex CLI and IDE extension. For hosted web work, use the supported Work surface with explicit outcome, constraints and review criteria. Verify the actual mode instead of assuming the command works everywhere.

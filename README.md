@@ -2,11 +2,12 @@
 
 Conductor is the canonical shared practice library for the assistant apps you already use. Common workflow, status definitions, reusable skills, techniques, architecture patterns and harness contracts live here. Each real project repository owns its specific plans, ADRs, issues, progress, ownership, checkpoints, code and safe data-output references. Usually one assistant works on a project at a time; parallel work is an explicitly approved exception.
 
-This kit is documentation and templates only. It installs no root/global instructions, native skills, credentials, integrations, schedules or runtime. The former application is retired to Git history. There is no project directory or current-state ledger in this library.
+This kit contains shared practice, templates and an explicitly invoked project-initialization helper. Unpacking it installs no root/global instructions, native skills, credentials, integrations, schedules or runtime. The former application is retired to Git history. There is no project directory or current-state ledger in this library.
 
 ## Start here
 - [Full guide](GUIDE.md), with its generated [editable Word export](docs/shared-github-workflow-coding-analytics.docx)
 - [Common workflow](shared/WORKFLOW.md)
+- [Project initialization skill](shared/skills/conductor-init/SKILL.md) and [setup usage](docs/project-initialization.md)
 - [Read-only bootstrap prompt](shared/prompts/bootstrap.md)
 - [Assistant setup and discovery](assistants/README.md)
 - [Contribution and release process](docs/contributing.md)

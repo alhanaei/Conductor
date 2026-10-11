@@ -5,6 +5,10 @@
 Fill this from observed repository files and current official documentation. Do not invent values. Keep this document short and update when the project actually changes.
 
 - Project / repository / visibility:
+- Lifecycle: Active / Parked / Closed (explicit project decision)
+- Authoritative task/issue records and ownership references:
+- Task progress: Backlog / Ready / In progress / Review / Done (in the linked records)
+- Execution state: Ready / Running / Waiting quota / Blocked / Needs approval / null (separate from progress)
 - Default branch and protected branches:
 - Runtime/tool versions and authoritative version files:
 - Package managers and lockfiles:
@@ -28,3 +32,8 @@ Fill this from observed repository files and current official documentation. Do 
 - Last verified UTC date / evidence commit:
 
 Record this project’s own verified CI and release boundaries. Do not import another project’s deployment rules.
+
+Keep lifecycle separate from task progress and execution state. Closed requires an
+authorized transition before new work; Parked does not resume implicitly. Labels are
+not ownership locks. Done requires verification, review and null execution state.
+Keep the actual ledger at its authoritative task links, not in this blank template.
