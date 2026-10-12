@@ -3,9 +3,10 @@
 [Conductor Init](../shared/skills/conductor-init/SKILL.md) is the portable repository
 source skill. It generates an assistant-specific **conductor-project-init** skill, then
 that skill onboards the named project. The
-[Codex source adapter](../codex/global/skills/conductor-init/SKILL.md) carries the same
-helper, recipe and template for independent distribution. Neither folder implies a
-personal installation.
+[Codex source adapter](../codex/global/skills/conductor-init/SKILL.md) and the
+[Claude Code source adapter](../assistants/claude-code/global/skills/conductor-init/SKILL.md)
+carry the same helper, recipe and template for independent distribution. No folder
+implies a personal installation.
 
 Ask the assistant:
 
@@ -50,8 +51,44 @@ Review, then repeat with `--apply` for authorized setup. Artifact sources add
 the independent distribution. The helper cannot prove an artifact digest's external
 association with its claimed commit.
 
-Invoke `$conductor-project-init` in the target, or explicitly read its SKILL.md while
-fresh native discovery is pending. It gathers evidenced facts JSON, for example:
+## Working Claude Code example
+
+The same helper accepts a verified Claude Code profile. Native paths are documented in
+[skills](https://code.claude.com/docs/en/skills) and
+[memory](https://code.claude.com/docs/en/memory); confirm them for the actual surface
+before setting `verified` true.
+
+```json
+{
+  "assistant": "claude-code",
+  "surface": "desktop",
+  "scope": "project",
+  "execution": "local",
+  "native_skills": ".claude/skills",
+  "native_instructions": "CLAUDE.md",
+  "verified": true,
+  "evidence_ref": "https://code.claude.com/docs/en/skills"
+}
+```
+
+Stage one then creates `.claude/skills/conductor-project-init/` without Codex UI
+metadata, pinned to `assistants/claude-code/SHA256SUMS` instead of `codex/SHA256SUMS`.
+Stage two writes the same `AGENTS.md` and `PROJECT.md` managed sections as Codex, installs
+`.claude/skills/project-verification/`, and adds a managed section to `CLAUDE.md` whose
+first line is `@AGENTS.md`, because a root `CLAUDE.md` stops Claude Code from reading
+`AGENTS.md` on its own. An existing `@AGENTS.md` line outside the section is not
+duplicated. Invoke the generated skill as `/conductor-project-init`.
+
+A project onboarded by Codex can be onboarded by Claude Code afterwards, and vice versa,
+with the same facts: the shared `AGENTS.md` section is left byte-identical, each assistant
+keeps its own native skills, and `.conductor/adoption.json` lists both under `assistants`.
+When both generated initializers exist, pass `--skill-root` to `onboard`.
+
+## Facts and onboarding
+
+Invoke `$conductor-project-init` (Codex) or `/conductor-project-init` (Claude Code) in the
+target, or explicitly read its SKILL.md while fresh native discovery is pending. It
+gathers evidenced facts JSON, for example:
 
 ```json
 {
@@ -80,16 +117,17 @@ reproduction or reconciliation procedures, units and tolerances relevant to thei
 evidence. No software test suite is inferred. Manual procedures can be recorded as
 commands when their reproducible steps are evidenced by the named project document.
 
-From the target project:
+From the target project (use `.claude/skills/...` for the Claude Code copy):
 
 ```sh
 python3 .agents/skills/conductor-project-init/scripts/conductor_init.py onboard --target . --facts /approved/scratch/facts.json
 ```
 
 Review, then repeat with `--apply`. Outputs: managed sections in `AGENTS.md` and
-`PROJECT.md`, `.conductor/adoption.json`, `.conductor/policy/<sha>/`, an absent setup
-checkpoint and an absent/unmodified native verification skill. Existing custom skills,
-Claude files and text outside managed sections remain intact. Bindings are relative,
+`PROJECT.md` (plus `CLAUDE.md` for Claude Code), `.conductor/adoption.json`,
+`.conductor/policy/<sha>/`, an absent setup checkpoint and an absent/unmodified native
+verification skill. Existing custom skills, other assistants' files and text outside
+managed sections remain intact. Bindings are relative,
 with SHA/digests; generator provenance is separate from policy provenance.
 
 Project/global scope and local/cloud execution are independent. `execution: cloud`
@@ -116,9 +154,9 @@ Add `--apply` for authorized rollback. It refuses subsequent edits. Keep exclusi
 access during setup: atomic per-file writes do not make a multi-file crash-atomic
 transaction or acquire a writer lock. Project commands never run during installation.
 Confirm effective precedence and discovery separately in a fresh native session;
-packaging checks do not confirm every assistant or hosted surface. Only the Codex
-mapping has an executable reference here; other native mappings remain drafts until
-verified. Initialization grants no implementation, home/global editing, credential,
+packaging checks do not confirm every assistant or hosted surface. The Codex and Claude
+Code mappings have executable references here; other native mappings remain drafts
+until verified. Initialization grants no implementation, home/global editing, credential,
 schedule, publication, deployment or cloud-configuration authority.
 
 ## Source maintenance and validation
@@ -134,10 +172,13 @@ Run isolated fixtures:
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 ```
 
-Tests archive historical policy commit `9d7743620ee23c6e2219878fea314ea47b1941b1`
+The Codex tests archive historical policy commit `9d7743620ee23c6e2219878fea314ea47b1941b1`
 and use disposable software/analytics projects. They check both stages, preservation,
-repeatability, trust/path boundaries, lifecycle/ownership and rollback. They are not
-installed into generated projects.
+repeatability, trust/path boundaries, lifecycle/ownership and rollback. The Claude Code
+tests build their fixture from this package's own manifest-bound files, so the packaging
+check must be current; they cover the native layout, the `AGENTS.md` import, shared
+records across both assistants and rollback. Tests are not installed into generated
+projects.
 
 See the [validation record](initializer-validation.md) for actual test results and the
 independent forward evaluation's scope and limitations.

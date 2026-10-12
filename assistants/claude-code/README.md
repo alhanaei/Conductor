@@ -18,6 +18,7 @@ and data deliverables. This kit creates no runtime, hook, credential or integrat
 | [project/CLAUDE.md](project/CLAUDE.md) | Thin project adapter → target repository root `CLAUDE.md`; imports the project `AGENTS.md` |
 | [conductor-handoff](global/skills/conductor-handoff/SKILL.md) | General skill → user `~/.claude/skills/conductor-handoff/` |
 | [project-verification](project/skills/project-verification/SKILL.md) | Project skill → repository `.claude/skills/project-verification/` |
+| [conductor-init](global/skills/conductor-init/SKILL.md) | Generate a native project initializer; optional personal installation to `~/.claude/skills/conductor-init/` only within that scope |
 | [LOCAL-SETUP.md](LOCAL-SETUP.md) | Local installation, discovery check and rollback procedure |
 | [CLOUD-SETUP.md](CLOUD-SETUP.md) | Cloud session and Remote Control differences |
 | [MANIFEST.md](MANIFEST.md) | Sources, version, pinning and placeholder contract |
@@ -26,6 +27,12 @@ and data deliverables. This kit creates no runtime, hook, credential or integrat
 These directories are distribution sources. They do not install themselves. A `CLAUDE.md`
 inside a template directory is loaded on demand when Claude Code reads files there, so do
 not launch project work from inside the template folders.
+
+For repeatable project setup, use [conductor-init](global/skills/conductor-init/SKILL.md).
+Its helper, recipe and template are generated copies of the canonical sources under
+`shared/`; the helper accepts a verified Claude Code profile and writes the same
+`AGENTS.md` and `PROJECT.md` record as the Codex copy. See
+[usage and validation](../../docs/project-initialization.md).
 
 ## Unified project record
 

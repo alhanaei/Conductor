@@ -30,6 +30,7 @@ the selected source fixed; avoid symlinks to a moving checkout.
 | Root `shared/WORKFLOW.md` and the files it links | Fixed snapshot, for example `~/.claude/conductor/snapshots/<commit>/shared/`; a snapshot already pinned for another assistant may be reused when its digest matches |
 | `global/CLAUDE.md` | `~/.claude/CLAUDE.md` (append and fill) |
 | `global/skills/conductor-handoff/` | `~/.claude/skills/conductor-handoff/` (whole directory) |
+| `global/skills/conductor-init/` | `~/.claude/skills/conductor-init/` (whole directory, including bundled recipe, helper and template) |
 | `project/CLAUDE.md` | Actual project repository root `CLAUDE.md` (merge and fill) |
 | `project/skills/project-verification/` | Actual project `.claude/skills/project-verification/` (whole directory) |
 

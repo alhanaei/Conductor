@@ -4,7 +4,7 @@
 
 Resolve the named target and authority, assistant surface, scope (project/global), and
 execution location (local/cloud) separately. The reference helper supports project scope
-for Codex; it does not modify saved cloud environments or home instructions. Inspect
+for Codex and Claude Code; it does not modify saved cloud environments or home instructions. Inspect
 existing rules, overrides, native skills, adoption/version records and checkpoints.
 Keep the existing policy pin; any upgrade needs an explicit reviewed migration.
 
@@ -12,17 +12,20 @@ Select a reviewed Conductor source. Accept a clean Git checkout whose HEAD is th
 requested 40-character SHA, verifying packaged bytes against Git blobs, root manifest
 and native checksums. For an artifact, obtain an independent manifest SHA-256 from the
 reviewed distribution; a self-computed digest does not establish identity. If the
-manifest does not bind `codex/SHA256SUMS`, supply its independent SHA-256 too. The
+manifest does not bind the assistant's native checksum file (`codex/SHA256SUMS` or
+`assistants/claude-code/SHA256SUMS`), supply its independent SHA-256 too. The
 artifact's association with the claimed commit must be established outside the helper.
 Never treat a moving branch or dirty source as the requested immutable revision.
 
 Verify native capabilities using primary documentation and, where available, observed
 discovery. Record evidence, assistant, surface, scope, execution location, native skill
 folder and instruction entrypoint. Unsupported or unverified features mean an inactive
-draft. The Codex profile uses `.agents/skills` and root `AGENTS.md`. Respect overrides,
+draft. The Codex profile uses `.agents/skills` and root `AGENTS.md`. The Claude Code
+profile uses `.claude/skills` and a root `CLAUDE.md` that imports `AGENTS.md`, so project
+facts live in `AGENTS.md` and `PROJECT.md` for every assistant. Respect overrides,
 narrower rules and instruction-size limits during the fresh-session check.
 
-From the generic skill folder, preview the Codex reference generator:
+From the generic skill folder, preview the reference generator:
 
 ```sh
 python3 scripts/conductor_init.py generate --target /approved/project --source /reviewed/Conductor --source-sha <full-sha> --capabilities /approved/scratch/capabilities.json
@@ -30,12 +33,13 @@ python3 scripts/conductor_init.py generate --target /approved/project --source /
 
 For an independently identified artifact, add `--manifest-sha <external-sha256>`.
 After reviewing the changes, add `--apply` if setup is authorized. Stage one creates
-`.agents/skills/conductor-project-init/` containing native instructions, helper, pinned
-source snapshot and metadata. No effective project `AGENTS.md` is created yet.
+`conductor-project-init/` under the assistant's native skills folder (`.agents/skills/`
+or `.claude/skills/`) containing native instructions, helper, pinned source snapshot and
+metadata. No effective project `AGENTS.md` is created yet.
 Generator/helper/template identities are separate from the policy source commit.
 An older compatible policy can be pinned by a newer reviewed generator.
 
-To update an unmodified generated Codex skill after reviewing a newer generator,
+To update an unmodified generated skill after reviewing a newer generator,
 preview the same command with `--update`, then add `--apply` within setup authority.
 This retains the same policy and capability pin; custom edits or a different pin remain
 blocked for reconciliation. Updating the skill does not silently rewrite project adoption.
@@ -45,7 +49,7 @@ this shared procedure and that assistant's verified native mapping. Keep shared 
 canonical; translate entrypoints and discovery, not policy. Package the recipe and
 pinned policy references needed for the generated skill to work independently. If no
 native loader exists, supply an explicitly read draft and describe manual invocation.
-The Codex helper rejects unknown mappings; it does not claim a universal adapter.
+The helper rejects unknown mappings; it does not claim a universal adapter.
 
 ## Stage two: onboard the actual project
 
@@ -67,7 +71,10 @@ over. Closed needs an explicitly authorized transition; Parked adoption starts n
 Preview `onboard` with the generated helper and evidenced facts JSON. Apply within the
 authorized target. Generate a thin root adapter, managed project facts, project-owned
 adoption record, relative pinned snapshot and an absent setup checkpoint. Never put
-project state in Conductor. Preserve user text outside owned markers, existing
+project state in Conductor. The adoption record is shared: a second assistant onboarding
+the same project reuses the recorded facts and pin, adds only its native skill and
+instruction file, and leaves the first assistant's entries intact. When more than one
+generated initializer exists, name the one to use with `--skill-root`. Preserve user text outside owned markers, existing
 checkpoint content and custom native skills as complete directories. An effective
 override, unowned markers, changed generated content, owner/fact conflicts or changed
 pin blocks automatic replacement. Migration and reconciliation stay explicit.

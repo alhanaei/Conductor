@@ -19,7 +19,48 @@ class InitError(Exception):
 
 BEGIN = "<!-- conductor:init:begin -->"
 END = "<!-- conductor:init:end -->"
-NATIVE = ".agents/skills/conductor-project-init"
+SKILL_NAME = "conductor-project-init"
+# Verified native mappings. Policy stays canonical; only entrypoints and discovery differ.
+PROFILES = {
+    "codex": {
+        "label": "Codex", "native_skills": ".agents/skills", "native_instructions": "AGENTS.md",
+        "kit": "codex", "checksums": "codex/SHA256SUMS",
+        "verification_skill": "codex/project/skills/project-verification",
+        "verification_assets": ("SKILL.md", "agents/openai.yaml"),
+        "ui_metadata": True, "invocation": "$conductor-project-init",
+    },
+    "claude-code": {
+        "label": "Claude Code", "native_skills": ".claude/skills", "native_instructions": "CLAUDE.md",
+        "kit": "assistants/claude-code", "checksums": "assistants/claude-code/SHA256SUMS",
+        "verification_skill": "assistants/claude-code/project/skills/project-verification",
+        "verification_assets": ("SKILL.md",),
+        "ui_metadata": False, "invocation": "/conductor-project-init",
+    },
+}
+
+
+def profile_for(capabilities):
+    """Return the verified native profile for a capability record, or None."""
+    name = capabilities.get("assistant")
+    spec = PROFILES.get(name)
+    if not spec:
+        return None
+    verified = (capabilities.get("verified") is True
+                and capabilities.get("native_skills") == spec["native_skills"]
+                and capabilities.get("native_instructions") == spec["native_instructions"]
+                and capabilities.get("scope", "project") == "project"
+                and capabilities.get("execution") in ("local", "cloud")
+                and bool(capabilities.get("surface")) and bool(capabilities.get("evidence_ref")))
+    return dict(spec, name=name) if verified else None
+
+
+def native_root(spec):
+    return spec["native_skills"] + "/" + SKILL_NAME
+
+
+def native_checksums(metadata):
+    """Earlier Codex-only generators recorded the checksum identity under a Codex key."""
+    return metadata.get("native_checksums_sha256", metadata.get("source_codex_checksums_sha256"))
 
 
 def digest(data):
@@ -75,7 +116,8 @@ def git(source, *args):
     return result.stdout
 
 
-def verified_source(source, sha, capabilities, manifest_sha=None):
+def verified_source(source, sha, capabilities, manifest_sha=None, spec=None):
+    spec = spec or dict(PROFILES["codex"], name="codex")
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise InitError("Source revision must be an immutable full commit SHA")
     manifest_data = read(source, "MANIFEST.json")
@@ -84,17 +126,19 @@ def verified_source(source, sha, capabilities, manifest_sha=None):
     manifest = load(source, "MANIFEST.json")
     files = dict(manifest["files"])
     files["MANIFEST.json"] = digest(manifest_data)
-    checks = read(source, "codex/SHA256SUMS")
+    checks = read(source, spec["checksums"])
     if not checks:
-        raise InitError("Source has no native Codex checksums")
+        raise InitError(f"Source has no native {spec['label']} checksums")
     # A reviewed artifact needs independent identities, not a digest it reports itself.
     if manifest_sha is not None:
         if digest(manifest_data) != manifest_sha:
             raise InitError("Artifact manifest identity mismatch")
-        bound = files.get("codex/SHA256SUMS")
-        expected = bound or capabilities.get("source_codex_checksums_sha256")
+        bound = files.get(spec["checksums"])
+        expected = bound or capabilities.get("source_native_checksums_sha256")
+        if not expected and spec["name"] == "codex":
+            expected = capabilities.get("source_codex_checksums_sha256")
         if not expected or digest(checks) != expected:
-            raise InitError("Independent Codex checksum identity required or mismatched")
+            raise InitError(f"Independent {spec['label']} checksum identity required or mismatched")
     else:
         if git(source, "rev-parse", "HEAD").decode().strip() != sha:
             raise InitError("Git source HEAD does not match the requested pin")
@@ -127,21 +171,20 @@ def verified_source(source, sha, capabilities, manifest_sha=None):
                 raise InitError(f"Working source differs from pinned Git blob: {key}")
             if bool(safe(source, key).stat().st_mode & 0o111) != (mode == b"100755"):
                 raise InitError(f"Working source mode differs from its pin: {key}")
-    files["codex/SHA256SUMS"] = digest(checks)
+    files[spec["checksums"]] = digest(checks)
     for line in checks.decode().splitlines():
         if not line.strip():
             continue
         match = re.fullmatch(r"([0-9a-f]{64})\s+\*?(.+)", line)
         if not match:
-            raise InitError("Invalid Codex checksum entry")
-        key = "codex/" + match[2]
+            raise InitError(f"Invalid {spec['label']} checksum entry")
+        key = spec["kit"] + "/" + match[2]
         if key in files and files[key] != match[1]:
             raise InitError(f"Conflicting source digests: {key}")
         files[key] = match[1]
     required = ["shared/WORKFLOW.md", "shared/templates/HANDOFF.md",
-                "shared/harness/run-contract.schema.json",
-                "codex/project/skills/project-verification/SKILL.md",
-                "codex/project/skills/project-verification/agents/openai.yaml"]
+                "shared/harness/run-contract.schema.json"]
+    required.extend(spec["verification_skill"] + "/" + asset for asset in spec["verification_assets"])
     if any(key not in files for key in required):
         raise InitError("Manifest does not cover required policy and native assets")
     contents = {}
@@ -233,14 +276,17 @@ def owned_outputs(target, outputs, old_hashes):
 
 def check_generated(root, metadata):
     sha = metadata["policy_commit"]
+    spec = profile_for(metadata["capabilities"])
     if (not re.fullmatch(r"[0-9a-f]{40}", sha) or metadata.get("scope") != "project"
-            or metadata.get("version") != 1 or not codex_profile(metadata["capabilities"])):
+            or metadata.get("version") != 1 or not spec):
         raise InitError("Invalid generated skill binding or capability profile")
     source_files = verified_source(root / "assets/source", sha, {
-        "source_codex_checksums_sha256": metadata["source_codex_checksums_sha256"]
-    }, metadata["policy_manifest_sha256"])
+        "source_native_checksums_sha256": native_checksums(metadata)
+    }, metadata["policy_manifest_sha256"], spec)
     expected = {"assets/source/" + key for key in source_files}
-    expected.update(("SKILL.md", "scripts/conductor_init.py", "agents/openai.yaml"))
+    expected.update(("SKILL.md", "scripts/conductor_init.py"))
+    if spec["ui_metadata"]:
+        expected.add("agents/openai.yaml")
     if set(metadata["files"]) != expected:
         raise InitError("Generated asset coverage differs from its pinned source")
     for relative, expected in metadata["files"].items():
@@ -251,56 +297,74 @@ def check_generated(root, metadata):
     if (f"`{sha}`".encode() not in skill
             or digest(read(root, "scripts/conductor_init.py")) != metadata["generator_sha256"]):
         raise InitError("Generated skill pin or generator identity differs from metadata")
-    return source_files
+    return source_files, spec
 
 
-def codex_profile(profile):
-    return (profile.get("assistant") == "codex" and profile.get("verified") is True
-            and profile.get("native_skills") == ".agents/skills"
-            and profile.get("native_instructions") == "AGENTS.md"
-            and profile.get("scope", "project") == "project"
-            and profile.get("execution") in ("local", "cloud")
-            and bool(profile.get("surface")) and bool(profile.get("evidence_ref")))
+def locate_generated(target, skill_root=None):
+    """Find the generated skill: explicit root, the running helper's own skill, or the only one present."""
+    if skill_root:
+        return Path(skill_root)
+    own = Path(__file__).absolute().parent.parent
+    if (own / "generation.json").is_file():
+        return own
+    found = [safe(target, native_root(spec)) for spec in PROFILES.values()
+             if read(target, native_root(spec) + "/generation.json")]
+    if len(found) != 1:
+        raise InitError(f"Specify the generated skill root; found {len(found)} generated initializers")
+    return found[0]
 
 
 def generate(target, source, source_sha, capabilities, apply=False, manifest_sha=None, update=False):
     target, source = Path(target), Path(source)
     profile = capabilities
-    if not codex_profile(profile):
-        return result("draft", blockers=["Verify a native capability mapping; this helper supports project-scoped Codex only"])
-    safe(target, NATIVE)
-    source_files = verified_source(source, source_sha, profile, manifest_sha)
+    spec = profile_for(profile)
+    if not spec:
+        supported = " or ".join(item["label"] for item in PROFILES.values())
+        return result("draft", blockers=[f"Verify a native capability mapping; this helper supports project-scoped {supported} only"])
+    native = native_root(spec)
+    safe(target, native)
+    source_files = verified_source(source, source_sha, profile, manifest_sha, spec)
     package = Path(__file__).absolute().parent.parent
     outputs = {"assets/source/" + key: value for key, value in source_files.items()}
     outputs["scripts/conductor_init.py"] = Path(__file__).read_bytes()
     template = read(package, "assets/project-skill.md")
     if template is None:
         raise InitError("Generic generator template missing; invoke stage one from the source skill")
-    outputs["SKILL.md"] = template.replace(b"@SOURCE_SHA@", source_sha.encode())
-    outputs["agents/openai.yaml"] = (
-        'interface:\n  display_name: "Conductor Project Init"\n'
-        '  short_description: "Onboard a project to pinned Conductor policy"\n'
-        '  default_prompt: "Use $conductor-project-init to onboard this project."\n').encode()
-    metadata = {"version": 1, "scope": "project", "policy_commit": source_sha,
+    skill = template
+    for placeholder, value in (("@SOURCE_SHA@", source_sha), ("@ASSISTANT@", spec["label"]),
+                               ("@NATIVE_SKILLS@", spec["native_skills"]), ("@INVOCATION@", spec["invocation"])):
+        skill = skill.replace(placeholder.encode(), value.encode())
+    outputs["SKILL.md"] = skill
+    if spec["ui_metadata"]:
+        outputs["agents/openai.yaml"] = (
+            'interface:\n  display_name: "Conductor Project Init"\n'
+            '  short_description: "Onboard a project to pinned Conductor policy"\n'
+            '  default_prompt: "Use $conductor-project-init to onboard this project."\n').encode()
+    metadata = {"version": 1, "scope": "project", "assistant": spec["name"], "policy_commit": source_sha,
                 "policy_manifest_sha256": digest(source_files["MANIFEST.json"]),
-                "source_codex_checksums_sha256": digest(source_files["codex/SHA256SUMS"]),
+                "native_checksums_sha256": digest(source_files[spec["checksums"]]),
                 "capabilities": profile, "generator_sha256": digest(outputs["scripts/conductor_init.py"]),
                 "template_sha256": digest(template),
                 "files": {key: digest(value) for key, value in outputs.items()}}
+    if spec["name"] == "codex":
+        # Earlier Codex-only generators recorded this key; keep it so their pins stay recognizable.
+        metadata["source_codex_checksums_sha256"] = metadata["native_checksums_sha256"]
     outputs["generation.json"] = encoded(metadata)
-    root = safe(target, NATIVE)
+    root = safe(target, native)
     old = load(root, "generation.json") if read(root, "generation.json") else None
     if old:
         check_generated(root, old)
         if old != metadata:
-            if (not update or any(old[key] != metadata[key] for key in (
-                    "policy_commit", "policy_manifest_sha256", "source_codex_checksums_sha256", "capabilities"))):
+            same_pin = (all(old.get(key) == metadata.get(key) for key in (
+                "policy_commit", "policy_manifest_sha256", "capabilities"))
+                and native_checksums(old) == native_checksums(metadata))
+            if not update or not same_pin:
                 return result("blocked", blockers=["Existing generation differs; use a reviewed --update for generator changes at the same policy/capability pin, or reconcile a policy migration explicitly"])
     hashes = dict(old["files"]) if old else {}
     if old:
         hashes["generation.json"] = digest(read(root, "generation.json"))
     owned_outputs(root, outputs, hashes)
-    return apply_plan(target, {NATIVE + "/" + key: value for key, value in outputs.items()}, apply)
+    return apply_plan(target, {native + "/" + key: value for key, value in outputs.items()}, apply)
 
 
 def block(data):
@@ -392,13 +456,25 @@ def project_record(facts):
     return "\n".join(lines)
 
 
+def native_adapter(spec, previous):
+    """Thin native instruction section; project facts stay in the shared AGENTS.md."""
+    text = (previous or b"").decode()
+    current = block(previous)
+    outside = text.replace(current.decode(), "") if current else text
+    imports = "" if re.search(r"^@AGENTS\.md\s*$", outside, re.M) else "@AGENTS.md\n\n"
+    return (f"# Conductor {spec['label']} adapter\n\n" + imports +
+            "Project facts, policy binding and verification contract are in the imported `AGENTS.md` and in `PROJECT.md`; nothing is restated here.\n"
+            f"Native skills: `{native_root(spec)}` for setup and `{spec['native_skills']}/project-verification` for recorded checks.\n"
+            "Explicit task limits in `AGENTS.md` or the checkpoint take precedence over inherited commit, push, worktree or delegation defaults.")
+
+
 def onboard(target, facts, skill_root=None, apply=False):
     target = Path(target)
-    root = Path(skill_root) if skill_root else safe(target, NATIVE)
-    if root.resolve() != safe(target, NATIVE).resolve():
-        raise InitError("Generated skill must be inside this project at its recorded native path")
+    root = locate_generated(target, skill_root)
     metadata = load(root, "generation.json")
-    source_files = check_generated(root, metadata)
+    source_files, spec = check_generated(root, metadata)
+    if root.resolve() != safe(target, native_root(spec)).resolve():
+        raise InitError("Generated skill must be inside this project at its recorded native path")
     for name in ("AGENTS.override.md",):
         if read(target, name):
             return result("blocked", blockers=["Active native instruction override requires explicit reconciliation: " + name])
@@ -431,7 +507,7 @@ def onboard(target, facts, skill_root=None, apply=False):
             if current is None or digest(current) != expected:
                 raise InitError(f"Managed content changed: {key}")
     else:
-        for key in ("AGENTS.md", "PROJECT.md"):
+        for key in ("AGENTS.md", "PROJECT.md", spec["native_instructions"]):
             if block(read(target, key)) is not None:
                 raise InitError("Unowned Conductor managed section requires reconciliation")
         if existing_declarations(project_old, "(?:Owner|Assigned to)"):
@@ -449,16 +525,20 @@ def onboard(target, facts, skill_root=None, apply=False):
             "Verify recorded checks before reporting task completion; never infer an unrecorded command.\n"
             "This adapter grants no deployment, credential, cloud, scheduling, or publication authority.")
     project = project_record(facts)
+    adapters = [("AGENTS.md", body), ("PROJECT.md", project)]
+    if spec["native_instructions"] != "AGENTS.md":
+        adapters.append((spec["native_instructions"],
+                         native_adapter(spec, read(target, spec["native_instructions"]))))
     outputs = {}
     managed = {}
-    for key, text in (("AGENTS.md", body), ("PROJECT.md", project)):
+    for key, text in adapters:
         outputs[key], section = append_block(read(target, key), text)
         managed[key] = digest(section)
     for key, data in source_files.items():
         outputs[pin + "/" + key] = data
-    verification_root = ".agents/skills/project-verification"
-    native_assets = {key: source_files["codex/project/skills/project-verification/" + key]
-                     for key in ("SKILL.md", "agents/openai.yaml")}
+    verification_root = spec["native_skills"] + "/project-verification"
+    native_assets = {key: source_files[spec["verification_skill"] + "/" + key]
+                     for key in spec["verification_assets"]}
     native_path = safe(target, verification_root)
     # Preserve an existing custom/incomplete skill as a whole, without mixing assets.
     native_compatible = not native_path.exists() or (
@@ -482,17 +562,31 @@ def onboard(target, facts, skill_root=None, apply=False):
     elif old and checkpoint in old.get("files", {}):
         # Checkpoints are live project state; subsequent work can legitimately edit them.
         pass
-    hashes = old.get("files", {}) if old else {}
+    hashes = dict(old.get("files", {})) if old else {}
     # Managed sections permit arbitrary custom text outside their owned markers.
     owned_outputs(target, {key: value for key, value in outputs.items()
                            if key not in managed}, hashes)
-    adoption = {"version": 1, "scope": "project", "policy_commit": sha,
+    # One project record serves every assistant: merge this assistant's entries into it.
+    assistants = sorted(set(old.get("assistants", ["codex"])) | {spec["name"]}) if old else [spec["name"]]
+    managed_blocks = dict(old.get("managed_blocks", {})) if old else {}
+    managed_blocks.update(managed)
+    files = dict(hashes)
+    files.update({key: digest(value) for key, value in outputs.items()
+                  if key not in managed and key != checkpoint})
+    generators = old.get("generator_sha256", {}) if old else {}
+    discovery = old.get("native_discovery", {}) if old else {}
+    if isinstance(generators, str):  # record written by the Codex-only generator
+        generators = {"codex": generators}
+    if isinstance(discovery, str):
+        discovery = {"codex": discovery}
+    generators = dict(generators, **{spec["name"]: metadata["generator_sha256"]})
+    discovery = dict(discovery)
+    discovery.setdefault(spec["name"], "unverified; check in a fresh native session")
+    adoption = {"version": 1, "scope": "project", "assistants": assistants, "policy_commit": sha,
                 "policy_manifest_sha256": metadata["policy_manifest_sha256"],
-                "generator_sha256": metadata["generator_sha256"], "facts": facts,
-                "managed_blocks": managed,
-                "files": {key: digest(value) for key, value in outputs.items()
-                          if key not in managed and key != checkpoint},
-                "native_discovery": "unverified; check in a fresh native session"}
+                "generator_sha256": generators, "facts": facts,
+                "managed_blocks": managed_blocks, "files": files,
+                "native_discovery": discovery}
     outputs[".conductor/adoption.json"] = encoded(adoption)
     response = apply_plan(target, outputs, apply)
     if not native_compatible:
@@ -549,6 +643,7 @@ def main():
     first.add_argument("--update", action="store_true", help="Reviewed generator update retaining the existing policy and capability pin")
     second = sub.add_parser("onboard")
     second.add_argument("--facts", type=Path, required=True)
+    second.add_argument("--skill-root", type=Path, help="Generated skill folder when more than one assistant has generated one")
     third = sub.add_parser("rollback")
     third.add_argument("--transaction", type=Path, required=True)
     for command in (first, second, third):
@@ -560,7 +655,7 @@ def main():
             response = generate(args.target, args.source, args.source_sha,
                                 json.loads(args.capabilities.read_text()), args.apply, args.manifest_sha, args.update)
         elif args.operation == "onboard":
-            response = onboard(args.target, json.loads(args.facts.read_text()), apply=args.apply)
+            response = onboard(args.target, json.loads(args.facts.read_text()), args.skill_root, apply=args.apply)
         else:
             response = rollback(args.target, args.transaction, args.apply)
     except (InitError, OSError, ValueError, KeyError, TypeError) as exc:

@@ -16,8 +16,10 @@ instruction entrypoints and precedence from current primary docs or observed dis
 never assume another assistant implements Codex features.
 
 The [standard-library helper](scripts/conductor_init.py) implements project-scoped
-Codex generation and onboarding. Its [output template](assets/project-skill.md) is the
-working native example. Other assistants use the same procedure to generate a thin
+Codex and Claude Code generation and onboarding. Its [output template](assets/project-skill.md)
+is the working native example for both. Every assistant onboards into the same
+vendor-neutral `AGENTS.md` and `PROJECT.md` record; Claude Code adds a thin `CLAUDE.md`
+that imports `AGENTS.md`. Other assistants use the same procedure to generate a thin
 native initializer after verifying their mapping. Unsupported capabilities produce a
 reviewable inactive draft. File copying does not prove native discovery.
 

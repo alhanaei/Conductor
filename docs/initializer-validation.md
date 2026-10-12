@@ -1,4 +1,40 @@
-# Initializer validation — 11 October 2026
+# Initializer validation
+
+## 12 October 2026 — Claude Code mapping added
+
+Validated the helper after adding the Claude Code native profile, on disposable projects
+using Python 3.12.7. No real project, personal instructions, credentials, cloud
+environment or deployment was modified by these tests.
+
+Evaluated helper SHA-256:
+`85f55cac3f77aea10946dae576a1ce2f80a62890e6a1a531aadfd16bc4423a13`.
+
+```sh
+python3 tests/package_conductor_init.py
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
+git diff --check
+```
+
+**57 tests passed**: the 47 Codex tests unchanged, plus 10 Claude Code tests in
+`tests/test_conductor_init_claude.py`. The Claude Code tests build their fixture from the
+package's own manifest-bound working-tree files, so they also prove the packaging check is
+current. They cover: the generated `.claude/skills/conductor-project-init/` layout without
+Codex UI metadata and pinned to `assistants/claude-code/SHA256SUMS`; onboarding that writes
+the shared `AGENTS.md` and `PROJECT.md` sections, installs `.claude/skills/project-verification/`
+and adds a `CLAUDE.md` section beginning with `@AGENTS.md`; an existing `@AGENTS.md` line
+not duplicated and existing rules preserved; exact-byte repeat no-ops; mismatched or
+unverified mappings rejected without writes; Codex then Claude Code onboarding the same
+project with one byte-identical `AGENTS.md` section, both native skills, both assistants in
+`.conductor/adoption.json`, and both reruns unchanged; a second assistant blocked from
+changing shared facts; automatic location of a single generated skill and refusal when two
+exist; rollback restoring an original `CLAUDE.md`; and generated-skill portability.
+
+Packaging checks passed: 80 root digests, 16 Codex digests, 12 Claude Code digests, equality
+of canonical and distributed helper/template/recipe for both kits, frontmatter, template
+placeholders, resource links and absence of author paths. Native fresh-session discovery
+for the generated Claude Code skill was not observed in this run.
+
+## 11 October 2026 — Codex reference
 
 Validated the two-stage source generator and the Codex native example on disposable
 projects using Python 3.14.6. No real project, personal instructions, credentials, cloud
