@@ -1,0 +1,13 @@
+# Checkpoint and quota handoff workflow
+
+Maintain an up-to-date HANDOFF.md for nontrivial work. Checkpoint at coherent milestones, before expensive/long steps and before ending a session. Do not wait until the last available message or token.
+
+When usage/context/time is nearly exhausted or a platform becomes unavailable:
+1. Stop expanding scope. Preserve current files without reverting unrelated work. Record the exact base/head and dirty/untracked state.
+2. Update the task contract, verification ledger and handoff with complete/remaining work, next executable step, assumptions, blockers and approvals. Note whether quota was observed or only suspected.
+3. Preserve artifacts in an authorized durable location. A local commit can preserve a logical checkpoint when allowed, but it is not remotely backed up. Push or publish only when explicitly authorized; otherwise provide a retrievable patch/export and explain the local-only state.
+4. Record active job IDs and terminal state. Do not launch replacement jobs until the successor checks whether originals are still running; avoid duplicated charges and writes. Do not stop shared/production services merely to clean up.
+5. Tell the user exactly where work can resume and what action or approval is needed. Do not buy credits, switch to billable APIs, create accounts, borrow credentials or bypass limits.
+6. The successor reads the canonical contract and handoff, verifies actual state, confirms it owns the task, runs a targeted check and resumes from evidence. It does not restart the entire project or blindly trust the previous summary.
+
+Use the product's genuine goal/background/cloud mode only after verifying its availability and persistence. Long-running instructions do not create a scheduler or make a local session run after its machine sleeps. If no supported background mode exists, use bounded milestones and explicit resumable handoffs.

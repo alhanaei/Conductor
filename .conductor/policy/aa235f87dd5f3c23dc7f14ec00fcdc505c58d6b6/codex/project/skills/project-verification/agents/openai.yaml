@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Verification"
+  short_description: "Verify project changes with local evidence"
+  default_prompt: "Use $project-verification to verify this project change."

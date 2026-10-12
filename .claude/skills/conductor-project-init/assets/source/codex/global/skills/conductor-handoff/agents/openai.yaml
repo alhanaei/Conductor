@@ -1,0 +1,4 @@
+interface:
+  display_name: "Conductor Handoff"
+  short_description: "Prepare a project-local evidence handoff"
+  default_prompt: "Use $conductor-handoff to prepare a project-local checkpoint."

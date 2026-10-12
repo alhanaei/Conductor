@@ -1,0 +1,425 @@
+{
+  "files": {
+    ".claude/skills/conductor-project-init/SKILL.md": {
+      "after": "b9a5632ee3ba579c547a3ba7874b010011aae87bf231748f4afc462be5ce6096",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/GUIDE.md": {
+      "after": "efb964fb589e2fb670f030ac48ca0eb46f058747bf82fb0a20a410b1cc930458",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/MANIFEST.json": {
+      "after": "a02438c6d6992cb20d87598a806d9f1eeb3ed8c00b322eb0f7d0a9b02846bf5e",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/README.md": {
+      "after": "8dd12aba21504a8f86aa69a5924130edb0bb6e4d950b733bc147b7d73ef9e7cc",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/README.md": {
+      "after": "ca10546f66e540d9e687a028731ae2e17699ea327658ec7a841bc875cc21487b",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/chatgpt/README.md": {
+      "after": "7ba3ba1c254fb8137da9c643a689168671e02f0caf75bd198d3e518a2b597ea8",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/CLOUD-SETUP.md": {
+      "after": "6d5710bd6083f545025adc1383ae79448531bbe75be9b292624b10495519b9b0",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/LOCAL-SETUP.md": {
+      "after": "ef77c6b1cd1af776ca74e2e6a83241b27168c05516a4ca92ed3935daf8957f2b",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/MANIFEST.md": {
+      "after": "f6350d40351b626ef3cc221af5a725252e4ccd9f09c28ea1e8ddd04fd4ff5f14",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/README.md": {
+      "after": "61a94729d301021ff351c1b92a565ca8683a44c8630bcc9feec8153c410fb329",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/SHA256SUMS": {
+      "after": "7a38fa8baf7b3f3e52cec9f07f74c14004610d0c54168e08fe8c41598e17d8a7",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/global/CLAUDE.md": {
+      "after": "011115c4d3a754e9d2829fdaba0d7393d9b00d9df39e4d948f8e0520524d18b3",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/global/skills/conductor-handoff/SKILL.md": {
+      "after": "c76368ef05b3d3d6376c893472a5b6322f92e292ff3c723bd2577b7b75704fac",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/global/skills/conductor-init/SKILL.md": {
+      "after": "176b6178ea988464b8cb760469a10b1fa5e7dad876ac79350b3c43bf69d13195",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/global/skills/conductor-init/assets/project-skill.md": {
+      "after": "a1477db8e5fbf5d5da23bdad3ffb3388c6868dbd41d255c867c6549ed5f3e2d8",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/global/skills/conductor-init/references/project-init.md": {
+      "after": "155083a747caa7db1a1a22db3ab0557b5e118177968beb59b54bcab5fd184151",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/global/skills/conductor-init/scripts/conductor_init.py": {
+      "after": "85f55cac3f77aea10946dae576a1ce2f80a62890e6a1a531aadfd16bc4423a13",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/project/CLAUDE.md": {
+      "after": "a3a71103b92e9608582e16663b360c80f1c17023b0d5ad4c6db8ff1b6badaef1",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/project/skills/project-verification/SKILL.md": {
+      "after": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/codex/README.md": {
+      "after": "1b3df676bd6ca509e9b91092e998d3145ebc2751623b05a77b5a4ac3fb3d579a",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/copilot/README.md": {
+      "after": "0b81caa48856c437d8190ebc6edd769964e3e49efe6f633c15d5775be711ca70",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/google/README.md": {
+      "after": "9565fcbb01210215376ad1d44eda613f35fd04c8a1bbe5be618d746eaf562b58",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/grok-build/README.md": {
+      "after": "708a1e1813605c71f4a1029a391970cb9935e85b2b55bb07f9f94d719222ae04",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/kilo-code/README.md": {
+      "after": "261fb8eea0088e6532bd080792f41b4ac0750df3b2209552588097fad73b93e6",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/CLOUD-SETUP.md": {
+      "after": "0a4a7cf65344f668eb23e4d82260990cb6962f66bc4415975b46da06ea454a05",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/LOCAL-SETUP.md": {
+      "after": "8a439e488f264452f3dbc55660828678af2a44329bb87fab5df7d0823fd86a46",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/MANIFEST.md": {
+      "after": "3ad65f5d17487df275f56661e0405e989801765b1c708529e0b0cf010c84da0d",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/README.md": {
+      "after": "c680591b2bd38d303842be71b87c1c745d1f62abdcbc7292f14682db05d78a40",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/SHA256SUMS": {
+      "after": "ba7accb03c01bc9ca5c2fd19d13661ae0018c739c423ed0d248015dd3c85e3d9",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/global/AGENTS.md": {
+      "after": "7911417c42d72d7b41b3b4912e5b070e8283d49de8d3e1527456afbad2f93892",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/global/skills/conductor-handoff/SKILL.md": {
+      "after": "c76368ef05b3d3d6376c893472a5b6322f92e292ff3c723bd2577b7b75704fac",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/global/skills/conductor-handoff/agents/openai.yaml": {
+      "after": "b9fce49a76ba610b8e92b7aa080719a008f20c82706b60696abf1edc41d325ed",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/global/skills/conductor-init/SKILL.md": {
+      "after": "2926dbf78a9e5b05e9ee93011bf1358718b465a805016a5868123102a9d37a53",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/global/skills/conductor-init/agents/openai.yaml": {
+      "after": "731d4ff8af35bb61fac97f91ff914bb8119dde8f62a2f310b6010742a4326504",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/global/skills/conductor-init/assets/project-skill.md": {
+      "after": "a1477db8e5fbf5d5da23bdad3ffb3388c6868dbd41d255c867c6549ed5f3e2d8",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/global/skills/conductor-init/references/project-init.md": {
+      "after": "155083a747caa7db1a1a22db3ab0557b5e118177968beb59b54bcab5fd184151",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/global/skills/conductor-init/scripts/conductor_init.py": {
+      "after": "85f55cac3f77aea10946dae576a1ce2f80a62890e6a1a531aadfd16bc4423a13",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/project/AGENTS.md": {
+      "after": "8bba859260f88edba5a31cdad9a77e624e9b0e1b5bba36984e40d5ea3a84ad13",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/project/skills/project-verification/SKILL.md": {
+      "after": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/project/skills/project-verification/agents/openai.yaml": {
+      "after": "5237c6b47a74aa1ff645419315a9bdde914154d23d9568fbc85aadf2450852c2",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/shared/PRACTICE.md": {
+      "after": "982631f01b6ec08ca071d1ed91578979dd32b235e9c894ce6baac01c1b4b73eb",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/docs/RELEASE.md": {
+      "after": "3b6f7af62845b8e1ff569bfcee264eda248a642d279c69439bb19af72c212b51",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/docs/contributing.md": {
+      "after": "2d7b1f4ba1cbb514f056d4665b2901a9776e138c44588e2aed4de645b10fef81",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/docs/initializer-validation.md": {
+      "after": "ad6b6c288f023d549ee78766cbb7316d729d02bb651bae9ccf973baf111ef728",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/docs/project-initialization.md": {
+      "after": "21da7faac87b64130993e5f1afd006db2792c1c695234ca730e15bcc4b23d0c1",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/docs/shared-github-workflow-coding-analytics.docx": {
+      "after": "cd326b1b43f2fc9e6f939fb428f2fc46f21c06d6e9a47335e8fe91861df5b8fe",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/WORKFLOW.md": {
+      "after": "0a8dc78dbaaa801e6f93fcffe02dbd2e46231dddaaa7fac7c69bf259fe4ee04a",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/harness/README.md": {
+      "after": "923b6f435b82086e1790ff4e2ed7bf2cb85b91209edd7487d35f60b54711c30b",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/harness/examples/analytics-review-checkpoint.json": {
+      "after": "1d3f3d1c06950aa26666a4f59ff373be6431ac5e08b6f683c6d1ac47b3c19c18",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/harness/examples/coding-quota-checkpoint.json": {
+      "after": "0f9b335d0a78105272d8d0f4989da667512d3945f8fdec4be8021408fae29e8d",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/harness/run-contract.schema.json": {
+      "after": "5f10e5f282c54d08a2bb36e81ebd3a0ab3db633df11bdc57d52ef9278927d3b9",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/patterns/architecture-patterns.md": {
+      "after": "6f1ea1090c10ea7478c0961c15f3cadd3de07ab770c54c06ae07cfbf39bf87fe",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/prompts/bootstrap.md": {
+      "after": "7e38e9cd5fc88352ec73cb32516e1cec3ec6a02514cac3bddd1fe9f488dc7a5b",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/prompts/coordination.md": {
+      "after": "8a356e8bb28333825ed93c35bb951f611d7cc4912d61a190a05dbcc5bec584cb",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/prompts/resume.md": {
+      "after": "e160b71e40a97ac640bbd875c01e87a42aac611bf27ab3a185b148941b9e3998",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/prompts/reviewer.md": {
+      "after": "1cc192203cb27607bb04b158571bcd97178c852c8fa2ec5294f0de4e22b32d07",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/prompts/worker.md": {
+      "after": "537e42077094be6a1c3a90998d6bc7061ccfa36388502333dfb6eb8414d1cc9e",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/skills/analytics-task/SKILL.md": {
+      "after": "d71269b57af76c5385cff322f2bb49fe962cfbaa9fd271f7fee4da07d5afd813",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/skills/checkpoint-handoff/SKILL.md": {
+      "after": "f3e5929f0bec8e5cb5ffb79ab85e92c981d966ff3e8757c7f3b5f9897d90053f",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/skills/coding-task/SKILL.md": {
+      "after": "60e363e503012e01432d0b977ed87d90daecabc3d99248570aa1d62e98631a48",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/skills/conductor-init/SKILL.md": {
+      "after": "c24c12c69122509aab555e210b48d646ef3b02998d45d2750d5dec7c4771079e",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/skills/conductor-init/assets/project-skill.md": {
+      "after": "a1477db8e5fbf5d5da23bdad3ffb3388c6868dbd41d255c867c6549ed5f3e2d8",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/skills/conductor-init/references/project-init.md": {
+      "after": "155083a747caa7db1a1a22db3ab0557b5e118177968beb59b54bcab5fd184151",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/skills/conductor-init/scripts/conductor_init.py": {
+      "after": "85f55cac3f77aea10946dae576a1ce2f80a62890e6a1a531aadfd16bc4423a13",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/skills/independent-review/SKILL.md": {
+      "after": "b2f9c6916e1b736b3b96bea75606d15c4d6dc488921499387f10cfb7f46d7cd8",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/techniques/verification.md": {
+      "after": "bf671e9d3dc2a7d9ec613785a7eb1f5d69df32ed412a6199fbd35af7490bdc12",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/templates/ADAPTER-MANIFEST.example.json": {
+      "after": "804c199eadf7298a736c43cd0481e01294f0a80bce69cd51da912d6be2d40957",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/templates/AGENTS.template.md": {
+      "after": "7369013bb2c4ac4bdd39d6a947d38712886f0a4089cca25fcb982b32f577def9",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/templates/HANDOFF.md": {
+      "after": "1dbd2df383cf8063223dce7a3f02add69fd006c29f32ea8efd3c41ac4acb7412",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/templates/INSTRUCTION-VERSION.md": {
+      "after": "6470be17c44ab984ceb2416ea494e4ebc86105b60b977b73d5afe6230bada95d",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/templates/PROJECT.md": {
+      "after": "8c6faddb431b81a9896c20c6c87a1b6997c5a36374460476b3bbc7061e8d0184",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/templates/STATUS-UPDATE.md": {
+      "after": "f79089962e97b4b8ec9980fd69429b2a9777a0fe902dcf4b021b32efed751296",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/templates/TASK.md": {
+      "after": "edbeecdeb3ff0c275d2a9927433036c40de7cfd51130bef50ccdb4f623c6837f",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/workflows/analytics.md": {
+      "after": "06548ee659bf12be71fb3a04dcca511f20fd1ca55937d13ce10b1d7c89fcca69",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/workflows/coding.md": {
+      "after": "be7367820b170b15bbd5c4af16968dfbc8c6a90d9b917293cc2db81628e9e83e",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/workflows/handoff.md": {
+      "after": "40588830fb285b0e0c9e9b0748bddd0a5c186e237a42271dcac9423d226fd993",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/workflows/project-init.md": {
+      "after": "155083a747caa7db1a1a22db3ab0557b5e118177968beb59b54bcab5fd184151",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/workflows/review.md": {
+      "after": "754483f7d6e8e8e764d7396991df365d52235bab283efafc9c8e642a11cd4ba7",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/sources/SOURCE-REGISTER.md": {
+      "after": "5751e49972a02dab512d5a7096d0579b629264eeaf14962f6bc549b9b67462a1",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/tests/package_conductor_init.py": {
+      "after": "c524047c9d1ed7171985068f25269cdd1108d4339572a3a0c32daa2b67aeb1a1",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/tests/test_conductor_init.py": {
+      "after": "c7130214cab9fdfdf413df6314828947aa1183cacefcc87429823ee4cfc96fd1",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/tests/test_conductor_init_claude.py": {
+      "after": "8be782c35a5a928fd29e2b021dc080c4eb20a29d90aa412437eb27c835437524",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/generation.json": {
+      "after": "2feb4330745f0e289c54b8a03882a1054037f9e2c00e6a07ed24126fc0f92eb9",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/scripts/conductor_init.py": {
+      "after": "85f55cac3f77aea10946dae576a1ce2f80a62890e6a1a531aadfd16bc4423a13",
+      "backup": null,
+      "before": null
+    }
+  },
+  "version": 1
+}
