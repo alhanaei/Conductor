@@ -25,6 +25,32 @@ Consequences for this kit:
 - A cloud session uses the pushed branch, not local uncommitted edits. Confirm the exact
   remote revision before relying on adapters or policy copies in that session.
 
+## Making conductor-init available
+
+Local, user scope: copy `global/skills/conductor-init/` from a pinned snapshot to
+`~/.claude/skills/conductor-init/`, verify the four files against the kit `SHA256SUMS`,
+record the installation project-locally, and confirm the skill in a fresh session. This
+copy is invisible to cloud sessions.
+
+Cloud sessions have no personal skills folder, so choose one of three documented routes:
+
+1. **Account skill.** Upload the `conductor-init` folder as a skill on the claude.ai
+   account. Account skills load in cloud, Cowork and signed-in terminal sessions. The
+   kit's `SKILL.md` uses only `name` and `description`, which the upload accepts. The
+   helper still needs a readable pinned Conductor source inside the cloud workspace.
+2. **Environment setup script.** In the cloud environment's setup script, clone the
+   reviewed Conductor commit to a known path, verify `MANIFEST.json` and the kit
+   `SHA256SUMS`, and copy the skill into that user's `~/.claude/skills/conductor-init/`.
+   The docs show setup scripts writing `~/.claude/CLAUDE.md`; skills work the same way.
+   Publishing the environment is configuration work that needs its own authorization.
+3. **Repository scope.** Commit the generated `conductor-project-init` (stage one output)
+   under the project's `.claude/skills/` and push it. Repository skills always carry over,
+   so the cloud session can run stage two without any global installation.
+
+Whichever route is used, the generated project skill and the vendored policy snapshot
+must be committed and pushed before a cloud session can see them; local uncommitted
+files never reach the clone.
+
 ## Acceptance check in a new cloud session
 
 1. Confirm actual repository identity and revision; inspect existing changes without reset.
