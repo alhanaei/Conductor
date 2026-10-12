@@ -10,8 +10,8 @@ skill folder; policy and project templates still come from the verified adopted 
 
 Use the platform folder below. A generated native adapter or required snapshot must record source SHA/path/hash and its own hash in the project-owned adoption manifest. See [contributing](../docs/contributing.md).
 
-- [Codex / ChatGPT coding surfaces](codex/README.md)
-- [Claude Code](claude-code/README.md)
+- [Codex / ChatGPT coding surfaces](codex/README.md); installable templates in the root [codex/](../codex/README.md) kit
+- [Claude Code](claude-code/README.md); installable templates in the same folder, sharing skill names and bodies with the Codex kit
 - [GitHub Copilot](copilot/README.md)
 - [Google Antigravity and Jules](google/README.md)
 - [Grok Build](grok-build/README.md)
