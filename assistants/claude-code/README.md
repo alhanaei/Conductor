@@ -18,6 +18,7 @@ and data deliverables. This kit creates no runtime, hook, credential or integrat
 | [project/CLAUDE.md](project/CLAUDE.md) | Thin project adapter → target repository root `CLAUDE.md`; imports the project `AGENTS.md` |
 | [conductor-handoff](global/skills/conductor-handoff/SKILL.md) | General skill → user `~/.claude/skills/conductor-handoff/` |
 | [project-verification](project/skills/project-verification/SKILL.md) | Project skill → repository `.claude/skills/project-verification/` |
+| [gate-review](project/skills/gate-review/SKILL.md) | Project skill → repository `.claude/skills/gate-review/`; native copy of the shared `gate-review` wrapper for the lifecycle workflow |
 | [conductor-init](global/skills/conductor-init/SKILL.md) | Generate a native project initializer; optional personal installation to `~/.claude/skills/conductor-init/` only within that scope |
 | [LOCAL-SETUP.md](LOCAL-SETUP.md) | Local installation, discovery check and rollback procedure |
 | [CLOUD-SETUP.md](CLOUD-SETUP.md) | Cloud session and Remote Control differences |
