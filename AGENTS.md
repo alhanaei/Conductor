@@ -47,6 +47,10 @@ binding, decisions, results, blockers, and next action in the project checkpoint
 
 The user authorized fetching this review branch and installing local Codex adapters. For this task, do not commit, push, merge main, deploy, alter canonical shared source, create schedules, or update unrelated projects. These explicit task limits take precedence over inherited commit/push defaults. One accountable assistant owns this task; authorized bounded delegation does not transfer ownership. No local owner note or GitHub label is an exclusive lock.
 
+## Library folder ownership
+
+`shared/` is canonical and vendor-neutral; any assistant may propose changes there through the review process in `docs/contributing.md`. Each assistant maintains only its own folder: Claude Code maintains `assistants/claude-code/`, Codex maintains `codex/` and `assistants/codex/`, and other vendor folders under `assistants/` belong to their assistant. Do not hand-edit another assistant's folder; record the request in the project task records instead. Generated copies inside assistant folders and the root `MANIFEST.json` are regenerated from `shared/` by `tests/package_conductor_init.py --write` as part of a shared change, which is not an edit of the other folder.
+
 
 <!-- conductor:init:begin -->
 # Conductor project adapter
