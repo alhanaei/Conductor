@@ -14,7 +14,7 @@ This kit contains shared practice, templates and an explicitly invoked project-i
 - [Dated source register](sources/SOURCE-REGISTER.md)
 
 ## Structure
-- `shared/workflows/`: complete coding, analytics, review and handoff procedures
+- `shared/workflows/`: complete coding, analytics, review, handoff and project-lifecycle procedures
 - `shared/skills/`: minimal skill wrappers; generate native copies only after discovery is verified
 - `shared/techniques/`: reusable practical methods
 - `shared/patterns/`: general architecture options; actual decisions remain project ADRs
