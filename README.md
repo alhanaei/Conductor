@@ -14,12 +14,13 @@ This kit contains shared practice, templates and an explicitly invoked project-i
 - [Dated source register](sources/SOURCE-REGISTER.md)
 
 ## Structure
-- `shared/workflows/`: complete coding, analytics, review, handoff and project-lifecycle procedures
+- `shared/workflows/`: complete backlog, coding, analytics, review, handoff and project-lifecycle procedures
 - `shared/skills/`: minimal skill wrappers; generate native copies only after discovery is verified
 - `shared/techniques/`: reusable practical methods
 - `shared/patterns/`: general architecture options; actual decisions remain project ADRs
 - `shared/harness/`: portable task/checkpoint schema, fictional examples and contract guidance
 - `shared/templates/`: blank templates to adapt inside the real project, never a live project ledger here
+- `shared/templates/github/`: issue form, pull request template, pull request check and scheduled reconciliation report to copy into a project's `.github/`
 - `shared/prompts/`: reusable adoption, task, review and resume prompts
 - `assistants/<vendor>/`: thin setup, capabilities, entrypoints, known limits and tested/adopted version metadata; maintained only by that assistant
 - `docs/`: contributions, compatibility and releases
