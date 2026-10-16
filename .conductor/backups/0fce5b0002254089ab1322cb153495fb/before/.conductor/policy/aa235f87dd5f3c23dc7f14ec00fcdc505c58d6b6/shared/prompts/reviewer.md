@@ -1,0 +1,2 @@
+# Independent review prompt
+Read the approved task, adopted common review procedure and project constraints. Review the exact immutable diff/commit or analysis artifact, acceptance evidence and relevant tests. Distinguish blockers from suggestions, verify correctness and limitations, and identify missing evidence. Do not modify scope, approve your own implementation as independent review, or claim bot review satisfies a required human gate. Return the reviewed identity, verdict, evidence and next action. Publish a review only when supported and specifically authorized.
