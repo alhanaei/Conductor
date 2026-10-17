@@ -219,8 +219,19 @@ def atomic_write(path, data):
             os.unlink(name)
 
 
+def prune_empty(target, directory):
+    """Remove directories left empty by a removal, never the project root."""
+    root = Path(target).resolve()
+    directory = Path(directory).resolve()
+    while directory != root and root in directory.parents and directory.is_dir() and not any(directory.iterdir()):
+        directory.rmdir()
+        directory = directory.parent
+
+
 def apply_plan(target, outputs, apply):
-    """Preflight all paths, save real previous contents, then write changed files."""
+    """Preflight all paths, save real previous contents, then write or remove changed files.
+
+    A value of None removes the file; removals are backed up exactly like updates."""
     changed = {}
     before = {}
     for relative, data in sorted(outputs.items()):
@@ -230,8 +241,8 @@ def apply_plan(target, outputs, apply):
             before[relative] = old
     if not changed:
         return result("unchanged")
-    changes = [{"path": key, "action": "create" if before[key] is None else "update"}
-               for key in changed]
+    changes = [{"path": key, "action": "remove" if changed[key] is None
+                else "create" if before[key] is None else "update"} for key in changed]
     if not apply:
         return result("planned", changes)
     base = ".conductor/backups/" + uuid.uuid4().hex
@@ -240,7 +251,7 @@ def apply_plan(target, outputs, apply):
         backup = base + "/before/" + key if before[key] is not None else None
         transaction["files"][key] = {
             "before": digest(before[key]) if before[key] is not None else None,
-            "after": digest(data), "backup": backup,
+            "after": digest(data) if data is not None else None, "backup": backup,
         }
         if backup:
             path = safe(target, backup)
@@ -252,7 +263,11 @@ def apply_plan(target, outputs, apply):
     try:
         for key, data in changed.items():
             path = safe(target, key)
-            atomic_write(path, data)
+            if data is None:
+                path.unlink()
+                prune_empty(target, path.parent)
+            else:
+                atomic_write(path, data)
             written.append(key)
     except OSError:
         # Restore only writes from this operation. The recorded transaction survives.
@@ -314,16 +329,8 @@ def locate_generated(target, skill_root=None):
     return found[0]
 
 
-def generate(target, source, source_sha, capabilities, apply=False, manifest_sha=None, update=False):
-    target, source = Path(target), Path(source)
-    profile = capabilities
-    spec = profile_for(profile)
-    if not spec:
-        supported = " or ".join(item["label"] for item in PROFILES.values())
-        return result("draft", blockers=[f"Verify a native capability mapping; this helper supports project-scoped {supported} only"])
-    native = native_root(spec)
-    safe(target, native)
-    source_files = verified_source(source, source_sha, profile, manifest_sha, spec)
+def build_generation(spec, source_files, source_sha, profile):
+    """Outputs of a native generated skill for a verified source, plus its metadata."""
     package = Path(__file__).absolute().parent.parent
     outputs = {"assets/source/" + key: value for key, value in source_files.items()}
     outputs["scripts/conductor_init.py"] = Path(__file__).read_bytes()
@@ -350,6 +357,20 @@ def generate(target, source, source_sha, capabilities, apply=False, manifest_sha
         # Earlier Codex-only generators recorded this key; keep it so their pins stay recognizable.
         metadata["source_codex_checksums_sha256"] = metadata["native_checksums_sha256"]
     outputs["generation.json"] = encoded(metadata)
+    return outputs, metadata
+
+
+def generate(target, source, source_sha, capabilities, apply=False, manifest_sha=None, update=False):
+    target, source = Path(target), Path(source)
+    profile = capabilities
+    spec = profile_for(profile)
+    if not spec:
+        supported = " or ".join(item["label"] for item in PROFILES.values())
+        return result("draft", blockers=[f"Verify a native capability mapping; this helper supports project-scoped {supported} only"])
+    native = native_root(spec)
+    safe(target, native)
+    source_files = verified_source(source, source_sha, profile, manifest_sha, spec)
+    outputs, metadata = build_generation(spec, source_files, source_sha, profile)
     root = safe(target, native)
     old = load(root, "generation.json") if read(root, "generation.json") else None
     if old:
@@ -359,7 +380,7 @@ def generate(target, source, source_sha, capabilities, apply=False, manifest_sha
                 "policy_commit", "policy_manifest_sha256", "capabilities"))
                 and native_checksums(old) == native_checksums(metadata))
             if not update or not same_pin:
-                return result("blocked", blockers=["Existing generation differs; use a reviewed --update for generator changes at the same policy/capability pin, or reconcile a policy migration explicitly"])
+                return result("blocked", blockers=["Existing generation differs; use a reviewed --update for generator changes at the same policy/capability pin, or 'migrate' to move the adoption to a new policy source"])
     hashes = dict(old["files"]) if old else {}
     if old:
         hashes["generation.json"] = digest(read(root, "generation.json"))
@@ -468,6 +489,56 @@ def native_adapter(spec, previous):
             "Explicit task limits in `AGENTS.md` or the checkpoint take precedence over inherited commit, push, worktree or delegation defaults.")
 
 
+def adapter_body(sha, source_files, facts):
+    """The vendor-neutral AGENTS.md section every assistant reads."""
+    pin = ".conductor/policy/" + sha
+    return ("# Conductor project adapter\n\n"
+            f"Read `{pin}/shared/WORKFLOW.md` as the pinned common policy.\n"
+            f"Policy commit: `{sha}`; SHA-256: `{digest(source_files['shared/WORKFLOW.md'])}`.\n"
+            "Read `PROJECT.md` for project facts, verification and authoritative task links.\n"
+            "Verification contract: the Verification contract section in `PROJECT.md`; read its source evidence before executing checks.\n"
+            "Keep project lifecycle separate from task progress and execution state.\n"
+            "Respect Parked/Closed lifecycle and confirmed task ownership; initialization does not start work.\n"
+            f"Checkpoint destination: `{facts['checkpoint']}`. Read existing checkpoints before resuming.\n"
+            "Verify recorded checks before reporting task completion; never infer an unrecorded command.\n"
+            "This adapter grants no deployment, credential, cloud, scheduling, or publication authority.")
+
+
+def verification_outputs(target, spec, source_files, owned_hashes=None):
+    """The native verification skill assets, unless a custom skill occupies that folder.
+
+    An existing folder is replaceable when it is identical to the new assets or when
+    every file in it is owned by the adoption record; stale owned assets are removed."""
+    verification_root = spec["native_skills"] + "/project-verification"
+    native_assets = {key: source_files[spec["verification_skill"] + "/" + key]
+                     for key in spec["verification_assets"]}
+    native_path = safe(target, verification_root)
+    existing = {}
+    if native_path.exists():
+        for p in native_path.rglob("*"):
+            if p.is_file():
+                key = str(p.relative_to(native_path))
+                existing[key] = read(target, verification_root + "/" + key)
+    owned = owned_hashes or {}
+    replaceable = (not existing or existing == native_assets or all(
+        verification_root + "/" + key in owned and digest(data) == owned[verification_root + "/" + key]
+        for key, data in existing.items()))
+    if not replaceable:
+        return {}, False
+    outputs = {verification_root + "/" + key: data for key, data in native_assets.items()}
+    for key in existing:
+        if key not in native_assets:
+            outputs[verification_root + "/" + key] = None
+    return outputs, True
+
+
+def managed_blocks_intact(target, adoption):
+    for key, expected in adoption["managed_blocks"].items():
+        current = block(read(target, key))
+        if current is None or digest(current) != expected:
+            raise InitError(f"Managed content changed: {key}")
+
+
 def onboard(target, facts, skill_root=None, apply=False):
     target = Path(target)
     root = locate_generated(target, skill_root)
@@ -500,12 +571,11 @@ def onboard(target, facts, skill_root=None, apply=False):
             or any(value.casefold() != owner.get("name", "").casefold() for value in custom_owners)):
         return result("blocked", blockers=["Custom project ownership declaration conflicts with or lacks a confirmed adoption owner"])
     if old:
-        if old["policy_commit"] != metadata["policy_commit"] or old["facts"] != facts:
-            return result("blocked", blockers=["Existing adoption facts, ownership, or pin differ; reconcile explicitly before changing them"])
-        for key, expected in old["managed_blocks"].items():
-            current = block(read(target, key))
-            if current is None or digest(current) != expected:
-                raise InitError(f"Managed content changed: {key}")
+        if old["policy_commit"] != metadata["policy_commit"]:
+            return result("blocked", blockers=["The adoption pin differs from this generated skill's pin; run 'migrate' from the new source to move this assistant's skill, or reconcile explicitly"])
+        if old["facts"] != facts:
+            return result("blocked", blockers=["Existing adoption facts or ownership differ; reconcile explicitly before changing them"])
+        managed_blocks_intact(target, old)
     else:
         for key in ("AGENTS.md", "PROJECT.md", spec["native_instructions"]):
             if block(read(target, key)) is not None:
@@ -514,16 +584,7 @@ def onboard(target, facts, skill_root=None, apply=False):
             return result("blocked", blockers=["Existing owner needs explicit reconciliation before adoption"])
     sha = metadata["policy_commit"]
     pin = ".conductor/policy/" + sha
-    body = ("# Conductor project adapter\n\n"
-            f"Read `{pin}/shared/WORKFLOW.md` as the pinned common policy.\n"
-            f"Policy commit: `{sha}`; SHA-256: `{digest(source_files['shared/WORKFLOW.md'])}`.\n"
-            "Read `PROJECT.md` for project facts, verification and authoritative task links.\n"
-            "Verification contract: the Verification contract section in `PROJECT.md`; read its source evidence before executing checks.\n"
-            "Keep project lifecycle separate from task progress and execution state.\n"
-            "Respect Parked/Closed lifecycle and confirmed task ownership; initialization does not start work.\n"
-            f"Checkpoint destination: `{facts['checkpoint']}`. Read existing checkpoints before resuming.\n"
-            "Verify recorded checks before reporting task completion; never infer an unrecorded command.\n"
-            "This adapter grants no deployment, credential, cloud, scheduling, or publication authority.")
+    body = adapter_body(sha, source_files, facts)
     project = project_record(facts)
     adapters = [("AGENTS.md", body), ("PROJECT.md", project)]
     if spec["native_instructions"] != "AGENTS.md":
@@ -536,19 +597,9 @@ def onboard(target, facts, skill_root=None, apply=False):
         managed[key] = digest(section)
     for key, data in source_files.items():
         outputs[pin + "/" + key] = data
-    verification_root = spec["native_skills"] + "/project-verification"
-    native_assets = {key: source_files[spec["verification_skill"] + "/" + key]
-                     for key in spec["verification_assets"]}
-    native_path = safe(target, verification_root)
     # Preserve an existing custom/incomplete skill as a whole, without mixing assets.
-    native_compatible = not native_path.exists() or (
-        all(read(target, verification_root + "/" + key) == data
-            for key, data in native_assets.items())
-        and {str(p.relative_to(native_path)) for p in native_path.rglob("*") if p.is_file()}
-            == set(native_assets))
-    if native_compatible:
-        for key, data in native_assets.items():
-            outputs[verification_root + "/" + key] = data
+    verification, native_compatible = verification_outputs(target, spec, source_files, old.get("files") if old else None)
+    outputs.update(verification)
     checkpoint = facts["checkpoint"]
     if str(PurePosixPath(checkpoint)) in outputs:
         raise InitError("Checkpoint collides with a planned managed output")
@@ -570,9 +621,9 @@ def onboard(target, facts, skill_root=None, apply=False):
     assistants = sorted(set(old.get("assistants", ["codex"])) | {spec["name"]}) if old else [spec["name"]]
     managed_blocks = dict(old.get("managed_blocks", {})) if old else {}
     managed_blocks.update(managed)
-    files = dict(hashes)
+    files = {key: value for key, value in hashes.items() if outputs.get(key, value) is not None}
     files.update({key: digest(value) for key, value in outputs.items()
-                  if key not in managed and key != checkpoint})
+                  if value is not None and key not in managed and key != checkpoint})
     generators = old.get("generator_sha256", {}) if old else {}
     discovery = old.get("native_discovery", {}) if old else {}
     if isinstance(generators, str):  # record written by the Codex-only generator
@@ -582,15 +633,99 @@ def onboard(target, facts, skill_root=None, apply=False):
     generators = dict(generators, **{spec["name"]: metadata["generator_sha256"]})
     discovery = dict(discovery)
     discovery.setdefault(spec["name"], "unverified; check in a fresh native session")
-    adoption = {"version": 1, "scope": "project", "assistants": assistants, "policy_commit": sha,
-                "policy_manifest_sha256": metadata["policy_manifest_sha256"],
-                "generator_sha256": generators, "facts": facts,
-                "managed_blocks": managed_blocks, "files": files,
-                "native_discovery": discovery}
+    pins = dict(old.get("assistant_pins", {})) if old else {}
+    pins[spec["name"]] = sha
+    # Keys written by other operations (migration history, other assistants' pins) are kept.
+    adoption = dict(old) if old else {}
+    adoption.update({"version": 1, "scope": "project", "assistants": assistants, "policy_commit": sha,
+                     "policy_manifest_sha256": metadata["policy_manifest_sha256"],
+                     "generator_sha256": generators, "facts": facts,
+                     "managed_blocks": managed_blocks, "files": files,
+                     "native_discovery": discovery, "assistant_pins": pins})
     outputs[".conductor/adoption.json"] = encoded(adoption)
     response = apply_plan(target, outputs, apply)
     if not native_compatible:
         response["notes"] = ["Existing custom verification skill preserved as a whole; review its mapping to PROJECT.md"]
+    return response
+
+
+def migrate(target, source, source_sha, apply=False, manifest_sha=None, skill_root=None):
+    """Move this assistant's generated skill, and the shared adoption record, to a new verified source.
+
+    Run from the new source's conductor-init skill. The first assistant to migrate moves
+    the shared pin: AGENTS.md section, policy snapshot and adoption record. Each further
+    assistant then runs migrate for its own generated skill; until it does, its onboard
+    is blocked and the record lists it under assistant_pins at the previous pin."""
+    target, source = Path(target), Path(source)
+    root = locate_generated(target, skill_root)
+    old_meta = load(root, "generation.json")
+    _, spec = check_generated(root, old_meta)
+    if root.resolve() != safe(target, native_root(spec)).resolve():
+        raise InitError("Generated skill must be inside this project at its recorded native path")
+    if not read(target, ".conductor/adoption.json"):
+        return result("blocked", blockers=["No adoption record to migrate; use generate and onboard for a first adoption"])
+    adoption = load(target, ".conductor/adoption.json")
+    for name in ("AGENTS.override.md",):
+        if read(target, name):
+            return result("blocked", blockers=["Active native instruction override requires explicit reconciliation: " + name])
+    managed_blocks_intact(target, adoption)
+    old_pin, new_pin = adoption["policy_commit"], source_sha
+    if old_pin == new_pin and old_meta["policy_commit"] == new_pin:
+        return result("unchanged")
+    profile = old_meta["capabilities"]
+    source_files = verified_source(source, new_pin, profile, manifest_sha, spec)
+    skill_outputs, metadata = build_generation(spec, source_files, new_pin, profile)
+    native = native_root(spec)
+    hashes = dict(adoption.get("files", {}))
+    hashes.update({native + "/" + key: value for key, value in old_meta["files"].items()})
+    hashes[native + "/generation.json"] = digest(read(root, "generation.json"))
+    outputs = {native + "/" + key: value for key, value in skill_outputs.items()}
+    for key in old_meta["files"]:
+        if key not in skill_outputs:
+            outputs[native + "/" + key] = None
+    facts = adoption["facts"]
+    managed = {}
+    if old_pin != new_pin:
+        outputs["AGENTS.md"], section = append_block(read(target, "AGENTS.md"), adapter_body(new_pin, source_files, facts))
+        managed["AGENTS.md"] = digest(section)
+        for key, data in source_files.items():
+            outputs[".conductor/policy/" + new_pin + "/" + key] = data
+        for key in adoption.get("files", {}):
+            if key.startswith(".conductor/policy/" + old_pin + "/"):
+                outputs[key] = None
+    verification, compatible = verification_outputs(target, spec, source_files, hashes)
+    outputs.update(verification)
+    owned_outputs(target, {key: value for key, value in outputs.items() if key not in managed}, hashes)
+    files = {key: value for key, value in adoption.get("files", {}).items() if outputs.get(key, value) is not None}
+    files.update({key: digest(value) for key, value in outputs.items()
+                  if value is not None and key not in managed and not key.startswith(native + "/")})
+    managed_blocks = dict(adoption.get("managed_blocks", {}))
+    managed_blocks.update(managed)
+    generators = adoption.get("generator_sha256", {})
+    if isinstance(generators, str):
+        generators = {"codex": generators}
+    generators = dict(generators, **{spec["name"]: metadata["generator_sha256"]})
+    pins = dict(adoption.get("assistant_pins", {}))
+    for name in adoption.get("assistants", []):
+        pins.setdefault(name, old_pin)
+    pins[spec["name"]] = new_pin
+    migrations = list(adoption.get("migrations", []))
+    if old_pin != new_pin:
+        migrations.append({"from": old_pin, "to": new_pin, "assistant": spec["name"]})
+    updated = dict(adoption)
+    updated.update({"policy_commit": new_pin, "policy_manifest_sha256": metadata["policy_manifest_sha256"],
+                    "generator_sha256": generators, "managed_blocks": managed_blocks, "files": files,
+                    "assistant_pins": pins, "migrations": migrations})
+    outputs[".conductor/adoption.json"] = encoded(updated)
+    response = apply_plan(target, outputs, apply)
+    notes = []
+    pending = sorted(name for name, pin in pins.items() if pin != new_pin)
+    if pending:
+        notes.append("Assistants still on the previous pin must run migrate for their own skill: " + ", ".join(pending))
+    if not compatible:
+        notes.append("Existing custom verification skill preserved as a whole; review its mapping to PROJECT.md")
+    if notes:
+        response["notes"] = notes
     return response
 
 
@@ -609,7 +744,10 @@ def rollback(target, transaction, apply=False):
     replacements = {}
     for key, info in record["files"].items():
         current = read(target, key)
-        if current is None or digest(current) != info["after"]:
+        if info["after"] is None:
+            if current is not None:
+                raise InitError(f"Rollback refused: a removed file was recreated since setup: {key}")
+        elif current is None or digest(current) != info["after"]:
             raise InitError(f"Rollback refused: file changed since setup: {key}")
         previous = None
         if info["backup"]:
@@ -627,6 +765,7 @@ def rollback(target, transaction, apply=False):
         path = safe(target, key)
         if previous is None:
             path.unlink()
+            prune_empty(target, path.parent)
         else:
             atomic_write(path, previous)
     return result("rolled_back", changes)
@@ -646,7 +785,12 @@ def main():
     second.add_argument("--skill-root", type=Path, help="Generated skill folder when more than one assistant has generated one")
     third = sub.add_parser("rollback")
     third.add_argument("--transaction", type=Path, required=True)
-    for command in (first, second, third):
+    fourth = sub.add_parser("migrate", help="Move an existing adoption to a new verified policy source")
+    fourth.add_argument("--source", type=Path, required=True)
+    fourth.add_argument("--source-sha", required=True)
+    fourth.add_argument("--manifest-sha")
+    fourth.add_argument("--skill-root", type=Path, help="Generated skill folder when more than one assistant has generated one")
+    for command in (first, second, third, fourth):
         command.add_argument("--target", type=Path, required=True)
         command.add_argument("--apply", action="store_true")
     args = parser.parse_args()
@@ -656,6 +800,8 @@ def main():
                                 json.loads(args.capabilities.read_text()), args.apply, args.manifest_sha, args.update)
         elif args.operation == "onboard":
             response = onboard(args.target, json.loads(args.facts.read_text()), args.skill_root, apply=args.apply)
+        elif args.operation == "migrate":
+            response = migrate(args.target, args.source, args.source_sha, args.apply, args.manifest_sha, args.skill_root)
         else:
             response = rollback(args.target, args.transaction, args.apply)
     except (InitError, OSError, ValueError, KeyError, TypeError) as exc:

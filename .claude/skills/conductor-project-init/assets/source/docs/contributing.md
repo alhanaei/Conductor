@@ -8,4 +8,12 @@
 6. Generate native adapters only if the platform requires local discovery. Record source and generated hashes in a project-owned manifest; compare against upstream on updates. Do not hand-maintain duplicate master policies.
 7. Test a single-owner task and explicit cross-app handoff. Record actual supported capabilities and limitations. Scheduled checks are separately requested, read/report-only observations with defined scope and stopping conditions.
 
+## Folder ownership
+
+- `shared/` is the canonical, vendor-neutral source. Any assistant may propose a change there. A change to shared policy, workflows, skills, or the initializer helper, template and recipe is a library change: it follows the review steps above and regenerates every distributed copy.
+- Each assistant maintains its own folder and only its own folder. Claude Code maintains `assistants/claude-code/`; Codex maintains `codex/` and `assistants/codex/`; every other vendor folder under `assistants/` belongs to that assistant. An assistant edits its own adapters, setup notes, capability record and native `SKILL.md` files, and never hand-edits another assistant's folder.
+- Generated copies inside an assistant folder (`references/project-init.md`, `scripts/conductor_init.py`, `assets/project-skill.md`, each kit's `SHA256SUMS`, and the root `MANIFEST.json`) are derived from `shared/` by `tests/package_conductor_init.py --write`. Regenerating them is part of the shared change that caused it, not an edit of the other folder. Hand edits to generated copies fail the packaging check and are reverted by the next regeneration.
+- Behaviour that must stay identical across assistants, such as skill names, skill bodies and the helper's native profiles, lives in `shared/` or is pinned by tests, never by copying text between assistant folders.
+- When an assistant needs a change in a folder it does not maintain, it records the request in the project task records for the maintaining assistant instead of making the edit. Root files (`README.md`, `GUIDE.md`, `docs/`, `sources/`, `tests/`) are shared and open to proposals from any assistant.
+
 Unpacking this repository does not install root/global AGENTS files, native skill directories, hooks, credentials or runtimes. Publication and adoption changes require their own authorization.
