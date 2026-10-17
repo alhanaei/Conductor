@@ -45,7 +45,7 @@
     "codex/shared/PRACTICE.md": "982631f01b6ec08ca071d1ed91578979dd32b235e9c894ce6baac01c1b4b73eb",
     "docs/RELEASE.md": "3b6f7af62845b8e1ff569bfcee264eda248a642d279c69439bb19af72c212b51",
     "docs/contributing.md": "d1cbb4292e82accfbd77593c3e88db5c45f045babb9975bd6642f5eb1756882e",
-    "docs/initializer-validation.md": "ad6b6c288f023d549ee78766cbb7316d729d02bb651bae9ccf973baf111ef728",
+    "docs/initializer-validation.md": "a224209a90db59fe370e5fe81afbeeb61bd3fabbf9ed462c689f7f1e9717528b",
     "docs/project-initialization.md": "70d0a7f7ea610d2162a4bc269d90dfdba2059e04d21ef915e69ede76db036703",
     "docs/shared-github-workflow-coding-analytics.docx": "cd326b1b43f2fc9e6f939fb428f2fc46f21c06d6e9a47335e8fe91861df5b8fe",
     "shared/WORKFLOW.md": "adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2",
@@ -87,9 +87,10 @@
     "shared/workflows/project-init.md": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
     "shared/workflows/review.md": "754483f7d6e8e8e764d7396991df365d52235bab283efafc9c8e642a11cd4ba7",
     "sources/SOURCE-REGISTER.md": "5751e49972a02dab512d5a7096d0579b629264eeaf14962f6bc549b9b67462a1",
-    "tests/package_conductor_init.py": "516a570096439670a266ffc22f68398e02728537c1fe0588bdb550ed1fdd0c65",
+    "tests/package_conductor_init.py": "f7ebf3abb811a962366b2fbf8cc7e5dffe1c0a2f04418117ee77d6fb231eb7e6",
     "tests/test_conductor_init.py": "c7130214cab9fdfdf413df6314828947aa1183cacefcc87429823ee4cfc96fd1",
     "tests/test_conductor_init_claude.py": "8be782c35a5a928fd29e2b021dc080c4eb20a29d90aa412437eb27c835437524",
-    "tests/test_conductor_init_migration.py": "97b437cbc3c58f3db7e7622c79bb4c404732c8bb04ca9740525668dbee45d9fa"
+    "tests/test_conductor_init_migration.py": "97b437cbc3c58f3db7e7622c79bb4c404732c8bb04ca9740525668dbee45d9fa",
+    "tests/test_package_check.py": "aadeb72abf51a4fb46fe8f4f8a772ea845aa2aad78b040995b13acf54a2ac9e7"
   }
 }
