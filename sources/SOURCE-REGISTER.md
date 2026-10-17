@@ -26,6 +26,8 @@ Primary references checked on 9 October 2026. Design choices in this kit are pro
 
 - **P2** [Claude Code memory and instructions](https://code.claude.com/docs/en/memory) — Version-sensitive AGENTS and CLAUDE discovery
 
+- **P2a** [Claude Code Projects](https://code.claude.com/docs/en/claude-projects) — Coordinator conversation, cloud threads, project instructions and memory; checked 17 October 2026
+
 - **P3** [Copilot instruction support](https://docs.github.com/en/copilot/reference/custom-instructions-support) — Surface differences; skill source in ZIP
 
 - **P4** [Antigravity skills](https://www.antigravity.google/docs/skills) — Current native discovery; rules and plan sources in ZIP

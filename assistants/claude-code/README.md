@@ -20,7 +20,8 @@ and data deliverables. This kit creates no runtime, hook, credential or integrat
 | [project-verification](project/skills/project-verification/SKILL.md) | Project skill → repository `.claude/skills/project-verification/` |
 | [conductor-init](global/skills/conductor-init/SKILL.md) | Generate a native project initializer; optional personal installation to `~/.claude/skills/conductor-init/` only within that scope |
 | [LOCAL-SETUP.md](LOCAL-SETUP.md) | Local installation, discovery check and rollback procedure |
-| [CLOUD-SETUP.md](CLOUD-SETUP.md) | Cloud session and Remote Control differences |
+| [CLOUD-SETUP.md](CLOUD-SETUP.md) | Cloud session, Remote Control and Projects (beta) differences |
+| [PROJECT-INSTRUCTIONS.template.md](PROJECT-INSTRUCTIONS.template.md) | Conductor brief for a project's **Project instructions** field; filled per project, recorded in the installation record |
 | [MANIFEST.md](MANIFEST.md) | Sources, version, pinning and placeholder contract |
 | `SHA256SUMS` | Digests of every other kit file |
 
@@ -46,7 +47,7 @@ precedence of explicit task limits over inherited defaults.
 Once a root `CLAUDE.md` exists, Claude Code no longer reads `AGENTS.md` on its own, so the
 import line is required, not optional. The import never causes a double read.
 
-## Discovery facts (docs checked 2026-10-10)
+## Discovery facts (docs checked 2026-10-10; Projects checked 2026-10-17)
 
 - Load order at launch: managed policy file, `~/.claude/CLAUDE.md`, then `CLAUDE.md`,
   `.claude/CLAUDE.md` and `CLAUDE.local.md` from the root of the filesystem down to the
@@ -71,10 +72,18 @@ import line is required, not optional. The import never causes a double read.
 - Cloud sessions clone the repository's remote branch, not the local checkout. Repository
   `CLAUDE.md` and `.claude/skills/` carry over; `~/.claude/CLAUDE.md` and personal skills
   do not. Remote Control runs on the local machine and sees local files.
+- Projects (beta) run each task as a thread, usually a cloud session, from one coordinating
+  conversation. Threads load `CLAUDE.md` and `.claude/` skills, agents and commands from
+  every project repository; `.claude/settings.json` rules and hooks apply only in a
+  one-repository project. Project instructions (16,000 characters, set in the UI) and
+  project memory (`MEMORY.md`, Claude-written) reach cloud threads and are not in Git.
+  Threads run in auto mode and watch their pull requests with auto-fix on. See
+  [CLOUD-SETUP.md](CLOUD-SETUP.md#projects-beta).
 
 Sources: [memory and instruction discovery](https://code.claude.com/docs/en/memory),
 [skills](https://code.claude.com/docs/en/skills),
 [cloud sessions](https://code.claude.com/docs/en/claude-code-on-the-web),
+[projects](https://code.claude.com/docs/en/claude-projects),
 [headless mode](https://code.claude.com/docs/en/headless).
 
 ## Adoption contract
@@ -91,7 +100,7 @@ Sources: [memory and instruction discovery](https://code.claude.com/docs/en/memo
 
 ## Capability and adoption record
 
-- Documentation checked: 2026-10-10
+- Documentation checked: 2026-10-10; Projects documentation 2026-10-17
 - Actual app/surface and installed version: Claude Code desktop app, CLI 2.1.265 reported
   by `claude --version` on macOS, observed 2026-10-10
 - Observed discovery on that build: a repository `AGENTS.md` and a home-directory

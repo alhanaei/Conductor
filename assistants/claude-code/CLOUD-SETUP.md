@@ -3,8 +3,9 @@
 Claude Code has two remote modes that behave differently. A cloud session (claude.ai/code
 or `claude --cloud`) runs on hosted infrastructure from a fresh clone of the repository's
 remote branch. Remote Control drives a session that still runs on the local machine and
-sees local files. Treat each cloud environment as a separate installation. This kit
-changes no saved home files, credentials, permissions or published environment.
+sees local files. A project (beta) coordinates many such sessions as threads; see
+[Projects](#projects-beta) below. Treat each cloud environment as a separate installation.
+This kit changes no saved home files, credentials, permissions or published environment.
 
 ## What reaches a cloud session
 
@@ -24,6 +25,63 @@ Consequences for this kit:
   home-directory path from the Mac does not exist remotely.
 - A cloud session uses the pushed branch, not local uncommitted edits. Confirm the exact
   remote revision before relying on adapters or policy copies in that session.
+
+## Projects (beta)
+
+A Claude Code project is one coordinating conversation that starts a thread per task. Each
+thread is a cloud session on its own branch, or, on request, a Remote Control session on the
+user's computer. Docs checked 2026-10-17: [Projects](https://code.claude.com/docs/en/claude-projects).
+Availability is per account and plan; verify it in the sidebar, do not assume it.
+
+What a cloud thread starts with:
+
+- The `CLAUDE.md`, `.claude/skills/`, `.claude/agents/` and `.claude/commands/` of every
+  repository in the project, so the repository-scope route below is the one that reaches
+  threads. Account skills and claude.ai connectors load as well. Nothing from the user's
+  machine does.
+- Permission rules, hooks and `env` from `.claude/settings.json`, and `.mcp.json`, only in a
+  project with one repository. In a project with several repositories on an Anthropic-hosted
+  environment none of them apply; standing rules then go in project instructions and
+  variables in the cloud environment.
+- Project instructions: up to 16,000 characters sent to every new thread and to the
+  coordinator, set in **Project settings > Memory**, not in Git.
+- Project memory: files Claude writes itself under a `MEMORY.md` index, read by every cloud
+  thread at start and not by a thread on the user's computer.
+
+How threads behave by default:
+
+- They run in auto mode, work on a new branch from the default branch, may open a pull request
+  on their own for a concrete change, and then watch it with auto-fix on whether or not
+  auto-fix is on for other cloud sessions. State the pull request and merge policy in project
+  instructions; the kit's [project instructions template](PROJECT-INSTRUCTIONS.template.md)
+  carries Conductor's rules for this.
+- A sandbox pauses between turns; if it cannot resume, the thread continues from a fresh clone
+  and uncommitted changes are lost. Commit and push work in progress on long tasks.
+- Threads keep running after the laptop closes, wait across plan limits and resume on their
+  own, and routines can start threads on a schedule. Record that this was verified (surface,
+  date, limits) in the project's installation record; the shared rule that a prompt alone
+  guarantees no execution still stands.
+- A cloud session already doing the work can become a project (**Continue as project**) or
+  feed one (**Move to project**). A local session cannot be added; push its branch and name it
+  in the task instead.
+
+Consequences for this kit:
+
+- Project instructions and project memory are instruction layers outside the repository,
+  unversioned and unhashed. Keep policy in the pinned snapshot named in `AGENTS.md`, keep
+  repository rules in `CLAUDE.md`, and record the filled project instructions (or a digest)
+  in the installation record. Treat project memory as notes, never as the project record.
+- The **Overview** pane is live thread state, not a backlog. Task records stay the only
+  backlog; every thread starts from one, and the project's pull request check still enforces
+  the link at merge.
+- A project belongs to one user and cannot be shared, so a second person or another assistant
+  resumes only from the repository checkpoint and the task record, as the shared handoff
+  workflow already requires.
+
+Discovery check in a project: open one thread, run `/context` and `/skills`, confirm the pinned
+snapshot path resolves inside the clone with the recorded digest, confirm whether
+`.claude/settings.json` rules apply (one repository) or not (several), and record the result in
+the installation record before sending the rest of the work.
 
 ## Making conductor-init available
 
