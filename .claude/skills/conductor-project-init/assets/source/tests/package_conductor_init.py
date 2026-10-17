@@ -23,7 +23,7 @@ def sha(data):
 
 def packaged(root):
     return {str(p.relative_to(ROOT)) for p in (ROOT / root).rglob("*")
-            if p.is_file() and p.suffix in (".md", ".json", ".yaml", ".py", ".docx")
+            if p.is_file() and p.suffix in (".md", ".json", ".yaml", ".yml", ".py", ".docx")
             and "__pycache__" not in p.parts}
 
 

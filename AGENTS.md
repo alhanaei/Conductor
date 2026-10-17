@@ -55,8 +55,8 @@ The user authorized fetching this review branch and installing local Codex adapt
 <!-- conductor:init:begin -->
 # Conductor project adapter
 
-Read `.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/WORKFLOW.md` as the pinned common policy.
-Policy commit: `aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6`; SHA-256: `0a8dc78dbaaa801e6f93fcffe02dbd2e46231dddaaa7fac7c69bf259fe4ee04a`.
+Read `.conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/WORKFLOW.md` as the pinned common policy.
+Policy commit: `2a14788454aab84a5c4dbba1fcefc7f21697f07f`; SHA-256: `adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2`.
 Read `PROJECT.md` for project facts, verification and authoritative task links.
 Verification contract: the Verification contract section in `PROJECT.md`; read its source evidence before executing checks.
 Keep project lifecycle separate from task progress and execution state.
