@@ -5,6 +5,11 @@
 ## Outcome
 - User-visible result / decision this supports:
 - Task type: implementation / analytics / independent review
+- Task record / issue link:
+- Priority (exactly one from the project scale) and owner-blocked marker, if any:
+- Category (exactly one project kind):
+- Parent task, when this is a part of tracked work:
+- Selection basis (highest open priority; tie-break reference):
 - Request source and authorized scope:
 - Owner platform/session:
 - Authenticated GitHub actor and credential route, if used:

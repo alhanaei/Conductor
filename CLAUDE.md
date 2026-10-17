@@ -9,9 +9,9 @@ project-specific is restated here. Checkout-local task records are Git metadata.
 
 ## Shared practice binding
 
-- Local shared-policy file: `/Users/dr.ahmedalhanaee/.claude/conductor/snapshots/4f849af696de2501e552afcac8109a8bee639b5a/shared/WORKFLOW.md`
-- Expected SHA-256: `0a8dc78dbaaa801e6f93fcffe02dbd2e46231dddaaa7fac7c69bf259fe4ee04a`
-- Conductor source revision or reviewed artifact identity: `4f849af696de2501e552afcac8109a8bee639b5a` (branch `claude/claude-code-adapter-kit-20261010`, which adds the Claude Code kit on top of the Codex adoption source `9d7743620ee23c6e2219878fea314ea47b1941b1` pinned in `AGENTS.md`; the shared policy digest is identical at both revisions)
+- Local shared-policy file: `/Users/dr.ahmedalhanaee/.claude/conductor/snapshots/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/WORKFLOW.md`
+- Expected SHA-256: `adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2`
+- Conductor source revision or reviewed artifact identity: `2a14788454aab84a5c4dbba1fcefc7f21697f07f` (merge of PR #10 on `main`; the same pin as the project adoption in `.conductor/adoption.json`, migrated from `aa235f8` on 2026-10-16. The Codex local adapter section of `AGENTS.md` still binds `9d7743620ee23c6e2219878fea314ea47b1941b1` with the previous digest `0a8dc78d…` until Codex migrates its own adapters.)
 - Read and verify that file at task start. Follow it as the canonical common workflow.
   If absent, unresolved, or inconsistent with the imported `AGENTS.md` or global guidance,
   report the mismatch and pause dependent work. Do not fetch or switch to a moving policy

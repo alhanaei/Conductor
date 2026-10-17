@@ -14,16 +14,19 @@ This kit contains shared practice, templates and an explicitly invoked project-i
 - [Dated source register](sources/SOURCE-REGISTER.md)
 
 ## Structure
-- `shared/workflows/`: complete coding, analytics, review and handoff procedures
+- `shared/workflows/`: complete backlog, coding, analytics, review, handoff and policy-migration procedures
 - `shared/skills/`: minimal skill wrappers; generate native copies only after discovery is verified
 - `shared/techniques/`: reusable practical methods
 - `shared/patterns/`: general architecture options; actual decisions remain project ADRs
 - `shared/harness/`: portable task/checkpoint schema, fictional examples and contract guidance
 - `shared/templates/`: blank templates to adapt inside the real project, never a live project ledger here
+- `shared/templates/github/`: issue form, pull request template, pull request check and scheduled reconciliation report to copy into a project's `.github/`
 - `shared/prompts/`: reusable adoption, task, review and resume prompts
-- `assistants/<vendor>/`: thin setup, capabilities, entrypoints, known limits and tested/adopted version metadata
+- `assistants/<vendor>/`: thin setup, capabilities, entrypoints, known limits and tested/adopted version metadata; maintained only by that assistant
 - `docs/`: contributions, compatibility and releases
 - `sources/`: primary evidence checked on 9 October 2026
+
+Ownership: `shared/` is canonical and open to proposals from every assistant; each assistant folder is maintained only by its own assistant, and generated copies are regenerated from `shared/` rather than edited. See [folder ownership](docs/contributing.md#folder-ownership).
 
 ## Adoption
 Read first. Confirm an immutable released source SHA and the project's authority before changing files. A project's adopted-version record and task records belong in that project. If native discovery requires a local copy, generate only the necessary adapter/snapshot with source path, SHA and hash manifest. Do not maintain hand-edited duplicate master policy. Check for newer reviewed releases at session start; adopt compatible updates only within authority, report breaking changes, and never silently change mid-task policy.
