@@ -1,0 +1,79 @@
+# Project-owned template. Copy to .github/ISSUE_TEMPLATE/task.yml and replace the
+# priority and category options with the project's own scale and label names.
+name: Task
+description: A bounded unit of work that can become Ready under the shared workflow.
+title: "[task] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Propose before filing: the title, the problem in one or two sentences, and why it
+        needs its own record. A part of tracked work is a sub-issue of its parent.
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: Exactly one. Definitions live in this project's instructions. Choose the owner-blocked option when no pull request can close this task.
+      options:
+        - P0
+        - P1
+        - P2
+        - P3
+        - "blocked:owner"
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Exactly one kind. A tracking record only holds sub-issues and needs no priority.
+      options:
+        - security
+        - bug
+        - ops
+        - feature
+        - chore
+        - tracking
+    validations:
+      required: true
+  - type: input
+    id: parent
+    attributes:
+      label: Parent task
+      description: The issue this is a part of, or "none" when it stands alone.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Bounded outcome
+      description: The user-visible result or decision this task supports.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Numbered observable behaviours or results, each with the test, inspection or calculation that establishes it.
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals and dependencies
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Allowed paths, services and actions
+      description: Owned files or components, read-only context, data classification, environment, budget.
+    validations:
+      required: true
+  - type: textarea
+    id: stop
+    attributes:
+      label: Stop conditions
+      description: When to pause for the owner instead of continuing.
+    validations:
+      required: true

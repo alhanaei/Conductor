@@ -41,8 +41,10 @@ An older compatible policy can be pinned by a newer reviewed generator.
 
 To update an unmodified generated skill after reviewing a newer generator,
 preview the same command with `--update`, then add `--apply` within setup authority.
-This retains the same policy and capability pin; custom edits or a different pin remain
-blocked for reconciliation. Updating the skill does not silently rewrite project adoption.
+This retains the same policy and capability pin; custom edits remain blocked for
+reconciliation. Updating the skill does not silently rewrite project adoption. Moving an
+existing adoption to a different policy source is the `migrate` operation, described in
+the [policy migration workflow](migration.md); `generate` at a new pin points there.
 
 For another assistant, generate an equivalent thin native project-init skill using
 this shared procedure and that assistant's verified native mapping. Keep shared policy

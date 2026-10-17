@@ -1,0 +1,1005 @@
+{
+  "files": {
+    ".claude/skills/conductor-project-init/SKILL.md": {
+      "after": "22d5369c50af9a0c2480b5eedfa6e63ab0f5e2dd9fd4f96cca162a016c28725a",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/SKILL.md",
+      "before": "b9a5632ee3ba579c547a3ba7874b010011aae87bf231748f4afc462be5ce6096"
+    },
+    ".claude/skills/conductor-project-init/assets/source/MANIFEST.json": {
+      "after": "7127c8cdbd483dc85e21b8182cc60906dbcd00fc6c989aa647f2ee561bb70bfc",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/MANIFEST.json",
+      "before": "a02438c6d6992cb20d87598a806d9f1eeb3ed8c00b322eb0f7d0a9b02846bf5e"
+    },
+    ".claude/skills/conductor-project-init/assets/source/README.md": {
+      "after": "958df57c93bee997113cda0406071461bcdebed7585e07c2abc731dfde14046a",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/README.md",
+      "before": "8dd12aba21504a8f86aa69a5924130edb0bb6e4d950b733bc147b7d73ef9e7cc"
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/SHA256SUMS": {
+      "after": "9da228ed8185ae6ae0b5859365a487da8ebf76e208d2c34764a1d7dd639c8de1",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/assistants/claude-code/SHA256SUMS",
+      "before": "7a38fa8baf7b3f3e52cec9f07f74c14004610d0c54168e08fe8c41598e17d8a7"
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/global/skills/conductor-init/references/project-init.md": {
+      "after": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/assistants/claude-code/global/skills/conductor-init/references/project-init.md",
+      "before": "155083a747caa7db1a1a22db3ab0557b5e118177968beb59b54bcab5fd184151"
+    },
+    ".claude/skills/conductor-project-init/assets/source/assistants/claude-code/global/skills/conductor-init/scripts/conductor_init.py": {
+      "after": "e0dd4c6b1d2719952dac58c4d82c023adc0683d2957275eba6b661de9200255d",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/assistants/claude-code/global/skills/conductor-init/scripts/conductor_init.py",
+      "before": "85f55cac3f77aea10946dae576a1ce2f80a62890e6a1a531aadfd16bc4423a13"
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/SHA256SUMS": {
+      "after": "ddb0434ef39bc11fec7b5ac9c366cdccaab5641402e973a522ef3ab779aa589c",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/codex/SHA256SUMS",
+      "before": "ba7accb03c01bc9ca5c2fd19d13661ae0018c739c423ed0d248015dd3c85e3d9"
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/global/skills/conductor-init/references/project-init.md": {
+      "after": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/codex/global/skills/conductor-init/references/project-init.md",
+      "before": "155083a747caa7db1a1a22db3ab0557b5e118177968beb59b54bcab5fd184151"
+    },
+    ".claude/skills/conductor-project-init/assets/source/codex/global/skills/conductor-init/scripts/conductor_init.py": {
+      "after": "e0dd4c6b1d2719952dac58c4d82c023adc0683d2957275eba6b661de9200255d",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/codex/global/skills/conductor-init/scripts/conductor_init.py",
+      "before": "85f55cac3f77aea10946dae576a1ce2f80a62890e6a1a531aadfd16bc4423a13"
+    },
+    ".claude/skills/conductor-project-init/assets/source/docs/contributing.md": {
+      "after": "d1cbb4292e82accfbd77593c3e88db5c45f045babb9975bd6642f5eb1756882e",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/docs/contributing.md",
+      "before": "2d7b1f4ba1cbb514f056d4665b2901a9776e138c44588e2aed4de645b10fef81"
+    },
+    ".claude/skills/conductor-project-init/assets/source/docs/project-initialization.md": {
+      "after": "70d0a7f7ea610d2162a4bc269d90dfdba2059e04d21ef915e69ede76db036703",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/docs/project-initialization.md",
+      "before": "21da7faac87b64130993e5f1afd006db2792c1c695234ca730e15bcc4b23d0c1"
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/WORKFLOW.md": {
+      "after": "adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/shared/WORKFLOW.md",
+      "before": "0a8dc78dbaaa801e6f93fcffe02dbd2e46231dddaaa7fac7c69bf259fe4ee04a"
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/harness/README.md": {
+      "after": "62e491e62694e181d2309258fc55d18e7c2a03ad941d5442b1c1efe7b9b03ff1",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/shared/harness/README.md",
+      "before": "923b6f435b82086e1790ff4e2ed7bf2cb85b91209edd7487d35f60b54711c30b"
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/harness/run-contract.schema.json": {
+      "after": "f827ec9dde656be6096e5ecdb6c5cd53b739bafa4aa4ad4a22726c3ff77f91bb",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/shared/harness/run-contract.schema.json",
+      "before": "5f10e5f282c54d08a2bb36e81ebd3a0ab3db633df11bdc57d52ef9278927d3b9"
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/skills/conductor-init/references/project-init.md": {
+      "after": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/shared/skills/conductor-init/references/project-init.md",
+      "before": "155083a747caa7db1a1a22db3ab0557b5e118177968beb59b54bcab5fd184151"
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/skills/conductor-init/scripts/conductor_init.py": {
+      "after": "e0dd4c6b1d2719952dac58c4d82c023adc0683d2957275eba6b661de9200255d",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/shared/skills/conductor-init/scripts/conductor_init.py",
+      "before": "85f55cac3f77aea10946dae576a1ce2f80a62890e6a1a531aadfd16bc4423a13"
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/templates/TASK.md": {
+      "after": "e17d6b42a4684825ca4936999d7a355c96fad28a147d568b169fef268dbf94c0",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/shared/templates/TASK.md",
+      "before": "edbeecdeb3ff0c275d2a9927433036c40de7cfd51130bef50ccdb4f623c6837f"
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/templates/github/ISSUE_TEMPLATE/task.yml": {
+      "after": "cf3f05b3a6e68882e3938acf15eedd08f50c38c9c9eea2b0eae4f803d938b1d7",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/templates/github/pull_request_template.md": {
+      "after": "d20ce8e69db6893032d2982e147265d0007edf3184278477b5ae8f1808e58f1c",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/templates/github/workflows/backlog-review.yml": {
+      "after": "fba8ad03c938c5e742562b23c4b7305a7f31a583a96081b90ba0f7fca5b12630",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/templates/github/workflows/pr-policy.yml": {
+      "after": "a68bef87fb0865b2d6c1eaa6af6b58bbdc315c254e29d9124bd84415e50a5ae2",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/workflows/backlog.md": {
+      "after": "57e8e660a69e3498f3b179827a0e49f8333c302b6362d8dd8eb4f8dcae9620f7",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/workflows/coding.md": {
+      "after": "aef48d97a87e40aaadf1b8eabe24569a841f1a03c01bb15eeb800a4832441b31",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/shared/workflows/coding.md",
+      "before": "be7367820b170b15bbd5c4af16968dfbc8c6a90d9b917293cc2db81628e9e83e"
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/workflows/migration.md": {
+      "after": "3b73f4aecc0dc296411031a5ecb9de949e40f48b69754cc3c9fc08afd5800cb2",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/assets/source/shared/workflows/project-init.md": {
+      "after": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/shared/workflows/project-init.md",
+      "before": "155083a747caa7db1a1a22db3ab0557b5e118177968beb59b54bcab5fd184151"
+    },
+    ".claude/skills/conductor-project-init/assets/source/tests/package_conductor_init.py": {
+      "after": "516a570096439670a266ffc22f68398e02728537c1fe0588bdb550ed1fdd0c65",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/assets/source/tests/package_conductor_init.py",
+      "before": "c524047c9d1ed7171985068f25269cdd1108d4339572a3a0c32daa2b67aeb1a1"
+    },
+    ".claude/skills/conductor-project-init/assets/source/tests/test_conductor_init_migration.py": {
+      "after": "97b437cbc3c58f3db7e7622c79bb4c404732c8bb04ca9740525668dbee45d9fa",
+      "backup": null,
+      "before": null
+    },
+    ".claude/skills/conductor-project-init/generation.json": {
+      "after": "82013e4ed3a703960b6a149e022ceea7d7df6ab43adf23681dc9c7c63d6c599e",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/generation.json",
+      "before": "2feb4330745f0e289c54b8a03882a1054037f9e2c00e6a07ed24126fc0f92eb9"
+    },
+    ".claude/skills/conductor-project-init/scripts/conductor_init.py": {
+      "after": "e0dd4c6b1d2719952dac58c4d82c023adc0683d2957275eba6b661de9200255d",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.claude/skills/conductor-project-init/scripts/conductor_init.py",
+      "before": "85f55cac3f77aea10946dae576a1ce2f80a62890e6a1a531aadfd16bc4423a13"
+    },
+    ".conductor/adoption.json": {
+      "after": "058a9b07eaf620596ef3c6865fb17d84780bc7165f03910969b0a7bf10e0f145",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/adoption.json",
+      "before": "c2924a296d73529a3c3c06efac528a6f1ded42010d9615d69f99c8be96ddfaae"
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/GUIDE.md": {
+      "after": "efb964fb589e2fb670f030ac48ca0eb46f058747bf82fb0a20a410b1cc930458",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/MANIFEST.json": {
+      "after": "7127c8cdbd483dc85e21b8182cc60906dbcd00fc6c989aa647f2ee561bb70bfc",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/README.md": {
+      "after": "958df57c93bee997113cda0406071461bcdebed7585e07c2abc731dfde14046a",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/README.md": {
+      "after": "ca10546f66e540d9e687a028731ae2e17699ea327658ec7a841bc875cc21487b",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/chatgpt/README.md": {
+      "after": "7ba3ba1c254fb8137da9c643a689168671e02f0caf75bd198d3e518a2b597ea8",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/CLOUD-SETUP.md": {
+      "after": "6d5710bd6083f545025adc1383ae79448531bbe75be9b292624b10495519b9b0",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/LOCAL-SETUP.md": {
+      "after": "ef77c6b1cd1af776ca74e2e6a83241b27168c05516a4ca92ed3935daf8957f2b",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/MANIFEST.md": {
+      "after": "f6350d40351b626ef3cc221af5a725252e4ccd9f09c28ea1e8ddd04fd4ff5f14",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/README.md": {
+      "after": "61a94729d301021ff351c1b92a565ca8683a44c8630bcc9feec8153c410fb329",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/SHA256SUMS": {
+      "after": "9da228ed8185ae6ae0b5859365a487da8ebf76e208d2c34764a1d7dd639c8de1",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/global/CLAUDE.md": {
+      "after": "011115c4d3a754e9d2829fdaba0d7393d9b00d9df39e4d948f8e0520524d18b3",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/global/skills/conductor-handoff/SKILL.md": {
+      "after": "c76368ef05b3d3d6376c893472a5b6322f92e292ff3c723bd2577b7b75704fac",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/global/skills/conductor-init/SKILL.md": {
+      "after": "176b6178ea988464b8cb760469a10b1fa5e7dad876ac79350b3c43bf69d13195",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/global/skills/conductor-init/assets/project-skill.md": {
+      "after": "a1477db8e5fbf5d5da23bdad3ffb3388c6868dbd41d255c867c6549ed5f3e2d8",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/global/skills/conductor-init/references/project-init.md": {
+      "after": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/global/skills/conductor-init/scripts/conductor_init.py": {
+      "after": "e0dd4c6b1d2719952dac58c4d82c023adc0683d2957275eba6b661de9200255d",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/project/CLAUDE.md": {
+      "after": "a3a71103b92e9608582e16663b360c80f1c17023b0d5ad4c6db8ff1b6badaef1",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/project/skills/project-verification/SKILL.md": {
+      "after": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/codex/README.md": {
+      "after": "1b3df676bd6ca509e9b91092e998d3145ebc2751623b05a77b5a4ac3fb3d579a",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/copilot/README.md": {
+      "after": "0b81caa48856c437d8190ebc6edd769964e3e49efe6f633c15d5775be711ca70",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/google/README.md": {
+      "after": "9565fcbb01210215376ad1d44eda613f35fd04c8a1bbe5be618d746eaf562b58",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/grok-build/README.md": {
+      "after": "708a1e1813605c71f4a1029a391970cb9935e85b2b55bb07f9f94d719222ae04",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/kilo-code/README.md": {
+      "after": "261fb8eea0088e6532bd080792f41b4ac0750df3b2209552588097fad73b93e6",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/CLOUD-SETUP.md": {
+      "after": "0a4a7cf65344f668eb23e4d82260990cb6962f66bc4415975b46da06ea454a05",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/LOCAL-SETUP.md": {
+      "after": "8a439e488f264452f3dbc55660828678af2a44329bb87fab5df7d0823fd86a46",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/MANIFEST.md": {
+      "after": "3ad65f5d17487df275f56661e0405e989801765b1c708529e0b0cf010c84da0d",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/README.md": {
+      "after": "c680591b2bd38d303842be71b87c1c745d1f62abdcbc7292f14682db05d78a40",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/SHA256SUMS": {
+      "after": "ddb0434ef39bc11fec7b5ac9c366cdccaab5641402e973a522ef3ab779aa589c",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/AGENTS.md": {
+      "after": "7911417c42d72d7b41b3b4912e5b070e8283d49de8d3e1527456afbad2f93892",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-handoff/SKILL.md": {
+      "after": "c76368ef05b3d3d6376c893472a5b6322f92e292ff3c723bd2577b7b75704fac",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-handoff/agents/openai.yaml": {
+      "after": "b9fce49a76ba610b8e92b7aa080719a008f20c82706b60696abf1edc41d325ed",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-init/SKILL.md": {
+      "after": "2926dbf78a9e5b05e9ee93011bf1358718b465a805016a5868123102a9d37a53",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-init/agents/openai.yaml": {
+      "after": "731d4ff8af35bb61fac97f91ff914bb8119dde8f62a2f310b6010742a4326504",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-init/assets/project-skill.md": {
+      "after": "a1477db8e5fbf5d5da23bdad3ffb3388c6868dbd41d255c867c6549ed5f3e2d8",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-init/references/project-init.md": {
+      "after": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-init/scripts/conductor_init.py": {
+      "after": "e0dd4c6b1d2719952dac58c4d82c023adc0683d2957275eba6b661de9200255d",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/project/AGENTS.md": {
+      "after": "8bba859260f88edba5a31cdad9a77e624e9b0e1b5bba36984e40d5ea3a84ad13",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/project/skills/project-verification/SKILL.md": {
+      "after": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/project/skills/project-verification/agents/openai.yaml": {
+      "after": "5237c6b47a74aa1ff645419315a9bdde914154d23d9568fbc85aadf2450852c2",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/shared/PRACTICE.md": {
+      "after": "982631f01b6ec08ca071d1ed91578979dd32b235e9c894ce6baac01c1b4b73eb",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/docs/RELEASE.md": {
+      "after": "3b6f7af62845b8e1ff569bfcee264eda248a642d279c69439bb19af72c212b51",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/docs/contributing.md": {
+      "after": "d1cbb4292e82accfbd77593c3e88db5c45f045babb9975bd6642f5eb1756882e",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/docs/initializer-validation.md": {
+      "after": "ad6b6c288f023d549ee78766cbb7316d729d02bb651bae9ccf973baf111ef728",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/docs/project-initialization.md": {
+      "after": "70d0a7f7ea610d2162a4bc269d90dfdba2059e04d21ef915e69ede76db036703",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/docs/shared-github-workflow-coding-analytics.docx": {
+      "after": "cd326b1b43f2fc9e6f939fb428f2fc46f21c06d6e9a47335e8fe91861df5b8fe",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/WORKFLOW.md": {
+      "after": "adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/harness/README.md": {
+      "after": "62e491e62694e181d2309258fc55d18e7c2a03ad941d5442b1c1efe7b9b03ff1",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/harness/examples/analytics-review-checkpoint.json": {
+      "after": "1d3f3d1c06950aa26666a4f59ff373be6431ac5e08b6f683c6d1ac47b3c19c18",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/harness/examples/coding-quota-checkpoint.json": {
+      "after": "0f9b335d0a78105272d8d0f4989da667512d3945f8fdec4be8021408fae29e8d",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/harness/run-contract.schema.json": {
+      "after": "f827ec9dde656be6096e5ecdb6c5cd53b739bafa4aa4ad4a22726c3ff77f91bb",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/patterns/architecture-patterns.md": {
+      "after": "6f1ea1090c10ea7478c0961c15f3cadd3de07ab770c54c06ae07cfbf39bf87fe",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/prompts/bootstrap.md": {
+      "after": "7e38e9cd5fc88352ec73cb32516e1cec3ec6a02514cac3bddd1fe9f488dc7a5b",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/prompts/coordination.md": {
+      "after": "8a356e8bb28333825ed93c35bb951f611d7cc4912d61a190a05dbcc5bec584cb",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/prompts/resume.md": {
+      "after": "e160b71e40a97ac640bbd875c01e87a42aac611bf27ab3a185b148941b9e3998",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/prompts/reviewer.md": {
+      "after": "1cc192203cb27607bb04b158571bcd97178c852c8fa2ec5294f0de4e22b32d07",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/prompts/worker.md": {
+      "after": "537e42077094be6a1c3a90998d6bc7061ccfa36388502333dfb6eb8414d1cc9e",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/analytics-task/SKILL.md": {
+      "after": "d71269b57af76c5385cff322f2bb49fe962cfbaa9fd271f7fee4da07d5afd813",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/checkpoint-handoff/SKILL.md": {
+      "after": "f3e5929f0bec8e5cb5ffb79ab85e92c981d966ff3e8757c7f3b5f9897d90053f",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/coding-task/SKILL.md": {
+      "after": "60e363e503012e01432d0b977ed87d90daecabc3d99248570aa1d62e98631a48",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/conductor-init/SKILL.md": {
+      "after": "c24c12c69122509aab555e210b48d646ef3b02998d45d2750d5dec7c4771079e",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/conductor-init/assets/project-skill.md": {
+      "after": "a1477db8e5fbf5d5da23bdad3ffb3388c6868dbd41d255c867c6549ed5f3e2d8",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/conductor-init/references/project-init.md": {
+      "after": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/conductor-init/scripts/conductor_init.py": {
+      "after": "e0dd4c6b1d2719952dac58c4d82c023adc0683d2957275eba6b661de9200255d",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/independent-review/SKILL.md": {
+      "after": "b2f9c6916e1b736b3b96bea75606d15c4d6dc488921499387f10cfb7f46d7cd8",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/techniques/verification.md": {
+      "after": "bf671e9d3dc2a7d9ec613785a7eb1f5d69df32ed412a6199fbd35af7490bdc12",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/ADAPTER-MANIFEST.example.json": {
+      "after": "804c199eadf7298a736c43cd0481e01294f0a80bce69cd51da912d6be2d40957",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/AGENTS.template.md": {
+      "after": "7369013bb2c4ac4bdd39d6a947d38712886f0a4089cca25fcb982b32f577def9",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/HANDOFF.md": {
+      "after": "1dbd2df383cf8063223dce7a3f02add69fd006c29f32ea8efd3c41ac4acb7412",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/INSTRUCTION-VERSION.md": {
+      "after": "6470be17c44ab984ceb2416ea494e4ebc86105b60b977b73d5afe6230bada95d",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/PROJECT.md": {
+      "after": "8c6faddb431b81a9896c20c6c87a1b6997c5a36374460476b3bbc7061e8d0184",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/STATUS-UPDATE.md": {
+      "after": "f79089962e97b4b8ec9980fd69429b2a9777a0fe902dcf4b021b32efed751296",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/TASK.md": {
+      "after": "e17d6b42a4684825ca4936999d7a355c96fad28a147d568b169fef268dbf94c0",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/github/ISSUE_TEMPLATE/task.yml": {
+      "after": "cf3f05b3a6e68882e3938acf15eedd08f50c38c9c9eea2b0eae4f803d938b1d7",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/github/pull_request_template.md": {
+      "after": "d20ce8e69db6893032d2982e147265d0007edf3184278477b5ae8f1808e58f1c",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/github/workflows/backlog-review.yml": {
+      "after": "fba8ad03c938c5e742562b23c4b7305a7f31a583a96081b90ba0f7fca5b12630",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/github/workflows/pr-policy.yml": {
+      "after": "a68bef87fb0865b2d6c1eaa6af6b58bbdc315c254e29d9124bd84415e50a5ae2",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/analytics.md": {
+      "after": "06548ee659bf12be71fb3a04dcca511f20fd1ca55937d13ce10b1d7c89fcca69",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/backlog.md": {
+      "after": "57e8e660a69e3498f3b179827a0e49f8333c302b6362d8dd8eb4f8dcae9620f7",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/coding.md": {
+      "after": "aef48d97a87e40aaadf1b8eabe24569a841f1a03c01bb15eeb800a4832441b31",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/handoff.md": {
+      "after": "40588830fb285b0e0c9e9b0748bddd0a5c186e237a42271dcac9423d226fd993",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/migration.md": {
+      "after": "3b73f4aecc0dc296411031a5ecb9de949e40f48b69754cc3c9fc08afd5800cb2",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/project-init.md": {
+      "after": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/review.md": {
+      "after": "754483f7d6e8e8e764d7396991df365d52235bab283efafc9c8e642a11cd4ba7",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/sources/SOURCE-REGISTER.md": {
+      "after": "5751e49972a02dab512d5a7096d0579b629264eeaf14962f6bc549b9b67462a1",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/tests/package_conductor_init.py": {
+      "after": "516a570096439670a266ffc22f68398e02728537c1fe0588bdb550ed1fdd0c65",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/tests/test_conductor_init.py": {
+      "after": "c7130214cab9fdfdf413df6314828947aa1183cacefcc87429823ee4cfc96fd1",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/tests/test_conductor_init_claude.py": {
+      "after": "8be782c35a5a928fd29e2b021dc080c4eb20a29d90aa412437eb27c835437524",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/tests/test_conductor_init_migration.py": {
+      "after": "97b437cbc3c58f3db7e7622c79bb4c404732c8bb04ca9740525668dbee45d9fa",
+      "backup": null,
+      "before": null
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/GUIDE.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/GUIDE.md",
+      "before": "efb964fb589e2fb670f030ac48ca0eb46f058747bf82fb0a20a410b1cc930458"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/MANIFEST.json": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/MANIFEST.json",
+      "before": "a02438c6d6992cb20d87598a806d9f1eeb3ed8c00b322eb0f7d0a9b02846bf5e"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/README.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/README.md",
+      "before": "8dd12aba21504a8f86aa69a5924130edb0bb6e4d950b733bc147b7d73ef9e7cc"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/README.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/README.md",
+      "before": "ca10546f66e540d9e687a028731ae2e17699ea327658ec7a841bc875cc21487b"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/chatgpt/README.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/chatgpt/README.md",
+      "before": "7ba3ba1c254fb8137da9c643a689168671e02f0caf75bd198d3e518a2b597ea8"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/CLOUD-SETUP.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/CLOUD-SETUP.md",
+      "before": "6d5710bd6083f545025adc1383ae79448531bbe75be9b292624b10495519b9b0"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/LOCAL-SETUP.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/LOCAL-SETUP.md",
+      "before": "ef77c6b1cd1af776ca74e2e6a83241b27168c05516a4ca92ed3935daf8957f2b"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/MANIFEST.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/MANIFEST.md",
+      "before": "f6350d40351b626ef3cc221af5a725252e4ccd9f09c28ea1e8ddd04fd4ff5f14"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/README.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/README.md",
+      "before": "61a94729d301021ff351c1b92a565ca8683a44c8630bcc9feec8153c410fb329"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/SHA256SUMS": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/SHA256SUMS",
+      "before": "7a38fa8baf7b3f3e52cec9f07f74c14004610d0c54168e08fe8c41598e17d8a7"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/global/CLAUDE.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/global/CLAUDE.md",
+      "before": "011115c4d3a754e9d2829fdaba0d7393d9b00d9df39e4d948f8e0520524d18b3"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/global/skills/conductor-handoff/SKILL.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/global/skills/conductor-handoff/SKILL.md",
+      "before": "c76368ef05b3d3d6376c893472a5b6322f92e292ff3c723bd2577b7b75704fac"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/global/skills/conductor-init/SKILL.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/global/skills/conductor-init/SKILL.md",
+      "before": "176b6178ea988464b8cb760469a10b1fa5e7dad876ac79350b3c43bf69d13195"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/global/skills/conductor-init/assets/project-skill.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/global/skills/conductor-init/assets/project-skill.md",
+      "before": "a1477db8e5fbf5d5da23bdad3ffb3388c6868dbd41d255c867c6549ed5f3e2d8"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/global/skills/conductor-init/references/project-init.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/global/skills/conductor-init/references/project-init.md",
+      "before": "155083a747caa7db1a1a22db3ab0557b5e118177968beb59b54bcab5fd184151"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/global/skills/conductor-init/scripts/conductor_init.py": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/global/skills/conductor-init/scripts/conductor_init.py",
+      "before": "85f55cac3f77aea10946dae576a1ce2f80a62890e6a1a531aadfd16bc4423a13"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/project/CLAUDE.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/project/CLAUDE.md",
+      "before": "a3a71103b92e9608582e16663b360c80f1c17023b0d5ad4c6db8ff1b6badaef1"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/project/skills/project-verification/SKILL.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/claude-code/project/skills/project-verification/SKILL.md",
+      "before": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/codex/README.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/codex/README.md",
+      "before": "1b3df676bd6ca509e9b91092e998d3145ebc2751623b05a77b5a4ac3fb3d579a"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/copilot/README.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/copilot/README.md",
+      "before": "0b81caa48856c437d8190ebc6edd769964e3e49efe6f633c15d5775be711ca70"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/google/README.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/google/README.md",
+      "before": "9565fcbb01210215376ad1d44eda613f35fd04c8a1bbe5be618d746eaf562b58"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/grok-build/README.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/grok-build/README.md",
+      "before": "708a1e1813605c71f4a1029a391970cb9935e85b2b55bb07f9f94d719222ae04"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/kilo-code/README.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/assistants/kilo-code/README.md",
+      "before": "261fb8eea0088e6532bd080792f41b4ac0750df3b2209552588097fad73b93e6"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/CLOUD-SETUP.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/CLOUD-SETUP.md",
+      "before": "0a4a7cf65344f668eb23e4d82260990cb6962f66bc4415975b46da06ea454a05"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/LOCAL-SETUP.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/LOCAL-SETUP.md",
+      "before": "8a439e488f264452f3dbc55660828678af2a44329bb87fab5df7d0823fd86a46"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/MANIFEST.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/MANIFEST.md",
+      "before": "3ad65f5d17487df275f56661e0405e989801765b1c708529e0b0cf010c84da0d"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/README.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/README.md",
+      "before": "c680591b2bd38d303842be71b87c1c745d1f62abdcbc7292f14682db05d78a40"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/SHA256SUMS": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/SHA256SUMS",
+      "before": "ba7accb03c01bc9ca5c2fd19d13661ae0018c739c423ed0d248015dd3c85e3d9"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/AGENTS.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/AGENTS.md",
+      "before": "7911417c42d72d7b41b3b4912e5b070e8283d49de8d3e1527456afbad2f93892"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-handoff/SKILL.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-handoff/SKILL.md",
+      "before": "c76368ef05b3d3d6376c893472a5b6322f92e292ff3c723bd2577b7b75704fac"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-handoff/agents/openai.yaml": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-handoff/agents/openai.yaml",
+      "before": "b9fce49a76ba610b8e92b7aa080719a008f20c82706b60696abf1edc41d325ed"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-init/SKILL.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-init/SKILL.md",
+      "before": "2926dbf78a9e5b05e9ee93011bf1358718b465a805016a5868123102a9d37a53"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-init/agents/openai.yaml": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-init/agents/openai.yaml",
+      "before": "731d4ff8af35bb61fac97f91ff914bb8119dde8f62a2f310b6010742a4326504"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-init/assets/project-skill.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-init/assets/project-skill.md",
+      "before": "a1477db8e5fbf5d5da23bdad3ffb3388c6868dbd41d255c867c6549ed5f3e2d8"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-init/references/project-init.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-init/references/project-init.md",
+      "before": "155083a747caa7db1a1a22db3ab0557b5e118177968beb59b54bcab5fd184151"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-init/scripts/conductor_init.py": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/global/skills/conductor-init/scripts/conductor_init.py",
+      "before": "85f55cac3f77aea10946dae576a1ce2f80a62890e6a1a531aadfd16bc4423a13"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/project/AGENTS.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/project/AGENTS.md",
+      "before": "8bba859260f88edba5a31cdad9a77e624e9b0e1b5bba36984e40d5ea3a84ad13"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/project/skills/project-verification/SKILL.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/project/skills/project-verification/SKILL.md",
+      "before": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/project/skills/project-verification/agents/openai.yaml": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/project/skills/project-verification/agents/openai.yaml",
+      "before": "5237c6b47a74aa1ff645419315a9bdde914154d23d9568fbc85aadf2450852c2"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/shared/PRACTICE.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/codex/shared/PRACTICE.md",
+      "before": "982631f01b6ec08ca071d1ed91578979dd32b235e9c894ce6baac01c1b4b73eb"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/docs/RELEASE.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/docs/RELEASE.md",
+      "before": "3b6f7af62845b8e1ff569bfcee264eda248a642d279c69439bb19af72c212b51"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/docs/contributing.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/docs/contributing.md",
+      "before": "2d7b1f4ba1cbb514f056d4665b2901a9776e138c44588e2aed4de645b10fef81"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/docs/initializer-validation.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/docs/initializer-validation.md",
+      "before": "ad6b6c288f023d549ee78766cbb7316d729d02bb651bae9ccf973baf111ef728"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/docs/project-initialization.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/docs/project-initialization.md",
+      "before": "21da7faac87b64130993e5f1afd006db2792c1c695234ca730e15bcc4b23d0c1"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/docs/shared-github-workflow-coding-analytics.docx": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/docs/shared-github-workflow-coding-analytics.docx",
+      "before": "cd326b1b43f2fc9e6f939fb428f2fc46f21c06d6e9a47335e8fe91861df5b8fe"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/WORKFLOW.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/WORKFLOW.md",
+      "before": "0a8dc78dbaaa801e6f93fcffe02dbd2e46231dddaaa7fac7c69bf259fe4ee04a"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/harness/README.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/harness/README.md",
+      "before": "923b6f435b82086e1790ff4e2ed7bf2cb85b91209edd7487d35f60b54711c30b"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/harness/examples/analytics-review-checkpoint.json": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/harness/examples/analytics-review-checkpoint.json",
+      "before": "1d3f3d1c06950aa26666a4f59ff373be6431ac5e08b6f683c6d1ac47b3c19c18"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/harness/examples/coding-quota-checkpoint.json": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/harness/examples/coding-quota-checkpoint.json",
+      "before": "0f9b335d0a78105272d8d0f4989da667512d3945f8fdec4be8021408fae29e8d"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/harness/run-contract.schema.json": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/harness/run-contract.schema.json",
+      "before": "5f10e5f282c54d08a2bb36e81ebd3a0ab3db633df11bdc57d52ef9278927d3b9"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/patterns/architecture-patterns.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/patterns/architecture-patterns.md",
+      "before": "6f1ea1090c10ea7478c0961c15f3cadd3de07ab770c54c06ae07cfbf39bf87fe"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/prompts/bootstrap.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/prompts/bootstrap.md",
+      "before": "7e38e9cd5fc88352ec73cb32516e1cec3ec6a02514cac3bddd1fe9f488dc7a5b"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/prompts/coordination.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/prompts/coordination.md",
+      "before": "8a356e8bb28333825ed93c35bb951f611d7cc4912d61a190a05dbcc5bec584cb"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/prompts/resume.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/prompts/resume.md",
+      "before": "e160b71e40a97ac640bbd875c01e87a42aac611bf27ab3a185b148941b9e3998"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/prompts/reviewer.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/prompts/reviewer.md",
+      "before": "1cc192203cb27607bb04b158571bcd97178c852c8fa2ec5294f0de4e22b32d07"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/prompts/worker.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/prompts/worker.md",
+      "before": "537e42077094be6a1c3a90998d6bc7061ccfa36388502333dfb6eb8414d1cc9e"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/analytics-task/SKILL.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/analytics-task/SKILL.md",
+      "before": "d71269b57af76c5385cff322f2bb49fe962cfbaa9fd271f7fee4da07d5afd813"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/checkpoint-handoff/SKILL.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/checkpoint-handoff/SKILL.md",
+      "before": "f3e5929f0bec8e5cb5ffb79ab85e92c981d966ff3e8757c7f3b5f9897d90053f"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/coding-task/SKILL.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/coding-task/SKILL.md",
+      "before": "60e363e503012e01432d0b977ed87d90daecabc3d99248570aa1d62e98631a48"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/conductor-init/SKILL.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/conductor-init/SKILL.md",
+      "before": "c24c12c69122509aab555e210b48d646ef3b02998d45d2750d5dec7c4771079e"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/conductor-init/assets/project-skill.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/conductor-init/assets/project-skill.md",
+      "before": "a1477db8e5fbf5d5da23bdad3ffb3388c6868dbd41d255c867c6549ed5f3e2d8"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/conductor-init/references/project-init.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/conductor-init/references/project-init.md",
+      "before": "155083a747caa7db1a1a22db3ab0557b5e118177968beb59b54bcab5fd184151"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/conductor-init/scripts/conductor_init.py": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/conductor-init/scripts/conductor_init.py",
+      "before": "85f55cac3f77aea10946dae576a1ce2f80a62890e6a1a531aadfd16bc4423a13"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/independent-review/SKILL.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/skills/independent-review/SKILL.md",
+      "before": "b2f9c6916e1b736b3b96bea75606d15c4d6dc488921499387f10cfb7f46d7cd8"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/techniques/verification.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/techniques/verification.md",
+      "before": "bf671e9d3dc2a7d9ec613785a7eb1f5d69df32ed412a6199fbd35af7490bdc12"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/ADAPTER-MANIFEST.example.json": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/ADAPTER-MANIFEST.example.json",
+      "before": "804c199eadf7298a736c43cd0481e01294f0a80bce69cd51da912d6be2d40957"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/AGENTS.template.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/AGENTS.template.md",
+      "before": "7369013bb2c4ac4bdd39d6a947d38712886f0a4089cca25fcb982b32f577def9"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/HANDOFF.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/HANDOFF.md",
+      "before": "1dbd2df383cf8063223dce7a3f02add69fd006c29f32ea8efd3c41ac4acb7412"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/INSTRUCTION-VERSION.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/INSTRUCTION-VERSION.md",
+      "before": "6470be17c44ab984ceb2416ea494e4ebc86105b60b977b73d5afe6230bada95d"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/PROJECT.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/PROJECT.md",
+      "before": "8c6faddb431b81a9896c20c6c87a1b6997c5a36374460476b3bbc7061e8d0184"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/STATUS-UPDATE.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/STATUS-UPDATE.md",
+      "before": "f79089962e97b4b8ec9980fd69429b2a9777a0fe902dcf4b021b32efed751296"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/TASK.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/templates/TASK.md",
+      "before": "edbeecdeb3ff0c275d2a9927433036c40de7cfd51130bef50ccdb4f623c6837f"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/workflows/analytics.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/workflows/analytics.md",
+      "before": "06548ee659bf12be71fb3a04dcca511f20fd1ca55937d13ce10b1d7c89fcca69"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/workflows/coding.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/workflows/coding.md",
+      "before": "be7367820b170b15bbd5c4af16968dfbc8c6a90d9b917293cc2db81628e9e83e"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/workflows/handoff.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/workflows/handoff.md",
+      "before": "40588830fb285b0e0c9e9b0748bddd0a5c186e237a42271dcac9423d226fd993"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/workflows/project-init.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/workflows/project-init.md",
+      "before": "155083a747caa7db1a1a22db3ab0557b5e118177968beb59b54bcab5fd184151"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/workflows/review.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/shared/workflows/review.md",
+      "before": "754483f7d6e8e8e764d7396991df365d52235bab283efafc9c8e642a11cd4ba7"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/sources/SOURCE-REGISTER.md": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/sources/SOURCE-REGISTER.md",
+      "before": "5751e49972a02dab512d5a7096d0579b629264eeaf14962f6bc549b9b67462a1"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/tests/package_conductor_init.py": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/tests/package_conductor_init.py",
+      "before": "c524047c9d1ed7171985068f25269cdd1108d4339572a3a0c32daa2b67aeb1a1"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/tests/test_conductor_init.py": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/tests/test_conductor_init.py",
+      "before": "c7130214cab9fdfdf413df6314828947aa1183cacefcc87429823ee4cfc96fd1"
+    },
+    ".conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/tests/test_conductor_init_claude.py": {
+      "after": null,
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/.conductor/policy/aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6/tests/test_conductor_init_claude.py",
+      "before": "8be782c35a5a928fd29e2b021dc080c4eb20a29d90aa412437eb27c835437524"
+    },
+    "AGENTS.md": {
+      "after": "1e0e6cbff4609f6aeda5547bdf104460252b52cb081fba5291d5c276243c5081",
+      "backup": ".conductor/backups/0fce5b0002254089ab1322cb153495fb/before/AGENTS.md",
+      "before": "0aaf301936d5e6e864aa53937f4e3e3c8376203a82a555cd39758db535685bde"
+    }
+  },
+  "version": 1
+}
