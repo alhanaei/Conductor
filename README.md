@@ -23,7 +23,7 @@ This kit contains shared practice, templates and an explicitly invoked project-i
 - `shared/templates/github/`: issue form, pull request template, pull request check and scheduled reconciliation report to copy into a project's `.github/`
 - `shared/prompts/`: reusable adoption, task, review and resume prompts
 - `assistants/<vendor>/`: thin setup, capabilities, entrypoints, known limits and tested/adopted version metadata; maintained only by that assistant
-- `docs/`: contributions, compatibility and releases
+- `docs/`: contributions, compatibility, releases and this library's own ADRs under `docs/adr/`
 - `sources/`: primary evidence checked on 9 October 2026
 
 Ownership: `shared/` is canonical and open to proposals from every assistant; each assistant folder is maintained only by its own assistant, and generated copies are regenerated from `shared/` rather than edited. See [folder ownership](docs/contributing.md#folder-ownership).
