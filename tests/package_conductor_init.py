@@ -27,6 +27,7 @@ WRAPPER_ALLOWLIST = {
         "analytics-task": "Codex copies requested on #15",
         "independent-review": "Codex copies requested on #15",
         "backlog-task": "Codex copies requested on #15",
+        "gate-review": "Codex copy requested on #3 (PR #4)",
     },
     "assistants/claude-code/": {
         "backlog-task": "Claude Code copy deferred by #15 until #14 (PR #17) landed; now due",
