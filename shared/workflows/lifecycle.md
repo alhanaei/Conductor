@@ -20,9 +20,9 @@ Discover and Define may collapse into one phase for small internal work. Design 
 
 Plan backwards from the gate: criteria first, then outputs, then tasks.
 
-1. Copy the gate criteria to the top of the phase plan and make each specific to the project (the metric has a number; the contract rows name commands).
+1. Copy the gate criteria to the top of the phase plan and make each specific to the project (the metric has a number; the contract rows name commands). Settle open criteria with the owner by [grilling](../techniques/grilling.md): rounds of numbered questions with recommended answers, facts looked up, decisions put to the owner.
 2. List outputs, one line each, with an owner. An output without an owner is unplanned; an output no gate reads is cut.
-3. Break outputs into tasks of at most two days. Record them in the project's task source under the phase's milestone.
+3. Break outputs into tasks of at most two days, each sized to one assistant session, with blocking edges, using the [to-tickets workflow](to-tickets.md). Record them as sub-tasks in the project's task source under the phase's milestone.
 4. Order by dependency, then by risk: the most likely failure first, while there is time to change course.
 5. Size against real capacity. When tasks exceed days, cut tasks; never cut the gate.
 6. Set the time-box and the demo date. The phase ends on the date; undone work is cut or carried with a stated reason.
