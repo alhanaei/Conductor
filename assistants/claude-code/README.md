@@ -6,7 +6,9 @@ Use [shared policy](../../shared/WORKFLOW.md); current jobs belong in project is
 Conductor is the canonical shared-practice library. This folder holds the thin Claude Code
 adapter: how Claude Code discovers instructions and skills, the installable templates, and
 the adoption record. It mirrors the [Codex kit](../../codex/README.md) so that both
-assistants read one project record and carry the same skill names and bodies. Each actual
+assistants read one project record; the two kits carry the same `conductor-init`,
+`conductor-handoff` and `project-verification` names and bodies, and this kit also carries
+native copies of the shared task wrappers that the Codex kit does not yet have. Each actual
 project repository owns its state, plans, issues, current task owner, checkpoints, code
 and data deliverables. This kit creates no runtime, hook, credential or integration.
 
@@ -18,6 +20,9 @@ and data deliverables. This kit creates no runtime, hook, credential or integrat
 | [project/CLAUDE.md](project/CLAUDE.md) | Thin project adapter → target repository root `CLAUDE.md`; imports the project `AGENTS.md` |
 | [conductor-handoff](global/skills/conductor-handoff/SKILL.md) | General skill → user `~/.claude/skills/conductor-handoff/` |
 | [project-verification](project/skills/project-verification/SKILL.md) | Project skill → repository `.claude/skills/project-verification/` |
+| [coding-task](global/skills/coding-task/SKILL.md) | General skill → user `~/.claude/skills/coding-task/`; native copy of the shared `coding-task` wrapper |
+| [analytics-task](global/skills/analytics-task/SKILL.md) | General skill → user `~/.claude/skills/analytics-task/`; native copy of the shared `analytics-task` wrapper |
+| [independent-review](global/skills/independent-review/SKILL.md) | General skill → user `~/.claude/skills/independent-review/`; native copy of the shared `independent-review` wrapper |
 | [conductor-init](global/skills/conductor-init/SKILL.md) | Generate a native project initializer; optional personal installation to `~/.claude/skills/conductor-init/` only within that scope |
 | [LOCAL-SETUP.md](LOCAL-SETUP.md) | Local installation, discovery check and rollback procedure |
 | [CLOUD-SETUP.md](CLOUD-SETUP.md) | Cloud session and Remote Control differences |
