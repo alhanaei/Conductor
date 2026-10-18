@@ -18,7 +18,7 @@ Q2 - <question title>: ...
 Recommended: ...
 ```
 
-Grilling stays plain text: no platform question widget, no form. It works in every assistant and every surface, and the owner's answers land in the record as written.
+Grilling stays plain text: no platform question widget, no form. It works in every assistant and every surface (a terminal agent, Copilot Chat, a cloud agent commenting on an issue), and the owner's answers land in the record as written. On a surface that runs asynchronously, such as a cloud agent, a round is one comment on the record and the owner's reply is the next.
 
 ## Facts are the assistant's job; decisions are the owner's
 

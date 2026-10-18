@@ -35,5 +35,8 @@ The shared workflow remains canonical; this file only makes it discoverable.
    otherwise a Blocked by list. Describe behaviour from the user's side; keep file paths and
    code out of the body except a prototype-encoded decision. Link the children from the
    parent; do not close or otherwise edit it.
+   A filed sub-task may be handed to a cloud coding agent (Copilot coding agent by
+   assignment, Codex cloud, Claude Code on the web) only within the task's authorization;
+   that agent starts with no context, so the body must stand alone.
 7. Stop there. Filed slices are selectable under the backlog workflow's priority rule;
    starting one follows the common workflow's Ready to In progress gate, not this skill.
