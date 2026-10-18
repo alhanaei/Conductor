@@ -29,10 +29,7 @@ WRAPPER_ALLOWLIST = {
         "backlog-task": "Codex copies requested on #15",
     },
     "assistants/claude-code/": {
-        "coding-task": "lands with #15 (PR #23)",
-        "analytics-task": "lands with #15 (PR #23)",
-        "independent-review": "lands with #15 (PR #23)",
-        "backlog-task": "follows #14 (PR #17) under #15",
+        "backlog-task": "Claude Code copy deferred by #15 until #14 (PR #17) landed; now due",
     },
 }
 

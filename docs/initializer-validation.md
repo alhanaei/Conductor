@@ -9,6 +9,9 @@ copy of a `shared/skills` wrapper under its `global/skills/`, naming the kit and
 record that tracks each, and an entry whose copy exists fails as stale so the list shrinks
 as copies land. `tests/test_package_check.py` covers the missing, aliased, allowlisted,
 stale and per-kit cases and runs the rule on the repository itself. Suite: 72 tests.
+Allowlist at the first green run on `main`: the Codex kit for `coding-task`, `analytics-task`,
+`independent-review` and `backlog-task` (copies requested on #15); the Claude Code kit for
+`backlog-task` only, the other three having landed with PR #23.
 
 ## 12 October 2026 — Claude Code mapping added
 
