@@ -24,6 +24,8 @@ and data deliverables. This kit creates no runtime, hook, credential or integrat
 | [analytics-task](global/skills/analytics-task/SKILL.md) | General skill → user `~/.claude/skills/analytics-task/`; native copy of the shared `analytics-task` wrapper |
 | [independent-review](global/skills/independent-review/SKILL.md) | General skill → user `~/.claude/skills/independent-review/`; native copy of the shared `independent-review` wrapper |
 | [gate-review](global/skills/gate-review/SKILL.md) | General skill → user `~/.claude/skills/gate-review/`; native copy of the shared `gate-review` wrapper for the lifecycle workflow |
+| [grilling](global/skills/grilling/SKILL.md) | General skill → user `~/.claude/skills/grilling/`; native copy of the shared `grilling` technique wrapper |
+| [to-tickets](global/skills/to-tickets/SKILL.md) | General skill → user `~/.claude/skills/to-tickets/`; native copy of the shared `to-tickets` wrapper |
 | [conductor-init](global/skills/conductor-init/SKILL.md) | Generate a native project initializer; optional personal installation to `~/.claude/skills/conductor-init/` only within that scope |
 | [LOCAL-SETUP.md](LOCAL-SETUP.md) | Local installation, discovery check and rollback procedure |
 | [CLOUD-SETUP.md](CLOUD-SETUP.md) | Cloud session, Remote Control and Projects (beta) differences |

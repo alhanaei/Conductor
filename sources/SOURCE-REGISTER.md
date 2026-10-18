@@ -38,4 +38,6 @@ Primary references checked on 9 October 2026. Design choices in this kit are pro
 
 - **P7** [Kilo skills](https://kilo.ai/docs/customize/skills) — Current shared and native skill locations
 
+- **S1** [mattpocock/skills at 49dd158](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336) — MIT-licensed skill library consulted 18 October 2026; the pull request Merge danger section (#26) and the grilling and to-tickets procedures (#25) are adapted from it, not vendored
+
 Additional provider-specific primary links and dated caveats are in the corresponding assistants/ folder. Media-Studio is a project-specific source example; its release pipeline is not a universal policy.
