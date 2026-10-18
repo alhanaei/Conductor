@@ -52,6 +52,7 @@
     "codex/shared/PRACTICE.md": "982631f01b6ec08ca071d1ed91578979dd32b235e9c894ce6baac01c1b4b73eb",
     "docs/RELEASE.md": "3b6f7af62845b8e1ff569bfcee264eda248a642d279c69439bb19af72c212b51",
     "docs/adr/0002-one-claude-code-kit.md": "5e4836336c85ec3154bfb9fc04d57d74ea284e69e11e1f28c7016ec1836d0e82",
+    "docs/adr/0003-backlog-gates-and-roles.md": "4182fc0e20f00d1f40bf6f98f1342a95ca85593624ca5e39f51498e86ff0c529",
     "docs/contributing.md": "d1cbb4292e82accfbd77593c3e88db5c45f045babb9975bd6642f5eb1756882e",
     "docs/initializer-validation.md": "15aa62061eda9be074ffd4e50bb9aaffd98650fca80b1b26161bc88eb0d7c531",
     "docs/project-initialization.md": "70d0a7f7ea610d2162a4bc269d90dfdba2059e04d21ef915e69ede76db036703",
