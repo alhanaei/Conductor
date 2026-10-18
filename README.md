@@ -14,8 +14,8 @@ This kit contains shared practice, templates and an explicitly invoked project-i
 - [Dated source register](sources/SOURCE-REGISTER.md)
 
 ## Structure
-- `shared/workflows/`: complete backlog, coding, analytics, review, handoff and policy-migration procedures
-- `shared/skills/`: minimal skill wrappers (`conductor-init`, `backlog-task`, `coding-task`, `analytics-task`, `independent-review`, `checkpoint-handoff`); generate native copies only after discovery is verified
+- `shared/workflows/`: complete backlog, coding, analytics, review, handoff, policy-migration and project-lifecycle procedures
+- `shared/skills/`: minimal skill wrappers (`conductor-init`, `backlog-task`, `coding-task`, `analytics-task`, `independent-review`, `checkpoint-handoff`, `gate-review`); generate native copies only after discovery is verified
 - `shared/techniques/`: reusable practical methods
 - `shared/patterns/`: general architecture options; actual decisions remain project ADRs
 - `shared/harness/`: portable task/checkpoint schema, fictional examples and contract guidance

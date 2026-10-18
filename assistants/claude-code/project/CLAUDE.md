@@ -22,9 +22,10 @@ optional facts. Keep live task state in the checkpoint, not in Conductor.
 ## Claude Code specifics
 
 - Project skill: `.claude/skills/project-verification/` runs the verification contract
-  defined in `AGENTS.md`. Personal skill: `~/.claude/skills/conductor-handoff/` prepares
-  the project checkpoint at `{{PROJECT_CHECKPOINT_PATH}}`. The shared workflow remains
-  usable without skill discovery.
+  defined in `AGENTS.md`. Personal skills: `~/.claude/skills/conductor-handoff/` prepares
+  the project checkpoint at `{{PROJECT_CHECKPOINT_PATH}}`; `~/.claude/skills/gate-review/`
+  reviews a phase against its lifecycle gate (G0–G5) and returns a decision for the project
+  record. The shared workflow remains usable without skill discovery.
 - Same-named skills installed for other assistants (for example `.agents/skills/`) are
   pinned copies of the same source; do not edit one copy independently.
 - Explicit task limits recorded in `AGENTS.md` or the checkpoint take precedence over
