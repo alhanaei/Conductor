@@ -69,4 +69,7 @@ recorded in the project's own instructions; this file defines the dimensions and
 Project templates for GitHub live in [shared/templates/github/](../templates/github/): an
 issue form carrying the readiness fields, a pull request template with the verification
 ledger, a pull request check for the linked task's labels, and a scheduled reconciliation
-report. Copy them into the project's `.github/` and adjust the label names there.
+report. Copy them into the project's `.github/` and adjust the label names there. The check
+accepts `Refs #n` in place of a closing keyword only when every changed file is a record (by
+default `docs/adr/` and the checkpoint), because a decision record or a checkpoint documents
+a task without closing it; it still requires the referenced task's priority and category.
