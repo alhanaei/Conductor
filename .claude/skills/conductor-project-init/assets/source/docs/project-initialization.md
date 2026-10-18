@@ -133,6 +133,24 @@ with SHA/digests; generator provenance is separate from policy provenance.
 Project/global scope and local/cloud execution are independent. `execution: cloud`
 does not create a saved cloud environment or expand project installation scope.
 
+## Migrating to a newer policy source
+
+An adoption stays at its pin until the owner approves a migration. From the new source's
+skill folder, preview and then apply:
+
+```sh
+python3 scripts/conductor_init.py migrate --target /approved/project --source /reviewed/Conductor --source-sha <new-full-sha>
+```
+
+The first assistant to migrate moves the shared record: the `AGENTS.md` section, the policy
+snapshot (the previous one is removed in the same transaction), its own generated skill
+and its verification skill when the record owns it. Every other assistant that onboarded
+runs the same command for its own skill; until it does, its `onboard` is blocked and
+`.conductor/adoption.json` lists it under `assistant_pins` at the previous pin. The record
+keeps the history under `migrations`. Rollback uses the migration's transaction. Personal
+and global adapters are moved by hand under the same decision. The full procedure is
+[shared/workflows/migration.md](../shared/workflows/migration.md).
+
 ## Reruns, rollback and limitations
 
 Identical reruns are exact no-ops. Missing essential facts or unsupported capabilities

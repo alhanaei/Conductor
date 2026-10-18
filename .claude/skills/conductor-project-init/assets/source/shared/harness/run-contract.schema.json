@@ -93,6 +93,33 @@
         "project_record_ref": {
           "type": "string",
           "minLength": 1
+        },
+        "priority": {
+          "description": "Exactly one value from the project's ordered scale; null only for tracking records.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "category": {
+          "description": "Exactly one project-defined kind.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "parent_task_ref": {
+          "description": "The tracked parent when this task is one part of it.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "owner_blocked": {
+          "description": "True when no pull request can close the task; it is out of the queue.",
+          "type": "boolean"
         }
       },
       "required": [

@@ -15,6 +15,24 @@ NATIVE = {
                                 "assistants/claude-code/SHA256SUMS"),
 }
 TEMPLATE_PLACEHOLDERS = ("@SOURCE_SHA@", "@ASSISTANT@", "@NATIVE_SKILLS@", "@INVOCATION@")
+# Every shared/skills wrapper needs a same-named native copy in each kit's global skills,
+# except where WRAPPER_ALIASES maps the shared name to the kit's name. WRAPPER_ALLOWLIST
+# records deliberate omissions per kit with the task record that tracks each; a listed
+# name whose copy exists fails as stale, so the list shrinks as copies land.
+WRAPPER_SKILLS = "global/skills/"
+WRAPPER_ALIASES = {"checkpoint-handoff": "conductor-handoff"}
+WRAPPER_ALLOWLIST = {
+    "codex/": {
+        "coding-task": "Codex copies requested on #15",
+        "analytics-task": "Codex copies requested on #15",
+        "independent-review": "Codex copies requested on #15",
+        "backlog-task": "Codex copies requested on #15",
+        "gate-review": "Codex copy requested on #3 (PR #4)",
+    },
+    "assistants/claude-code/": {
+        "backlog-task": "Claude Code copy deferred by #15 until #14 (PR #17) landed; now due",
+    },
+}
 
 
 def sha(data):
@@ -25,6 +43,35 @@ def packaged(root):
     return {str(p.relative_to(ROOT)) for p in (ROOT / root).rglob("*")
             if p.is_file() and p.suffix in (".md", ".json", ".yaml", ".yml", ".py", ".docx")
             and "__pycache__" not in p.parts}
+
+
+def check_wrapper_copies(shared_names, kit_skills, allowlist=WRAPPER_ALLOWLIST, aliases=WRAPPER_ALIASES):
+    """Fail when a kit lacks a native copy of a shared wrapper, or allowlists one it has.
+
+    shared_names: folder names under shared/skills; kit_skills: kit prefix -> native
+    skill folder names under that kit's global skills. Returns the kits checked.
+    """
+    for prefix in sorted(kit_skills):
+        present = set(kit_skills[prefix])
+        allowed = allowlist.get(prefix, {})
+        for shared in sorted(shared_names):
+            native = aliases.get(shared, shared)
+            if native in present:
+                if shared in allowed:
+                    raise ValueError(
+                        f"Stale wrapper allowlist entry: {prefix} has {native}; remove {shared!r}")
+                continue
+            if shared in allowed:
+                continue
+            raise ValueError(
+                f"Missing wrapper copy: {prefix}{WRAPPER_SKILLS}{native}/SKILL.md for shared/skills/{shared}"
+                " (add the copy or allowlist it with its task record)")
+    return sorted(kit_skills)
+
+
+def skill_names(folder):
+    """Folder names under a skills directory that carry a SKILL.md."""
+    return {path.parent.name for path in (ROOT / folder).glob("*/SKILL.md")}
 
 
 def check_skill_resources(content):
@@ -82,6 +129,8 @@ def main():
 
     content.outputs = outputs
     check_skill_resources(content)
+    check_wrapper_copies(skill_names("shared/skills"),
+                         {prefix: skill_names(prefix + WRAPPER_SKILLS) for prefix in NATIVE})
 
     native_counts = {}
     for prefix, (_, checksums) in NATIVE.items():
