@@ -21,22 +21,22 @@ facts are folded in below where they still hold.
 
 ## Repository state
 
-- Repository: https://github.com/alhanaei/Conductor; `main` at `67fc650` (PR #28 merged).
+- Repository: https://github.com/alhanaei/Conductor; `main` at `7ff3b7f` (PR #22 merged).
 - Merged today, in order: PR #17 (#14, shared `backlog-task` wrapper), PR #23 (#15, three
   Claude Code wrapper copies), PR #24 (#16, package check fails on a missing or stale kit
   wrapper copy; allowlist trimmed to the Codex kit plus the Claude `backlog-task` copy),
   PR #4 (#8, lifecycle workflow, phase plan template, `gate-review`), PR #27 (#26, Merge
   danger section in the PR templates), PR #28 (#25, `grilling` technique and `to-tickets`
-  workflow with wrappers and Claude copies). CI green on `main` after each.
-- Open pull requests, all refreshed against `67fc650`, generated files regenerated:
+  workflow with wrappers and Claude copies), then on the owner's word PR #34 (#33, the
+  linked-task check accepts record-only pull requests with `Refs #n`), PR #20 (#18, Claude
+  Code Projects in the kit) and PR #22 (#19, verified-background-mode sentence in the handoff
+  workflow). CI green on `main` after each. PR #32 closed as superseded by this file.
+- Open pull requests:
 
-  | PR | Closes | Head | State | Next |
+  | PR | Task | Head | State | Next |
   | --- | --- | --- | --- | --- |
-  | #20 | #18 Claude Code Projects in the kit | `731a506` | green, mergeable | owner merge |
-  | #22 | #19 verified background mode sentence in handoff workflow | `158b58b` | green, mergeable | owner merge |
-  | #34 | #33 linked-task accepts record-only PRs with `Refs #n` | `428c01c` | green expected; first record-only PR after it proves the path | owner merge |
-  | #30 | refs #29, ADR 0001 invocation axis (Proposed) | `476604e` | `verify` green, `linked-task` red until #34 lands | held on decision D1 below |
-  | #32 | previous planning checkpoint | `4d8d1ff` | superseded by this file | owner closes |
+  | #35 | refs #3, this checkpoint | see PR | record-only; `linked-task` runs under the #34 rule once the head carries it | owner merge |
+  | #30 | refs #29, ADR 0001 invocation axis (Proposed) | `476604e` | `verify` green; `linked-task` passes on its next run now that #34 is on `main` and the head is refreshed | held on decision D1 below |
 
 - Working trees: nothing unpushed on any branch of this session.
 
@@ -74,9 +74,6 @@ is on `main`.
 | Record | Priority | State | Planning session | Main session |
 | --- | --- | --- | --- | --- |
 | #3 Define phase, orchestrator MVP | P1 | Backlog; #4 dependency cleared | Grill to Ready and G1 criteria after D1 and D2 are decided, since the MVP shape depends on both; then `to-tickets` the Define outputs | Implements the sub-tasks |
-| #33 record-only PR check | P2 | PR #34 open | Review | Drive to merge |
-| #18 Projects in the kit | P2 | PR #20 open | Review | Drive to merge |
-| #19 verified background mode | P3 | PR #22 open | Review | Drive to merge |
 | #29 invocation axis rollout | P3 | Backlog; waits on D3 | Re-scope after D3 | Implements after acceptance |
 | #31 retro step in handoff | P3 | Backlog; depends on #25 (merged) | Confirm scope after D1 (Codex allowlist line falls away under one kit) | Implements |
 
@@ -100,10 +97,9 @@ not planned.
   backlog it writes slices there instead. The text already says "the project's task
   source".
 
-## Verification at `main` 67fc650 and at every open head of this session
+## Verification at `main` 7ff3b7f
 
-- `python3 tests/package_conductor_init.py`, cwd `.`: verified; 102 root digests at `main`,
-  103 on PR #20, 102 on PR #22 and PR #34.
+- `python3 tests/package_conductor_init.py`, cwd `.`: verified; 103 root digests.
 - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests`, cwd `.`: OK (72 tests).
 - `git diff --check`: clean everywhere.
 - `sha256sum shared/WORKFLOW.md`: `adefbfa6…` everywhere.
@@ -129,15 +125,17 @@ the wakeups above came from armed triggers and subscriptions, not from instructi
    first; file only on approval). Grill the owner on D1 and D2 in one round each; write the
    answers to the records.
 3. Hand the accepted decisions to the main session by comment on each record; the main
-   session opens the ADRs and the restructuring tasks.
+   session opens the ADRs (record-only pull requests with `Refs #n`) and the restructuring
+   tasks.
 4. Only then grill #3 to Ready and run `to-tickets` on its Define outputs.
-5. Review PRs #20, #22, #34 and #30 advisory-only; findings go on the pull request, never a
-   push.
+5. Review PR #30 advisory-only; findings go on the pull request, never a push.
 
 ## Rules both sessions keep
 
 - Every change starts from a labelled record; propose before filing; the pull request names
-  it (`Closes #n`, or `Refs #n` for a record-only pull request once #34 is on `main`).
+  it (`Closes #n`, or `Refs #n` for a record-only pull request; the check reads the
+  workflow from the pull request's own head, so a branch older than #34 must merge `main`
+  first).
 - Highest open priority first; anything found mid-task is proposed on its record and left.
 - Merge is the owner's gate; the main session merges only when the owner says so.
 - `shared/` is canonical and generic first; Claude edits only `assistants/claude-code/` and
@@ -153,6 +151,6 @@ the wakeups above came from armed triggers and subscriptions, not from instructi
 ## Blockers and publication state
 
 - No blockers. Nothing unpushed. No deployment, schedule, credential or cloud configuration
-  changed. The main session holds one armed self check-in (PRs #20 and #22, trigger
-  `trig_01VseyJgPcnsYUgkoEQqLKkd`, about 12:42 UTC) and subscriptions to PRs #20, #22 and
-  #34; both end when those merge.
+  changed. The main session holds one armed self check-in (trigger
+  `trig_01LjDSbHbuUSahMpjFpso6SE`, about 16:46 UTC) and a subscription to PR #35; both end
+  when it merges.
