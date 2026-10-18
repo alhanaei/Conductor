@@ -51,7 +51,7 @@ Gate-specific additions:
 - G1: could a stranger build the right thing from the brief alone?
 - G2: which decision would be most expensive to reverse, and does it have an ADR?
 - G3: has someone outside the team used it?
-- G4: has the rollback been executed once, on purpose, outside production?
+- G4: has the rollback been executed once, on purpose, outside production? Does the closing pull request's Merge danger section state the door type and blast radius, and does the rehearsal match them?
 - G5: can the on-call owner resolve the top failure modes from the runbook alone?
 
 ## Boundaries

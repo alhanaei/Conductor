@@ -11,6 +11,11 @@ Closes #
 | --- | --- | --- | --- |
 | | | | |
 
+## Merge danger
+
+- Door: two-way (one revert commit undoes it, no data or external effect) or one-way (migration, published artifact, external call, deletion, credential or access change). State which and why.
+- Blast radius: what else breaks if this is wrong, and who notices first.
+
 ## Review
 
 - Independent reviewer and reviewed SHA (advisory; merge remains the integrator's gate):
