@@ -5,7 +5,7 @@
   "generated_docx": "docs/shared-github-workflow-coding-analytics.docx",
   "files": {
     "GUIDE.md": "efb964fb589e2fb670f030ac48ca0eb46f058747bf82fb0a20a410b1cc930458",
-    "README.md": "a93aa557b26bfa7b3c9d6b46961ea83ec8211a763ed4f3494ff0f9e1b80aba89",
+    "README.md": "786a226aefa13345d3f5e68bdf019ef0bb5fb5f0b82abefa41fd9c44ed46b144",
     "assistants/README.md": "ca10546f66e540d9e687a028731ae2e17699ea327658ec7a841bc875cc21487b",
     "assistants/chatgpt/README.md": "7ba3ba1c254fb8137da9c643a689168671e02f0caf75bd198d3e518a2b597ea8",
     "assistants/claude-code/CLOUD-SETUP.md": "8e93a347190fe3b17c10e1115f86e48b751f1e7f8ba0b8c40be809d872234bc9",
@@ -51,6 +51,7 @@
     "codex/project/skills/project-verification/agents/openai.yaml": "5237c6b47a74aa1ff645419315a9bdde914154d23d9568fbc85aadf2450852c2",
     "codex/shared/PRACTICE.md": "982631f01b6ec08ca071d1ed91578979dd32b235e9c894ce6baac01c1b4b73eb",
     "docs/RELEASE.md": "3b6f7af62845b8e1ff569bfcee264eda248a642d279c69439bb19af72c212b51",
+    "docs/adr/0002-one-claude-code-kit.md": "5e4836336c85ec3154bfb9fc04d57d74ea284e69e11e1f28c7016ec1836d0e82",
     "docs/contributing.md": "d1cbb4292e82accfbd77593c3e88db5c45f045babb9975bd6642f5eb1756882e",
     "docs/initializer-validation.md": "15aa62061eda9be074ffd4e50bb9aaffd98650fca80b1b26161bc88eb0d7c531",
     "docs/project-initialization.md": "70d0a7f7ea610d2162a4bc269d90dfdba2059e04d21ef915e69ede76db036703",
