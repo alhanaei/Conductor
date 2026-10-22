@@ -35,3 +35,5 @@ No app is assumed to read private chats or control another vendor's sessions. A 
 
 ## Validation
 The manifest lists every packaged file and SHA-256. Contract examples use fictional URLs and dummy identities; they grant no authority. Schema validation checks structure, not truthful evidence, access or semantic completion. Native discovery and a single-owner project checkpoint/handoff test remain required adoption checks.
+
+<!-- Test line for #41 criterion 3; this draft PR is closed without merging. -->
