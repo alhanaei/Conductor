@@ -92,7 +92,9 @@ Consequences for this kit:
   backlog; every thread starts from one, and the project's pull request check still enforces
   the link at merge.
 - Boundary skills such as `project-verification` must be account skills to reach threads;
-  the committed repository copies serve local and plain cloud sessions.
+  the committed repository copies serve local and plain cloud sessions. An account skill is
+  not in Git and can drift from the kit unnoticed, so record the SHA-256 of each uploaded
+  skill file in the installation record, matching the kit `SHA256SUMS`.
 - State "never merge, never mark a draft ready" in project instructions. Nothing else stops a
   thread acting as an admin owner.
 - A project belongs to one user and cannot be shared, so a second person or another assistant
@@ -102,8 +104,8 @@ Consequences for this kit:
 Discovery check in a project: open one thread and have it quote its loaded memory files and
 its available-skills list (a thread cannot type `/context` or `/skills`), confirm the pinned
 snapshot path resolves inside the clone with the recorded digest, confirm that no repository
-skill is expected to load, and record the result in the installation record before sending
-the rest of the work.
+skill is expected to load and that each account skill still matches its recorded digest, and
+record the result in the installation record before sending the rest of the work.
 
 ## Making conductor-init available
 
