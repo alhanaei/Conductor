@@ -8,6 +8,11 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMON = "shared/skills/conductor-init/"
+# Task boundary skills: written once in shared/skills, copied byte for byte into each kit
+# that carries them (task-start holds the helper source; task-finish gets a generated copy).
+BOUNDARY_SKILLS = ("task-start", "task-finish")
+BOUNDARY_HELPER = "shared/skills/task-start/scripts/task_boundary.py"
+BOUNDARY_KITS = ("assistants/claude-code/",)
 # Native distribution copies: kit prefix -> (skill folder, checksum file).
 NATIVE = {
     "codex/": ("codex/global/skills/conductor-init/", "codex/SHA256SUMS"),
@@ -23,13 +28,13 @@ WRAPPER_SKILLS = "global/skills/"
 WRAPPER_ALIASES = {"checkpoint-handoff": "conductor-handoff"}
 WRAPPER_ALLOWLIST = {
     "codex/": {
-        "coding-task": "Codex copies requested on #15",
-        "analytics-task": "Codex copies requested on #15",
         "independent-review": "Codex copies requested on #15",
         "backlog-task": "Codex copies requested on #15",
         "gate-review": "Codex copy requested on #3 (PR #4)",
         "grilling": "Codex copy requested on #25",
         "to-tickets": "Codex copy requested on #25",
+        "task-start": "Codex native copies are a sprint 3 and 4 non-goal of #46",
+        "task-finish": "Codex native copies are a sprint 3 and 4 non-goal of #46",
     },
     "assistants/claude-code/": {
         "backlog-task": "Claude Code copy deferred by #15 until #14 (PR #17) landed; now due",
@@ -121,6 +126,13 @@ def main():
     args = parser.parse_args()
     recipe = (ROOT / "shared/workflows/project-init.md").read_bytes()
     outputs = {COMMON + "references/project-init.md": recipe}
+    helper = (ROOT / BOUNDARY_HELPER).read_bytes()
+    for skill in BOUNDARY_SKILLS:
+        source = (ROOT / f"shared/skills/{skill}/SKILL.md").read_bytes()
+        for kit in BOUNDARY_KITS:
+            outputs[f"{kit}{WRAPPER_SKILLS}{skill}/SKILL.md"] = source
+            outputs[f"{kit}{WRAPPER_SKILLS}{skill}/scripts/task_boundary.py"] = helper
+    outputs["shared/skills/task-finish/scripts/task_boundary.py"] = helper
     for folder, _ in NATIVE.values():
         outputs[folder + "references/project-init.md"] = recipe
         outputs[folder + "scripts/conductor_init.py"] = (ROOT / (COMMON + "scripts/conductor_init.py")).read_bytes()
@@ -131,8 +143,11 @@ def main():
 
     content.outputs = outputs
     check_skill_resources(content)
-    check_wrapper_copies(skill_names("shared/skills"),
-                         {prefix: skill_names(prefix + WRAPPER_SKILLS) for prefix in NATIVE})
+    kit_skills = {prefix: skill_names(prefix + WRAPPER_SKILLS) | {
+        key.split("/")[-2] for key in outputs
+        if key.startswith(prefix + WRAPPER_SKILLS) and key.endswith("/SKILL.md")}
+        for prefix in NATIVE}
+    check_wrapper_copies(skill_names("shared/skills"), kit_skills)
 
     native_counts = {}
     for prefix, (_, checksums) in NATIVE.items():
@@ -147,6 +162,7 @@ def main():
     keys.update(outputs)
     keys.update(("docs/project-initialization.md",))
     keys.discard("MANIFEST.json")
+    keys = {key for key in keys if key in outputs or (ROOT / key).is_file()}  # drop retired files
     manifest["version"] = "0.5.0-draft"
     manifest["files"] = {key: sha(content(key)) for key in sorted(keys)}
     outputs["MANIFEST.json"] = (json.dumps(manifest, indent=2) + "\n").encode()
