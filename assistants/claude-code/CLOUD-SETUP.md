@@ -38,8 +38,8 @@ sidebar, do not assume it.
 What a cloud thread starts with:
 
 - The repository's `CLAUDE.md`, with its `@` imports (observed), `.claude/CLAUDE.md` (docs)
-  and `.claude/rules/` (docs; the #41 test branch `claude/41-rules-test` awaits a thread
-  started from it).
+  and `.claude/rules/` (docs only, not observed; #41 criterion 2 was dropped on
+  2026-10-22 when Projects mode was parked for Conductor work).
 - Not the repository's `.claude/skills/` (observed: `conductor-project-init` and
   `project-verification` were in the clone but not in the thread's skill list), nor
   `.claude/agents/`, `.claude/commands/` or `.claude/settings.json` (docs). The
@@ -72,12 +72,13 @@ How threads behave by default:
   example `alhanaei`, `author_association: OWNER`), and its commits carry the container's
   git identity, `Claude <noreply@anthropic.com>`. A thread has no route to a separate bot
   account such as `conductor-claude` unless the environment is given one.
-- Branch protection does not hold the merge gate against a thread when the owner is a
-  repository admin and `enforce_admins` is off (observed on this repository: one required
-  approval and two required checks, admins not enforced). The thread acts as the admin and
-  could bypass them, and an author cannot approve their own pull request anyway. The merge
-  gate then holds by project instructions only; making it mechanical is a repository-setting
-  decision for the owner.
+- Branch protection binds a thread only when bypass is off. With `enforce_admins` off
+  (observed on this repository on 2026-10-22: one required approval, two required checks,
+  admins not enforced) the thread acts as the admin and could bypass every rule, and an
+  author cannot approve their own pull request anyway. The owner's setting since
+  2026-10-22 is "Do not allow bypassing" on and "Require approvals" off: the required
+  checks (`verify`, `linked-task`) then bind every session, and merging stays the owner's
+  own action, held by project instructions rather than by a review requirement.
 - A cloud session already doing the work can become a project (**Continue as project**) or
   feed one (**Move to project**). A local session cannot be added; push its branch and name it
   in the task instead.
