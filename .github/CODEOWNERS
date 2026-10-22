@@ -1,0 +1,4 @@
+# Code owners for alhanaei/Conductor.
+# The repository owner reviews every change; branch protection on main requires a
+# code-owner approval before a pull request can merge (task record #40).
+*  @alhanaei
