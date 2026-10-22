@@ -1,4 +1,26 @@
 {
+  "adapters": {
+    "claude-code-projects": {
+      "always_on_lines": [
+        "Pinned policy: `.conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/WORKFLOW.md` (SHA-256 `adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2`); `PROJECT.md` holds the facts and the verification contract.",
+        "Every task starts with `/task-start #N` on a record carrying `status:ready` and ends with `/task-finish`; between them your own practice runs.",
+        "Never merge, mark a draft ready, approve, force-push, change CI or push to `main`; verification is the recorded commands run on the exact head, nothing inferred."
+      ],
+      "discovery": "unverified; run the owner checklist's discovery step from a thread",
+      "inputs": {
+        "default_branch": "main",
+        "max_parallel_threads": 2
+      },
+      "owner_checklist": ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md",
+      "owner_checklist_sha256": "edd7fd1a49f82716fbac162b04204fccae9cdf886710c7ebb93ef1343adcd5aa",
+      "policy_commit": "2a14788454aab84a5c4dbba1fcefc7f21697f07f",
+      "policy_sha256": "adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2",
+      "profile": "claude-code-projects",
+      "project_instructions": ".conductor/adapters/claude-code-projects/project-instructions.md",
+      "project_instructions_chars": 5225,
+      "project_instructions_sha256": "1f6f0a981e81db68855f64af95cbd1e395466b64e76dd4396a49b24235908d6f"
+    }
+  },
   "assistant_pins": {
     "claude-code": "2a14788454aab84a5c4dbba1fcefc7f21697f07f"
   },
@@ -49,6 +71,8 @@
   },
   "files": {
     ".claude/skills/project-verification/SKILL.md": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063",
+    ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md": "edd7fd1a49f82716fbac162b04204fccae9cdf886710c7ebb93ef1343adcd5aa",
+    ".conductor/adapters/claude-code-projects/project-instructions.md": "1f6f0a981e81db68855f64af95cbd1e395466b64e76dd4396a49b24235908d6f",
     ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/GUIDE.md": "efb964fb589e2fb670f030ac48ca0eb46f058747bf82fb0a20a410b1cc930458",
     ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/MANIFEST.json": "7127c8cdbd483dc85e21b8182cc60906dbcd00fc6c989aa647f2ee561bb70bfc",
     ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/README.md": "958df57c93bee997113cda0406071461bcdebed7585e07c2abc731dfde14046a",
@@ -143,7 +167,7 @@
   },
   "managed_blocks": {
     "AGENTS.md": "d8a6832a57f14d8992e3dd6c17524d28bbe5f80141d2555f69282988e71eb400",
-    "CLAUDE.md": "dfb29c82e38bfc8879d72ec565875f50d22767ad743a07a53aad2ab13316a0a0",
+    "CLAUDE.md": "f324667fc3406178a580338aee43d480f40205fd90e46a97d480a792f6e86de0",
     "PROJECT.md": "311dc117aa419fcc8fae625c309312d2f96888da42ddc0cf3114417b2c0b8326"
   },
   "migrations": [

@@ -1,0 +1,20 @@
+{
+  "always_on_lines": [
+    "Pinned policy: `.conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/WORKFLOW.md` (SHA-256 `adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2`); `PROJECT.md` holds the facts and the verification contract.",
+    "Every task starts with `/task-start #N` on a record carrying `status:ready` and ends with `/task-finish`; between them your own practice runs.",
+    "Never merge, mark a draft ready, approve, force-push, change CI or push to `main`; verification is the recorded commands run on the exact head, nothing inferred."
+  ],
+  "discovery": "unverified; run the owner checklist's discovery step from a thread",
+  "inputs": {
+    "default_branch": "main",
+    "max_parallel_threads": 2
+  },
+  "owner_checklist": ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md",
+  "owner_checklist_sha256": "edd7fd1a49f82716fbac162b04204fccae9cdf886710c7ebb93ef1343adcd5aa",
+  "policy_commit": "2a14788454aab84a5c4dbba1fcefc7f21697f07f",
+  "policy_sha256": "adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2",
+  "profile": "claude-code-projects",
+  "project_instructions": ".conductor/adapters/claude-code-projects/project-instructions.md",
+  "project_instructions_chars": 5225,
+  "project_instructions_sha256": "1f6f0a981e81db68855f64af95cbd1e395466b64e76dd4396a49b24235908d6f"
+}
