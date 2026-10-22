@@ -30,18 +30,24 @@ Consequences for this kit:
 
 A Claude Code project is one coordinating conversation that starts a thread per task. Each
 thread is a cloud session on its own branch, or, on request, a Remote Control session on the
-user's computer. Docs checked 2026-10-17: [Projects](https://code.claude.com/docs/en/claude-projects).
-Availability is per account and plan; verify it in the sidebar, do not assume it.
+user's computer. Docs checked 2026-10-22: [Projects](https://code.claude.com/docs/en/claude-projects).
+Observed 2026-10-22 in a one-repository test project (#41); items marked "docs" are from the
+documentation and were not observed. Availability is per account and plan; verify it in the
+sidebar, do not assume it.
 
 What a cloud thread starts with:
 
-- The `CLAUDE.md`, `.claude/skills/`, `.claude/agents/` and `.claude/commands/` of every
-  repository in the project, so the repository-scope route below is the one that reaches
-  threads. Account skills and claude.ai connectors load as well. Nothing from the user's
-  machine does.
-- Permission rules, hooks and `env` from `.claude/settings.json`, and `.mcp.json`, only in a
-  project with one repository. In a project with several repositories on an Anthropic-hosted
-  environment none of them apply; standing rules then go in project instructions and
+- The repository's `CLAUDE.md`, with its `@` imports (observed), `.claude/CLAUDE.md` (docs)
+  and `.claude/rules/` (docs; the #41 test branch `claude/41-rules-test` awaits a thread
+  started from it).
+- Not the repository's `.claude/skills/` (observed: `conductor-project-init` and
+  `project-verification` were in the clone but not in the thread's skill list), nor
+  `.claude/agents/`, `.claude/commands/` or `.claude/settings.json` (docs). The
+  repository-scope route below therefore does not reach project threads; use the account
+  route.
+- Skills enabled on the claude.ai account, claude.ai plugins and connectors (observed).
+  Nothing from the user's machine.
+- Standing rules that would live in `.claude/settings.json` go in project instructions, and
   variables in the cloud environment.
 - Project instructions: up to 16,000 characters sent to every new thread and to the
   coordinator, set in **Project settings > Memory**, not in Git.
@@ -61,6 +67,17 @@ How threads behave by default:
   own, and routines can start threads on a schedule. Record that this was verified (surface,
   date, limits) in the project's installation record; the shared rule that a prompt alone
   guarantees no execution still stands.
+- Threads reach GitHub through the Claude GitHub App acting as the user who owns the project
+  (observed). Pull requests and comments a thread creates show that user as author (for
+  example `alhanaei`, `author_association: OWNER`), and its commits carry the container's
+  git identity, `Claude <noreply@anthropic.com>`. A thread has no route to a separate bot
+  account such as `conductor-claude` unless the environment is given one.
+- Branch protection does not hold the merge gate against a thread when the owner is a
+  repository admin and `enforce_admins` is off (observed on this repository: one required
+  approval and two required checks, admins not enforced). The thread acts as the admin and
+  could bypass them, and an author cannot approve their own pull request anyway. The merge
+  gate then holds by project instructions only; making it mechanical is a repository-setting
+  decision for the owner.
 - A cloud session already doing the work can become a project (**Continue as project**) or
   feed one (**Move to project**). A local session cannot be added; push its branch and name it
   in the task instead.
@@ -74,14 +91,19 @@ Consequences for this kit:
 - The **Overview** pane is live thread state, not a backlog. Task records stay the only
   backlog; every thread starts from one, and the project's pull request check still enforces
   the link at merge.
+- Boundary skills such as `project-verification` must be account skills to reach threads;
+  the committed repository copies serve local and plain cloud sessions.
+- State "never merge, never mark a draft ready" in project instructions. Nothing else stops a
+  thread acting as an admin owner.
 - A project belongs to one user and cannot be shared, so a second person or another assistant
   resumes only from the repository checkpoint and the task record, as the shared handoff
   workflow already requires.
 
-Discovery check in a project: open one thread, run `/context` and `/skills`, confirm the pinned
-snapshot path resolves inside the clone with the recorded digest, confirm whether
-`.claude/settings.json` rules apply (one repository) or not (several), and record the result in
-the installation record before sending the rest of the work.
+Discovery check in a project: open one thread and have it quote its loaded memory files and
+its available-skills list (a thread cannot type `/context` or `/skills`), confirm the pinned
+snapshot path resolves inside the clone with the recorded digest, confirm that no repository
+skill is expected to load, and record the result in the installation record before sending
+the rest of the work.
 
 ## Making conductor-init available
 
@@ -102,8 +124,9 @@ Cloud sessions have no personal skills folder, so choose one of three documented
    The docs show setup scripts writing `~/.claude/CLAUDE.md`; skills work the same way.
    Publishing the environment is configuration work that needs its own authorization.
 3. **Repository scope.** Commit the generated `conductor-project-init` (stage one output)
-   under the project's `.claude/skills/` and push it. Repository skills always carry over,
-   so the cloud session can run stage two without any global installation.
+   under the project's `.claude/skills/` and push it. Repository skills carry over to a plain
+   cloud session, which can then run stage two without any global installation. They do not
+   load in a project thread (observed, #41); there, use route 1.
 
 Whichever route is used, the generated project skill and the vendored policy snapshot
 must be committed and pushed before a cloud session can see them; local uncommitted
