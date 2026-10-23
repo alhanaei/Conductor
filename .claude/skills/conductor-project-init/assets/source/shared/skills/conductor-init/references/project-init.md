@@ -4,7 +4,7 @@
 
 Resolve the named target and authority, assistant surface, scope (project/global), and
 execution location (local/cloud) separately. The reference helper supports project scope
-for Codex and Claude Code; it does not modify saved cloud environments or home instructions. Inspect
+for the native profiles in its profile table; it does not modify saved cloud environments or home instructions. Inspect
 existing rules, overrides, native skills, adoption/version records and checkpoints.
 Keep the existing policy pin; any upgrade needs an explicit reviewed migration.
 
@@ -12,17 +12,17 @@ Select a reviewed Conductor source. Accept a clean Git checkout whose HEAD is th
 requested 40-character SHA, verifying packaged bytes against Git blobs, root manifest
 and native checksums. For an artifact, obtain an independent manifest SHA-256 from the
 reviewed distribution; a self-computed digest does not establish identity. If the
-manifest does not bind the assistant's native checksum file (`codex/SHA256SUMS` or
-`assistants/claude-code/SHA256SUMS`), supply its independent SHA-256 too. The
+manifest does not bind the assistant's native checksum file (the kit's `SHA256SUMS`),
+supply its independent SHA-256 too. The
 artifact's association with the claimed commit must be established outside the helper.
 Never treat a moving branch or dirty source as the requested immutable revision.
 
 Verify native capabilities using primary documentation and, where available, observed
 discovery. Record evidence, assistant, surface, scope, execution location, native skill
 folder and instruction entrypoint. Unsupported or unverified features mean an inactive
-draft. The Codex profile uses `.agents/skills` and root `AGENTS.md`. The Claude Code
-profile uses `.claude/skills` and a root `CLAUDE.md` that imports `AGENTS.md`, so project
-facts live in `AGENTS.md` and `PROJECT.md` for every assistant. Respect overrides,
+draft. Each profile names its native skills folder and instruction entrypoint; a profile
+whose entrypoint is not `AGENTS.md` gets a thin native file that imports `AGENTS.md`, so
+project facts live in `AGENTS.md` and `PROJECT.md` for every assistant. Respect overrides,
 narrower rules and instruction-size limits during the fresh-session check.
 
 From the generic skill folder, preview the reference generator:
@@ -33,8 +33,7 @@ python3 scripts/conductor_init.py generate --target /approved/project --source /
 
 For an independently identified artifact, add `--manifest-sha <external-sha256>`.
 After reviewing the changes, add `--apply` if setup is authorized. Stage one creates
-`conductor-project-init/` under the assistant's native skills folder (`.agents/skills/`
-or `.claude/skills/`) containing native instructions, helper, pinned source snapshot and
+`conductor-project-init/` under the assistant's native skills folder containing native instructions, helper, pinned source snapshot and
 metadata. No effective project `AGENTS.md` is created yet.
 Generator/helper/template identities are separate from the policy source commit.
 An older compatible policy can be pinned by a newer reviewed generator.
@@ -45,6 +44,9 @@ This retains the same policy and capability pin; custom edits remain blocked for
 reconciliation. Updating the skill does not silently rewrite project adoption. Moving an
 existing adoption to a different policy source is the `migrate` operation, described in
 the [policy migration workflow](migration.md); `generate` at a new pin points there.
+The pinned snapshot written at onboarding and migration is the `shared/` tree of the
+source at the pinned commit, so the policy file's own links resolve; the adoption record
+names the commit and the SHA-256 of `shared/WORKFLOW.md` as the pin.
 
 For another assistant, generate an equivalent thin native project-init skill using
 this shared procedure and that assistant's verified native mapping. Keep shared policy

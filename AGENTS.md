@@ -1,62 +1,10 @@
-# Conductor local documentation adoption — local project instructions
-
-Local adapter for the approved review-branch source. Reusable source templates remain unchanged. Checkout-local task records are Git metadata; Conductor is not a work ledger for unrelated projects.
-
-## Shared practice binding
-
-- Local shared-policy file: `/Users/dr.ahmedalhanaee/.codex/conductor/snapshots/9d7743620ee23c6e2219878fea314ea47b1941b1/shared/WORKFLOW.md`
-- Expected SHA-256: `0a8dc78dbaaa801e6f93fcffe02dbd2e46231dddaaa7fac7c69bf259fe4ee04a`
-- Conductor source revision or reviewed artifact identity: `9d7743620ee23c6e2219878fea314ea47b1941b1`
-- Read and verify that file at task start. Follow it as the canonical common workflow.
-  If absent, unresolved, or inconsistent with global guidance, report the mismatch and
-  pause dependent work. Do not fetch or switch to a moving policy version silently.
-
-## Project facts and boundaries
-
-| Fact | Verified value |
-| --- | --- |
-| Purpose and acceptance criteria | Shared workflow/instruction source library; this local task installs and verifies fixed policy bindings and native Codex discovery, without implementing an orchestrator. |
-| Repository identity | https://github.com/alhanaei/Conductor; checkout /Users/dr.ahmedalhanaee/GitHub/Conductor |
-| Stack and supported runtime versions | Markdown, JSON and DOCX documentation; observed Codex CLI 0.144.1; Python 3 standard library for local integrity checks. No application runtime. |
-| Architecture and important boundaries | README.md, shared/WORKFLOW.md and docs/contributing.md; codex/ contains distribution templates, assistants/codex/README.md records capabilities. |
-| Plan and issue source | docs/contributing.md defines contribution process. No active issue or plan URL was supplied; this authorized task is local adoption only. Return status to the user/authorized recorder without inventing an issue or publishing. |
-| Checkpoint file (includes current owner) | /Users/dr.ahmedalhanaee/GitHub/Conductor/.git/conductor-local/checkpoint.md |
-| Code and output locations | Canonical files remain in shared/, codex/, assistants/ and docs/. Local active adapter: AGENTS.md; skill: .agents/skills/project-verification/. Local adoption records are Git metadata, not a library-wide work ledger. |
-| Data sources, allowed storage, sensitive areas | Documentation only. Preserve existing files and private configuration. No secrets, restricted datasets, runtime installs, deployments, credentials/access changes or other-repository sweeps. |
-| Additional scoped instructions / skills | Global ~/.codex/AGENTS.md and personal ~/.agents/skills/conductor-handoff/. Project skill .agents/skills/project-verification/. Inspect narrower overrides on entering subdirectories; codex/ template AGENTS.md files are unfilled installation sources. |
-
-## Verification contract
-
-Fill each row with exact commands, working directories, prerequisites, expected outcomes,
-and the evidence file or CI job that establishes the command. Do not execute placeholders.
-Mark inapplicable checks explicitly with a reason. Do not infer commands from another repo.
-
-| Check | Command / procedure, cwd, prerequisites, expected result, source |
-| --- | --- |
-| Focused code tests | Not applicable — documentation adoption has no application runtime. Use the defined integrity procedure below. |
-| Required lint / type / build checks | `python3 /Users/dr.ahmedalhanaee/GitHub/Conductor/.git/conductor-local/verify_installation.py`, cwd `/Users/dr.ahmedalhanaee/GitHub/Conductor`, Python 3 standard library only; expect exit 0. Checks root MANIFEST.json, codex/SHA256SUMS, fixed snapshot, readable JSON, active adapter bindings, installed skill hashes, preserved user rules and tracked Git state. Evidence: `/Users/dr.ahmedalhanaee/GitHub/Conductor/.git/conductor-local/verification.json`. |
-| Analytics reproduction and reconciliation | Not applicable — no analytical data or calculations in this task. |
-| Evidence storage | /Users/dr.ahmedalhanaee/GitHub/Conductor/.git/conductor-local/verification.json |
-
-Use the installed `project-verification` skill for applicable checks. Use the installed
-`conductor-handoff` skill for checkpoints if available; the shared workflow remains usable
-without automatic skill discovery. Store current objective, owner, branch/revision, policy
-binding, decisions, results, blockers, and next action in the project checkpoint.
-
-## Current adoption authority and precedence
-
-The user authorized fetching this review branch and installing local Codex adapters. For this task, do not commit, push, merge main, deploy, alter canonical shared source, create schedules, or update unrelated projects. These explicit task limits take precedence over inherited commit/push defaults. One accountable assistant owns this task; authorized bounded delegation does not transfer ownership. No local owner note or GitHub label is an exclusive lock.
-
-## Library folder ownership
-
-`shared/` is canonical and vendor-neutral; any assistant may propose changes there through the review process in `docs/contributing.md`. Each assistant maintains only its own folder: Claude Code maintains `assistants/claude-code/`, Codex maintains `codex/` and `assistants/codex/`, and other vendor folders under `assistants/` belong to their assistant. Do not hand-edit another assistant's folder; record the request in the project task records instead. Generated copies inside assistant folders and the root `MANIFEST.json` are regenerated from `shared/` by `tests/package_conductor_init.py --write` as part of a shared change, which is not an edit of the other folder.
-
+<!-- The single Conductor policy binding for this checkout. The managed section below is written by the conductor-project-init helper (onboard and migrate); edit nothing inside its markers by hand. -->
 
 <!-- conductor:init:begin -->
 # Conductor project adapter
 
-Read `.conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/WORKFLOW.md` as the pinned common policy.
-Policy commit: `2a14788454aab84a5c4dbba1fcefc7f21697f07f`; SHA-256: `adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2`.
+Read `.conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/WORKFLOW.md` as the pinned common policy.
+Policy commit: `084387daacd2bae8a307ab4671e3d4d95f135f56`; SHA-256: `539902dd4198ebd101bb0b49a4211949ab031f5b2766497213d734e175133f6c`.
 Read `PROJECT.md` for project facts, verification and authoritative task links.
 Verification contract: the Verification contract section in `PROJECT.md`; read its source evidence before executing checks.
 Keep project lifecycle separate from task progress and execution state.

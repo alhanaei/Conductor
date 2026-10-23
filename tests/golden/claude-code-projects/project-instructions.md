@@ -4,8 +4,8 @@ contracts and a two-stage project initializer. Documentation and templates only;
 runtime. Work happens in https://github.com/alhanaei/Conductor and the task records at
 https://github.com/alhanaei/Conductor/issues, https://github.com/alhanaei/Conductor/pulls,
 docs/contributing.md. Shared practice is the pinned policy at
-`.conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/WORKFLOW.md` (SHA-256
-`adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2`) inside the clone, plus the
+`.conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/WORKFLOW.md` (SHA-256
+`539902dd4198ebd101bb0b49a4211949ab031f5b2766497213d734e175133f6c`) inside the clone, plus the
 repository's `AGENTS.md` and `PROJECT.md`. Read them before dependent work; if the snapshot is
 missing or its digest differs, say so in your first message and stop.
 

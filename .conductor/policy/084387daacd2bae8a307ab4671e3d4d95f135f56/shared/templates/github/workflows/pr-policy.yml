@@ -1,0 +1,113 @@
+# Project-owned template. Copy to .github/workflows/pr-policy.yml.
+# Checks that a pull request names the task it closes and that the task is Ready: it
+# carries exactly one priority (or the owner-blocked marker), exactly one category and
+# the owner's readiness label. When the task is a sub-issue, its parent record is read
+# too and must be open with one category and a priority, the owner-blocked marker or the
+# tracking label. Label names come from repository variables so the project's own scale
+# applies:
+#   CONDUCTOR_PRIORITY_LABELS   comma-separated, default "P0,P1,P2,P3"
+#   CONDUCTOR_BLOCKED_LABEL     default "blocked:owner"
+#   CONDUCTOR_CATEGORY_PREFIX   default "kind:"
+#   CONDUCTOR_TRACKING_LABEL    default "kind:tracking" (exempt from priority and readiness)
+#   CONDUCTOR_READY_LABEL       default "status:ready" (the owner gate Ready, applied with
+#                               a comment naming the approval; required on the task a
+#                               pull request closes or references)
+#   CONDUCTOR_RECORD_PATHS      comma-separated path prefixes, default
+#                               "docs/adr/,.conductor/HANDOFF.md"; a pull request whose
+#                               changed files all match may reference its task with
+#                               "Refs #n" instead of closing one
+name: PR policy
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+jobs:
+  linked-task:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PRIORITY_LABELS: ${{ vars.CONDUCTOR_PRIORITY_LABELS || 'P0,P1,P2,P3' }}
+      BLOCKED_LABEL: ${{ vars.CONDUCTOR_BLOCKED_LABEL || 'blocked:owner' }}
+      CATEGORY_PREFIX: ${{ vars.CONDUCTOR_CATEGORY_PREFIX || 'kind:' }}
+      TRACKING_LABEL: ${{ vars.CONDUCTOR_TRACKING_LABEL || 'kind:tracking' }}
+      READY_LABEL: ${{ vars.CONDUCTOR_READY_LABEL || 'status:ready' }}
+      RECORD_PATHS: ${{ vars.CONDUCTOR_RECORD_PATHS || 'docs/adr/,.conductor/HANDOFF.md' }}
+    steps:
+      - name: Require a linked Ready task with one priority and one category
+        shell: python
+        run: |
+          import json, os, re, subprocess, sys
+
+          def gh(*args):
+              return subprocess.run(["gh", *args], check=True, capture_output=True, text=True).stdout
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          body = json.loads(gh("pr", "view", os.environ["PR_NUMBER"], "--repo", repo, "--json", "body"))["body"] or ""
+          numbers = sorted({int(n) for n in re.findall(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)", body, re.I)})
+          record_paths = [p.strip() for p in os.environ["RECORD_PATHS"].split(",") if p.strip()]
+          if not numbers and record_paths:
+              files = [f["path"] for f in json.loads(gh("pr", "view", os.environ["PR_NUMBER"], "--repo", repo, "--json", "files"))["files"]]
+              record_only = bool(files) and all(any(f == p or f.startswith(p) for p in record_paths) for f in files)
+              if record_only:
+                  numbers = sorted({int(n) for n in re.findall(r"\brefs?\s+#(\d+)", body, re.I)})
+                  if numbers:
+                      print(f"Record-only pull request ({', '.join(files)}): accepting the referenced task(s).")
+          if not numbers:
+              print("::error::The pull request body must name the task it closes, for example 'Closes #42'; a pull request that changes only record paths may reference its task with 'Refs #42'.")
+              sys.exit(1)
+          priorities = [p.strip() for p in os.environ["PRIORITY_LABELS"].split(",") if p.strip()]
+          blocked, prefix = os.environ["BLOCKED_LABEL"], os.environ["CATEGORY_PREFIX"]
+          tracking, ready = os.environ["TRACKING_LABEL"], os.environ["READY_LABEL"]
+
+          def labels_of(number):
+              issue = json.loads(gh("issue", "view", str(number), "--repo", repo, "--json", "labels,state"))
+              return [label["name"] for label in issue["labels"]], issue["state"]
+
+          def label_problems(labels):
+              priority_count = sum(label in priorities for label in labels)
+              categories = [label for label in labels if label.startswith(prefix)]
+              problems = []
+              if priority_count > 1:
+                  problems.append("more than one priority label")
+              if priority_count == 0 and blocked not in labels and tracking not in labels:
+                  problems.append("no priority label and no owner-blocked marker")
+              if len(categories) != 1:
+                  problems.append(f"expected exactly one '{prefix}' label, found {len(categories)}")
+              return problems
+
+          def parent_of(number):
+              # Sub-issues API: 404 when the task has no parent.
+              run = subprocess.run(["gh", "api", f"repos/{repo}/issues/{number}/parent"], capture_output=True, text=True)
+              if run.returncode:
+                  return None
+              parent = json.loads(run.stdout)
+              return parent.get("number")
+
+          failed = False
+          for number in numbers:
+              labels, state = labels_of(number)
+              problems = label_problems(labels)
+              if ready not in labels and tracking not in labels:
+                  problems.append(f"missing the '{ready}' label (owner gate Ready)")
+              if problems:
+                  failed = True
+                  print(f"::error::Task #{number} is not ready: " + "; ".join(problems) + f" (labels: {', '.join(labels) or 'none'})")
+              else:
+                  print(f"Task #{number} is ready: labels {', '.join(labels)}")
+              parent = parent_of(number)
+              if parent is None:
+                  continue
+              parent_labels, parent_state = labels_of(parent)
+              parent_problems = label_problems(parent_labels)
+              if parent_state.upper() != "OPEN":
+                  parent_problems.append("parent is closed")
+              if parent_problems:
+                  failed = True
+                  print(f"::error::Parent #{parent} of task #{number} is not a workable record: " + "; ".join(parent_problems) + f" (labels: {', '.join(parent_labels) or 'none'})")
+              else:
+                  print(f"Parent #{parent} of task #{number} is open: labels {', '.join(parent_labels)}")
+          sys.exit(1 if failed else 0)

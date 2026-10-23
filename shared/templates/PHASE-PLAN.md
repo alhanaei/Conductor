@@ -2,19 +2,19 @@
 
 # Phase plan: <project> — Phase <n>: <name>
 
-- Gate: G<n> <name>
-- Gate criteria, made specific to this project:
+- Phase gate: G<n> <name>
+- Phase gate criteria, made specific to this project:
   - <criterion>
 - Time-box: <start> → <end>
 - Demo date:
 - Owner:
-- Gate reviewer (not the owner):
+- Phase gate reviewer (not the owner):
 - Task source and milestone link:
 
 ## Outputs
 One line each: output — owner — done when.
 
-- 
+-
 
 ## Tasks
 At most two days each, riskiest first. Mirror in the project's task source.
@@ -29,13 +29,13 @@ At most three, each with a fallback.
 ## Carried from the previous phase
 Item and the stated reason it was carried.
 
-- 
+-
 
-## Gate record
-Filled at the gate review; copy the decision line to the project checkpoint.
+## Phase gate record
+Filled at the phase gate review; copy the decision line to the project checkpoint.
 
 - Date:
 - Decider:
 - Outcome: pass / pass with conditions / hold
 - Conditions (each dated and owned):
-  - 
+  -

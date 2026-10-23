@@ -1,20 +1,24 @@
 # Backlog and selection workflow
 
 The project's task records (GitHub issues or the project's equivalent) are the only
-backlog. This procedure governs how work enters that backlog, how it is ordered, and how
+backlog. Ideas that are not yet records sit as one-line proposals, each with a proposed
+priority, on one pinned Backlog record written by the Planner; promoting a line to its
+own record is the owner gate File. Roles are defined in [roles](roles.md). This procedure governs how work enters that backlog, how it is ordered, and how
 it leaves. Label names, priority definitions and the tie-break document are project facts
 recorded in the project's own instructions; this file defines the dimensions and the rules.
 
-## Entry
+## Entry (owner gate File)
 
 1. Every change starts from a tracked task: feature, fix, documentation, chore or spike.
    A plan agreed in chat is not a backlog until it is recorded. The pull request or
    deliverable names the task it closes.
 2. Propose before filing. State the title, the problem in one or two sentences, and the
    open record the work belongs to, or why it stands alone rather than being a comment on
-   an existing record, then wait for the owner's approval. Delegated agents and workflows
-   propose records in their reports and never create them. Comments on existing records
-   (findings, audit notes, verification results) need no approval.
+   an existing record, then wait for the owner's approval; that approval is the owner gate
+   File, recorded in the record's first comment with its date and where it was given.
+   Delegated agents and workflows propose records in their reports and never create them.
+   Comments on existing records (findings, audit notes, verification results) need no
+   approval.
 3. Work that relates to an open record is filed as a sub-task of that record, never as a
    sibling: a phase, one surface of a sweep, a checklist row, a follow-up, a fix the record
    uncovered, a spike it needs. It stands alone only when no open record covers it or the
@@ -26,14 +30,19 @@ recorded in the project's own instructions; this file defines the dimensions and
    never before. A sprint or a plan is such a parent: its records are filed as its
    sub-tasks.
 
-## Readiness
+## Readiness (owner gate Ready)
 
-4. A task is Ready, in the sense of the common workflow's gates, only when it carries
+4. A task is Ready, in the sense of the common workflow's status transitions, only when it carries
    exactly one priority and exactly one category together with the Ready facts: bounded
    outcome, acceptance, non-goals, dependencies, allowed paths, services and actions, data
    classification, environment, budget and stop conditions. A record with no priority and
    no owner-blocked marker is not ready to be worked: propose a priority and wait, as in
-   step 2. Tracking records are exempt from priority.
+   step 2. Tracking records are exempt from priority. Readiness is the owner's decision: the
+   Planner writes the Ready facts, the owner (or a Reviewer's recommendation plus the
+   owner) approves, and the `status:ready` label is applied with a comment naming that
+   approval. The pull-request check requires the label on the task a pull request closes.
+   When the owner confirms a to-tickets granularity round, that confirmation readies
+   every slice in it, labelled together with one comment naming the round.
 5. Priority is a project-defined ordered scale with written definitions, for example P0
    (live risk or blocker: drop other work and say so) down to P3 (only when already in that
    code). An owner-blocked marker records work no pull request can close: deployments,
@@ -53,12 +62,12 @@ recorded in the project's own instructions; this file defines the dimensions and
 8. A side task needs the owner to ask for it. Scope widens or narrows only on the owner's
    word; "while I was in there" is how the queue inverts.
 
-## Completion
+## Completion (owner gate Merge)
 
-9. Done follows the common workflow's gate: the exact delivered identity, verification
+9. Done follows the common workflow's Review to Done transition: the exact delivered identity, verification
    recorded against it, the required review (advisory, never a merge authorization), and
-   the merge or artifact identity when acceptance requires it. Closing the task record is
-   the last step, not the first.
+   the merge or artifact identity when acceptance requires it. Merge is the owner's gate,
+   never the Implementer's. Closing the task record is the last step, not the first.
 
 ## Reconciliation
 
@@ -72,8 +81,9 @@ recorded in the project's own instructions; this file defines the dimensions and
 
 Project templates for GitHub live in [shared/templates/github/](../templates/github/): an
 issue form carrying the readiness fields, a pull request template with the verification
-ledger, a pull request check for the linked task's labels, and a scheduled reconciliation
-report. Copy them into the project's `.github/` and adjust the label names there. The check
+ledger, a pull request check for the linked task's labels and `status:ready`, and a scheduled
+reconciliation report. Copy them into the project's `.github/` and adjust the label names there. The check
 accepts `Refs #n` in place of a closing keyword only when every changed file is a record (by
 default `docs/adr/` and the checkpoint), because a decision record or a checkpoint documents
-a task without closing it; it still requires the referenced task's priority and category.
+a task without closing it; it still requires the referenced task's priority, category and `status:ready`, and when
+the task is a sub-issue it checks the parent record as well.

@@ -1,6 +1,6 @@
 # Grilling: a structured interview for readiness
 
-Grilling is how an assistant takes a record from Backlog to Ready, or a phase plan to its gate criteria, by interviewing the owner until nothing is silently assumed. It produces the Ready facts the [backlog workflow](../workflows/backlog.md) requires and the gate criteria the [lifecycle workflow](../workflows/lifecycle.md) plans backwards from. It is a technique, not an authority: the answers go to the project's task record, and the record's owner decides when the interview is done.
+Grilling is how an assistant takes a record from Backlog to Ready, or a phase plan to its phase gate criteria, by interviewing the owner until nothing is silently assumed. It produces the Ready facts the [backlog workflow](../workflows/backlog.md) requires and the phase gate criteria the [lifecycle workflow](../workflows/lifecycle.md) plans backwards from. It is a technique, not an authority: the answers go to the project's task record, and the record's owner decides when the interview is done.
 
 ## The design tree and the frontier
 
@@ -26,8 +26,8 @@ When a frontier question needs a fact from the environment (a file, a command's 
 
 ## What the tree must cover
 
-For a task record, the frontier is empty only when every Ready fact has an answer the owner gave or accepted: bounded outcome, acceptance criteria with the test or inspection that establishes each, non-goals, dependencies, allowed paths, services and actions, data classification, environment, budget, stop conditions, plus exactly one priority and one category. For a phase plan, the frontier is empty when every gate criterion in the lifecycle workflow is specific to the project (the metric has a number, the contract rows name commands) and at most three risks each have an owner and a fallback.
+For a task record, the frontier is empty only when every Ready fact has an answer the owner gave or accepted: bounded outcome, acceptance criteria with the test or inspection that establishes each, non-goals, dependencies, allowed paths, services and actions, data classification, environment, budget, stop conditions, plus exactly one priority and one category. For a phase plan, the frontier is empty when every phase gate criterion in the lifecycle workflow is specific to the project (the metric has a number, the contract rows name commands) and at most three risks each have an owner and a fallback.
 
 ## Ending
 
-Grilling ends when the frontier is empty and the owner confirms a shared understanding. Write the answers to the task record or phase plan through supported authorized writes, or return them as a standard update for an authorized recorder. Do not start the work on the strength of the interview; starting follows the backlog workflow's selection step and the common workflow's gates. There is no cap on rounds or questions; a tree that keeps growing is a sign the outcome is too large for one record, which is itself an answer to put to the owner.
+Grilling ends when the frontier is empty and the owner confirms a shared understanding. Write the answers to the task record or phase plan through supported authorized writes, or return them as a standard update for an authorized recorder. Do not start the work on the strength of the interview; starting follows the backlog workflow's selection step and the common workflow's status transitions; readiness itself is the owner gate Ready. There is no cap on rounds or questions; a tree that keeps growing is a sign the outcome is too large for one record, which is itself an answer to put to the owner.

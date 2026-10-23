@@ -2,19 +2,34 @@
 """Regenerate/check distributed initializer assets and package identities."""
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMON = "shared/skills/conductor-init/"
+# Kit files whose text lives in the generator; regenerated here like the other copies.
+PROJECT_INSTRUCTIONS = "assistants/claude-code/PROJECT-INSTRUCTIONS.template.md"
+# Task boundary skills: written once in shared/skills, copied byte for byte into each kit
+# that carries them (task-start holds the helper source; task-finish gets a generated copy).
+BOUNDARY_SKILLS = ("task-start", "task-finish")
+BOUNDARY_HELPER = "shared/skills/task-start/scripts/task_boundary.py"
+BOUNDARY_KITS = ("assistants/claude-code/",)
 # Native distribution copies: kit prefix -> (skill folder, checksum file).
 NATIVE = {
-    "codex/": ("codex/global/skills/conductor-init/", "codex/SHA256SUMS"),
     "assistants/claude-code/": ("assistants/claude-code/global/skills/conductor-init/",
                                 "assistants/claude-code/SHA256SUMS"),
 }
 TEMPLATE_PLACEHOLDERS = ("@SOURCE_SHA@", "@ASSISTANT@", "@NATIVE_SKILLS@", "@INVOCATION@")
+# Every shared/skills wrapper needs a same-named native copy in each kit's global skills,
+# except where WRAPPER_ALIASES maps the shared name to the kit's name. WRAPPER_ALLOWLIST
+# records deliberate omissions per kit with the task record that tracks each; a listed
+# name whose copy exists fails as stale, so the list shrinks as copies land.
+WRAPPER_SKILLS = "global/skills/"
+WRAPPER_ALIASES = {"checkpoint-handoff": "conductor-handoff"}
+WRAPPER_ALLOWLIST = {}
 
 
 def sha(data):
@@ -25,6 +40,35 @@ def packaged(root):
     return {str(p.relative_to(ROOT)) for p in (ROOT / root).rglob("*")
             if p.is_file() and p.suffix in (".md", ".json", ".yaml", ".yml", ".py", ".docx")
             and "__pycache__" not in p.parts}
+
+
+def check_wrapper_copies(shared_names, kit_skills, allowlist=WRAPPER_ALLOWLIST, aliases=WRAPPER_ALIASES):
+    """Fail when a kit lacks a native copy of a shared wrapper, or allowlists one it has.
+
+    shared_names: folder names under shared/skills; kit_skills: kit prefix -> native
+    skill folder names under that kit's global skills. Returns the kits checked.
+    """
+    for prefix in sorted(kit_skills):
+        present = set(kit_skills[prefix])
+        allowed = allowlist.get(prefix, {})
+        for shared in sorted(shared_names):
+            native = aliases.get(shared, shared)
+            if native in present:
+                if shared in allowed:
+                    raise ValueError(
+                        f"Stale wrapper allowlist entry: {prefix} has {native}; remove {shared!r}")
+                continue
+            if shared in allowed:
+                continue
+            raise ValueError(
+                f"Missing wrapper copy: {prefix}{WRAPPER_SKILLS}{native}/SKILL.md for shared/skills/{shared}"
+                " (add the copy or allowlist it with its task record)")
+    return sorted(kit_skills)
+
+
+def skill_names(folder):
+    """Folder names under a skills directory that carry a SKILL.md."""
+    return {path.parent.name for path in (ROOT / folder).glob("*/SKILL.md")}
 
 
 def check_skill_resources(content):
@@ -54,16 +98,23 @@ def check_skill_resources(content):
                 linked = str((Path(key).parent / target).as_posix())
                 if linked not in content.outputs and not (ROOT / linked).is_file():
                     raise ValueError(f"Broken resource link: {key} -> {target}")
-    ui = content(NATIVE["codex/"][0] + "agents/openai.yaml").decode()
-    for field in ("display_name", "short_description", "default_prompt"):
-        match = re.search(r"^  " + field + r": (.+)$", ui, re.M)
-        if not match or not isinstance(json.loads(match[1]), str):
-            raise ValueError("UI metadata must use quoted string fields")
-    if "$conductor-init" not in ui:
-        raise ValueError("UI invocation must name the skill")
     claude = content(NATIVE["assistants/claude-code/"][0] + "SKILL.md").decode()
     if ".claude/skills/conductor-project-init" not in claude or "@AGENTS.md" not in claude:
         raise ValueError("Claude Code skill must name its native path and the AGENTS.md import")
+
+
+def generator_module():
+    """The canonical generator, imported for the text constants it carries."""
+    spec = importlib.util.spec_from_file_location("conductor_init_packaged", ROOT / (COMMON + "scripts/conductor_init.py"))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def project_instructions_template(generator):
+    """The kit's project-instructions template: heading block plus the generator's wrapped text."""
+    return (generator.PROJECT_INSTRUCTIONS_HEADING + generator.rewrap(generator.PROJECT_INSTRUCTIONS_TEMPLATE)).encode()
 
 
 def main():
@@ -71,7 +122,15 @@ def main():
     parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
     recipe = (ROOT / "shared/workflows/project-init.md").read_bytes()
-    outputs = {COMMON + "references/project-init.md": recipe}
+    outputs = {COMMON + "references/project-init.md": recipe,
+               PROJECT_INSTRUCTIONS: project_instructions_template(generator_module())}
+    helper = (ROOT / BOUNDARY_HELPER).read_bytes()
+    for skill in BOUNDARY_SKILLS:
+        source = (ROOT / f"shared/skills/{skill}/SKILL.md").read_bytes()
+        for kit in BOUNDARY_KITS:
+            outputs[f"{kit}{WRAPPER_SKILLS}{skill}/SKILL.md"] = source
+            outputs[f"{kit}{WRAPPER_SKILLS}{skill}/scripts/task_boundary.py"] = helper
+    outputs["shared/skills/task-finish/scripts/task_boundary.py"] = helper
     for folder, _ in NATIVE.values():
         outputs[folder + "references/project-init.md"] = recipe
         outputs[folder + "scripts/conductor_init.py"] = (ROOT / (COMMON + "scripts/conductor_init.py")).read_bytes()
@@ -82,6 +141,11 @@ def main():
 
     content.outputs = outputs
     check_skill_resources(content)
+    kit_skills = {prefix: skill_names(prefix + WRAPPER_SKILLS) | {
+        key.split("/")[-2] for key in outputs
+        if key.startswith(prefix + WRAPPER_SKILLS) and key.endswith("/SKILL.md")}
+        for prefix in NATIVE}
+    check_wrapper_copies(skill_names("shared/skills"), kit_skills)
 
     native_counts = {}
     for prefix, (_, checksums) in NATIVE.items():
@@ -92,10 +156,13 @@ def main():
         native_counts[checksums] = len(kit)
     manifest = json.loads((ROOT / "MANIFEST.json").read_bytes())
     keys = (set(manifest["files"]) | packaged("shared") | packaged("tests") | packaged("docs")
-            | packaged("assistants") | packaged("codex"))
+            | packaged("assistants"))
+    # Deleted paths drop out of the manifest instead of failing as missing sources.
+    keys = {key for key in keys if key in outputs or (ROOT / key).is_file()}
     keys.update(outputs)
     keys.update(("docs/project-initialization.md",))
     keys.discard("MANIFEST.json")
+    keys = {key for key in keys if key in outputs or (ROOT / key).is_file()}  # drop retired files
     manifest["version"] = "0.5.0-draft"
     manifest["files"] = {key: sha(content(key)) for key in sorted(keys)}
     outputs["MANIFEST.json"] = (json.dumps(manifest, indent=2) + "\n").encode()

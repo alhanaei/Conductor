@@ -3,8 +3,9 @@
 Claude Code has two remote modes that behave differently. A cloud session (claude.ai/code
 or `claude --cloud`) runs on hosted infrastructure from a fresh clone of the repository's
 remote branch. Remote Control drives a session that still runs on the local machine and
-sees local files. Treat each cloud environment as a separate installation. This kit
-changes no saved home files, credentials, permissions or published environment.
+sees local files. A project (beta) coordinates many such sessions as threads; see
+[Projects](#projects-beta) below. Treat each cloud environment as a separate installation.
+This kit changes no saved home files, credentials, permissions or published environment.
 
 ## What reaches a cloud session
 
@@ -25,6 +26,133 @@ Consequences for this kit:
 - A cloud session uses the pushed branch, not local uncommitted edits. Confirm the exact
   remote revision before relying on adapters or policy copies in that session.
 
+## Projects (beta)
+
+A Claude Code project is one coordinating conversation that starts a thread per task. Each
+thread is a cloud session on its own branch, or, on request, a Remote Control session on the
+user's computer. Docs checked 2026-10-22: [Projects](https://code.claude.com/docs/en/claude-projects).
+Observed 2026-10-22 in a one-repository test project (#41); items marked "docs" are from the
+documentation and were not observed. Availability is per account and plan; verify it in the
+sidebar, do not assume it.
+
+What a cloud thread starts with:
+
+- The repository's `CLAUDE.md`, with its `@` imports (observed), `.claude/CLAUDE.md` (docs)
+  and `.claude/rules/` (docs only, not observed; #41 criterion 2 was dropped on
+  2026-10-22 when Projects mode was parked for Conductor work).
+- Not the repository's `.claude/skills/` (observed: `conductor-project-init` and
+  `project-verification` were in the clone but not in the thread's skill list), nor
+  `.claude/agents/`, `.claude/commands/` or `.claude/settings.json` (docs). The
+  repository-scope route below therefore does not reach project threads; use the account
+  route.
+- Skills enabled on the claude.ai account, claude.ai plugins and connectors (observed).
+  Nothing from the user's machine.
+- Standing rules that would live in `.claude/settings.json` go in project instructions, and
+  variables in the cloud environment.
+- Project instructions: up to 16,000 characters sent to every new thread and to the
+  coordinator, set in **Project settings > Memory**, not in Git.
+- Project memory: files Claude writes itself under a `MEMORY.md` index, read by every cloud
+  thread at start and not by a thread on the user's computer.
+
+How threads behave by default:
+
+- They run in auto mode, work on a new branch from the default branch, may open a pull request
+  on their own for a concrete change, and then watch it with auto-fix on whether or not
+  auto-fix is on for other cloud sessions. State the pull request and merge policy in project
+  instructions; the `claude-code-projects` profile below generates that text with Conductor's
+  rules for this.
+- A sandbox pauses between turns; if it cannot resume, the thread continues from a fresh clone
+  and uncommitted changes are lost. Commit and push work in progress on long tasks.
+- Threads keep running after the laptop closes, wait across plan limits and resume on their
+  own, and routines can start threads on a schedule. Record that this was verified (surface,
+  date, limits) in the project's installation record; the shared rule that a prompt alone
+  guarantees no execution still stands.
+- Threads reach GitHub through the Claude GitHub App acting as the user who owns the project
+  (observed). Pull requests and comments a thread creates show that user as author (for
+  example `alhanaei`, `author_association: OWNER`), and its commits carry the container's
+  git identity, `Claude <noreply@anthropic.com>`. A thread has no route to a separate bot
+  account such as `conductor-claude` unless the environment is given one.
+- Branch protection binds a thread only when bypass is off. With `enforce_admins` off
+  (observed on this repository on 2026-10-22: one required approval, two required checks,
+  admins not enforced) the thread acts as the admin and could bypass every rule, and an
+  author cannot approve their own pull request anyway. The owner's setting since
+  2026-10-22 is "Do not allow bypassing" on and "Require approvals" off: the required
+  checks (`verify`, `linked-task`) then bind every session, and merging stays the owner's
+  own action, held by project instructions rather than by a review requirement.
+- A cloud session already doing the work can become a project (**Continue as project**) or
+  feed one (**Move to project**). A local session cannot be added; push its branch and name it
+  in the task instead.
+
+Consequences for this kit:
+
+- Project instructions and project memory are instruction layers outside the repository,
+  unversioned and unhashed. Keep policy in the pinned snapshot named in `AGENTS.md`, keep
+  repository rules in `CLAUDE.md`, and generate the project instructions with the
+  `claude-code-projects` profile (next section), which records their digest in the
+  installation record. Treat project memory as notes, never as the project record.
+- The **Overview** pane is live thread state, not a backlog. Task records stay the only
+  backlog; every thread starts from one, and the project's pull request check still enforces
+  the link at merge.
+- Boundary skills such as `project-verification` must be account skills to reach threads;
+  the committed repository copies serve local and plain cloud sessions. An account skill is
+  not in Git and can drift from the kit unnoticed, so record the SHA-256 of each uploaded
+  skill file in the installation record, matching the kit `SHA256SUMS`.
+- State "never merge, never mark a draft ready" in project instructions. Nothing else stops a
+  thread acting as an admin owner.
+- A project belongs to one user and cannot be shared, so a second person or another assistant
+  resumes only from the repository checkpoint and the task record, as the shared handoff
+  workflow already requires.
+
+Discovery check in a project: open one thread and have it quote its loaded memory files and
+its available-skills list (a thread cannot type `/context` or `/skills`), confirm the pinned
+snapshot path resolves inside the clone with the recorded digest, confirm that no repository
+skill is expected to load and that each account skill still matches its recorded digest, run
+`check --profile claude-code-projects`, and record the result and date under
+`adapters.claude-code-projects.discovery` in `.conductor/adoption.json` before sending the
+rest of the work.
+
+## Generating the project instructions: the `claude-code-projects` profile
+
+Do not fill the project instructions by hand. In a repository that `conductor-init` has
+already onboarded for Claude Code, run from the repository root (the helper is the kit's
+`global/skills/conductor-init/scripts/conductor_init.py`, or the generated
+`.claude/skills/conductor-project-init/scripts/conductor_init.py` once it carries this
+profile):
+
+```sh
+python3 conductor_init.py generate --profile claude-code-projects --target .          # preview
+python3 conductor_init.py generate --profile claude-code-projects --target . --apply  # write
+python3 conductor_init.py check --profile claude-code-projects --target .             # verify
+```
+
+From `PROJECT.md` (through the facts in `.conductor/adoption.json`) and the pinned policy file
+it writes four things, each a reviewed change in Git:
+
+1. `.conductor/adapters/claude-code-projects/project-instructions.md`: the filled text for
+   **Project settings > Memory > Project instructions**, under the field's 16,000 characters.
+   It names the pinned policy path and digest, the task and branch rules, the verification
+   commands from `PROJECT.md`, and the fallback steps a thread follows when the `task-start`
+   and `task-finish` account skills are missing.
+2. Its SHA-256 and character count under `adapters.claude-code-projects` in
+   `.conductor/adoption.json`, with the inputs used (`--default-branch`, default `main`;
+   `--max-parallel-threads`, default 2, neither of which `PROJECT.md` holds) and a
+   `discovery` field for the thread check.
+3. The repository `CLAUDE.md`: the three always-on lines (policy pin and digest, the two task
+   boundaries, the never-merge rule) appended to the managed section. A later `onboard`
+   keeps them.
+4. `.conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md`: the one-time owner steps
+   (paste the text and record its digest, enable the two boundary skills on the account,
+   create and pin the Backlog issue, set `CONDUCTOR_BACKLOG_REVIEW_ISSUE`, turn bypass off on
+   the default branch, run the discovery check from a thread).
+
+`check --profile claude-code-projects` regenerates the text and reports each mismatch by
+name: a recorded digest that differs from the generated text, a file on disk that differs
+from its recorded digest, or an edited `CLAUDE.md` section. The discovery check below runs
+it from a thread and records the result and date in the `discovery` field. The generator
+refuses a text over the field limit instead of dropping a rule; shorten the facts with the
+owner. The kit's [PROJECT-INSTRUCTIONS.template.md](PROJECT-INSTRUCTIONS.template.md) is
+the generated, unfilled source text for reading, not for pasting.
+
 ## Making conductor-init available
 
 Local, user scope: copy `global/skills/conductor-init/` from a pinned snapshot to
@@ -44,8 +172,9 @@ Cloud sessions have no personal skills folder, so choose one of three documented
    The docs show setup scripts writing `~/.claude/CLAUDE.md`; skills work the same way.
    Publishing the environment is configuration work that needs its own authorization.
 3. **Repository scope.** Commit the generated `conductor-project-init` (stage one output)
-   under the project's `.claude/skills/` and push it. Repository skills always carry over,
-   so the cloud session can run stage two without any global installation.
+   under the project's `.claude/skills/` and push it. Repository skills carry over to a plain
+   cloud session, which can then run stage two without any global installation. They do not
+   load in a project thread (observed, #41); there, use route 1.
 
 Whichever route is used, the generated project skill and the vendored policy snapshot
 must be committed and pushed before a cloud session can see them; local uncommitted

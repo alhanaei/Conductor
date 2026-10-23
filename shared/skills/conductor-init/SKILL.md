@@ -13,13 +13,13 @@ Resolve target, scope, execution location, assistant surface and immutable polic
 from the user's request or an existing verified binding. Read the source's
 `shared/WORKFLOW.md`. Preserve an existing adoption's pin. Verify native skill paths,
 instruction entrypoints and precedence from current primary docs or observed discovery;
-never assume another assistant implements Codex features.
+never assume one assistant implements another's native features.
 
 The [standard-library helper](scripts/conductor_init.py) implements project-scoped
-Codex and Claude Code generation and onboarding. Its [output template](assets/project-skill.md)
-is the working native example for both. Every assistant onboards into the same
-vendor-neutral `AGENTS.md` and `PROJECT.md` record; Claude Code adds a thin `CLAUDE.md`
-that imports `AGENTS.md`. Other assistants use the same procedure to generate a thin
+generation and onboarding for the native profiles in its profile table. Its
+[output template](assets/project-skill.md) is the working native example. Every assistant
+onboards into the same vendor-neutral `AGENTS.md` and `PROJECT.md` record; a profile whose
+native instruction file is not `AGENTS.md` adds a thin native file that imports it. Other assistants use the same procedure to generate a thin
 native initializer after verifying their mapping. Unsupported capabilities produce a
 reviewable inactive draft. File copying does not prove native discovery.
 

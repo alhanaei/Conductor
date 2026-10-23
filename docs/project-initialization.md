@@ -3,9 +3,8 @@
 [Conductor Init](../shared/skills/conductor-init/SKILL.md) is the portable repository
 source skill. It generates an assistant-specific **conductor-project-init** skill, then
 that skill onboards the named project. The
-[Codex source adapter](../codex/global/skills/conductor-init/SKILL.md) and the
 [Claude Code source adapter](../assistants/claude-code/global/skills/conductor-init/SKILL.md)
-carry the same helper, recipe and template for independent distribution. No folder
+carries the same helper, recipe and template for independent distribution. No folder
 implies a personal installation.
 
 Ask the assistant:
@@ -19,41 +18,9 @@ Use a clean reviewed checkout pinned to a full SHA or a reviewed artifact with
 independently recorded digests. Do not publish the author's active local adapters.
 Existing adoptions keep their policy pin.
 
-## Working Codex example
-
-Save this profile in an approved scratch directory. Confirm it for the actual surface
-before setting `verified` true. Native paths are documented in
-[skills](https://learn.chatgpt.com/docs/build-skills) and
-[instructions](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
-
-```json
-{
-  "assistant": "codex",
-  "surface": "cli",
-  "scope": "project",
-  "execution": "local",
-  "native_skills": ".agents/skills",
-  "native_instructions": "AGENTS.md",
-  "verified": true,
-  "evidence_ref": "https://learn.chatgpt.com/docs/build-skills"
-}
-```
-
-From the source skill folder, preview:
-
-```sh
-python3 scripts/conductor_init.py generate --target /approved/project --source /reviewed/Conductor --source-sha <full-sha> --capabilities /approved/scratch/capabilities.json
-```
-
-Review, then repeat with `--apply` for authorized setup. Artifact sources add
-`--manifest-sha <independent-digest>`. Older manifests not covering
-`codex/SHA256SUMS` also require `source_codex_checksums_sha256` in the profile from
-the independent distribution. The helper cannot prove an artifact digest's external
-association with its claimed commit.
-
 ## Working Claude Code example
 
-The same helper accepts a verified Claude Code profile. Native paths are documented in
+Save this profile in an approved scratch directory. Native paths are documented in
 [skills](https://code.claude.com/docs/en/skills) and
 [memory](https://code.claude.com/docs/en/memory); confirm them for the actual surface
 before setting `verified` true.
@@ -71,24 +38,35 @@ before setting `verified` true.
 }
 ```
 
-Stage one then creates `.claude/skills/conductor-project-init/` without Codex UI
-metadata, pinned to `assistants/claude-code/SHA256SUMS` instead of `codex/SHA256SUMS`.
-Stage two writes the same `AGENTS.md` and `PROJECT.md` managed sections as Codex, installs
-`.claude/skills/project-verification/`, and adds a managed section to `CLAUDE.md` whose
-first line is `@AGENTS.md`, because a root `CLAUDE.md` stops Claude Code from reading
-`AGENTS.md` on its own. An existing `@AGENTS.md` line outside the section is not
-duplicated. Invoke the generated skill as `/conductor-project-init`.
+From the source skill folder, preview:
 
-A project onboarded by Codex can be onboarded by Claude Code afterwards, and vice versa,
-with the same facts: the shared `AGENTS.md` section is left byte-identical, each assistant
-keeps its own native skills, and `.conductor/adoption.json` lists both under `assistants`.
-When both generated initializers exist, pass `--skill-root` to `onboard`.
+```sh
+python3 scripts/conductor_init.py generate --target /approved/project --source /reviewed/Conductor --source-sha <full-sha> --capabilities /approved/scratch/capabilities.json
+```
+
+Review, then repeat with `--apply` for authorized setup. Artifact sources add
+`--manifest-sha <independent-digest>`. A manifest that does not bind the kit's
+`SHA256SUMS` also requires `source_native_checksums_sha256` in the profile from the
+independent distribution. The helper cannot prove an artifact digest's external
+association with its claimed commit.
+
+Stage one creates `.claude/skills/conductor-project-init/` pinned to
+`assistants/claude-code/SHA256SUMS`. Stage two writes the managed `AGENTS.md` and
+`PROJECT.md` sections every assistant reads, installs `.claude/skills/project-verification/`,
+and adds a managed section to `CLAUDE.md` whose first line is `@AGENTS.md`, because a root
+`CLAUDE.md` stops Claude Code from reading `AGENTS.md` on its own. An existing `@AGENTS.md`
+line outside the section is not duplicated. Invoke the generated skill as
+`/conductor-project-init`.
+
+The helper's profile table is the only place it names a product. An adoption record
+written by an earlier generator for another assistant is read as data: its entries stay
+under `assistants`, `assistant_pins` and `generator_sha256`, and the owner migrates them
+when that assistant's generated profile exists again.
 
 ## Facts and onboarding
 
-Invoke `$conductor-project-init` (Codex) or `/conductor-project-init` (Claude Code) in the
-target, or explicitly read its SKILL.md while fresh native discovery is pending. It
-gathers evidenced facts JSON, for example:
+Invoke `/conductor-project-init` in the target, or explicitly read its SKILL.md while
+fresh native discovery is pending. It gathers evidenced facts JSON, for example:
 
 ```json
 {
@@ -117,18 +95,21 @@ reproduction or reconciliation procedures, units and tolerances relevant to thei
 evidence. No software test suite is inferred. Manual procedures can be recorded as
 commands when their reproducible steps are evidenced by the named project document.
 
-From the target project (use `.claude/skills/...` for the Claude Code copy):
+From the target project:
 
 ```sh
-python3 .agents/skills/conductor-project-init/scripts/conductor_init.py onboard --target . --facts /approved/scratch/facts.json
+python3 .claude/skills/conductor-project-init/scripts/conductor_init.py onboard --target . --facts /approved/scratch/facts.json
 ```
 
-Review, then repeat with `--apply`. Outputs: managed sections in `AGENTS.md` and
-`PROJECT.md` (plus `CLAUDE.md` for Claude Code), `.conductor/adoption.json`,
-`.conductor/policy/<sha>/`, an absent setup checkpoint and an absent/unmodified native
-verification skill. Existing custom skills, other assistants' files and text outside
-managed sections remain intact. Bindings are relative,
-with SHA/digests; generator provenance is separate from policy provenance.
+Review, then repeat with `--apply`. Outputs: managed sections in `AGENTS.md`, `PROJECT.md`
+and `CLAUDE.md`, `.conductor/adoption.json`, the pinned snapshot `.conductor/policy/<sha>/shared/`
+(the policy file and the files it links, nothing else), an absent setup checkpoint and an
+absent/unmodified native verification skill. Existing custom skills, other assistants'
+files and text outside managed sections remain intact. Bindings are relative, with
+SHA/digests; generator provenance is separate from policy provenance. The pin itself is
+one file plus its digest: `.conductor/adoption.json` records `policy_commit` and
+`policy_sha256`, the SHA-256 of `shared/WORKFLOW.md` at that commit, and the `AGENTS.md`
+section repeats both.
 
 Project/global scope and local/cloud execution are independent. `execution: cloud`
 does not create a saved cloud environment or expand project installation scope.
@@ -143,13 +124,13 @@ python3 scripts/conductor_init.py migrate --target /approved/project --source /r
 ```
 
 The first assistant to migrate moves the shared record: the `AGENTS.md` section, the policy
-snapshot (the previous one is removed in the same transaction), its own generated skill
-and its verification skill when the record owns it. Every other assistant that onboarded
-runs the same command for its own skill; until it does, its `onboard` is blocked and
-`.conductor/adoption.json` lists it under `assistant_pins` at the previous pin. The record
-keeps the history under `migrations`. Rollback uses the migration's transaction. Personal
-and global adapters are moved by hand under the same decision. The full procedure is
-[shared/workflows/migration.md](../shared/workflows/migration.md).
+snapshot (the previous one is removed in the same transaction, whatever it contained), its
+own generated skill and its verification skill when the record owns it. Every other
+assistant listed in the record runs the same command for its own skill; until it does, its
+`onboard` is blocked and `.conductor/adoption.json` lists it under `assistant_pins` at the
+previous pin. The record keeps the history under `migrations`. Rollback uses the
+migration's transaction. Personal and global adapters are moved by hand under the same
+decision. The full procedure is [shared/workflows/migration.md](../shared/workflows/migration.md).
 
 ## Adapter profiles: always-on text outside Git
 
@@ -182,23 +163,29 @@ projects need reconciliation. There is no automatic policy upgrade or force-over
 switch; migration and lifecycle transitions remain explicit reviewed steps. To update
 an unmodified generated skill with a reviewed newer generator, use `generate --update`
 (preview, then `--apply`) with the same policy and capability pin. This updates helper
-and template identity without silently rewriting project adoption. Other native adapters
-use the portable generation/update procedure after capability verification.
+and template identity without silently rewriting project adoption.
 
-Backups contain real previous contents. Preview rollback with the reported transaction:
+Backups contain real previous contents and live under `.conductor/backups/`, which the
+project should ignore in Git: they are local recovery data for the machine that ran the
+setup, not shared state. Preview rollback with the reported transaction:
 
 ```sh
-python3 .agents/skills/conductor-project-init/scripts/conductor_init.py rollback --target . --transaction .conductor/backups/<id>/transaction.json
+python3 .claude/skills/conductor-project-init/scripts/conductor_init.py rollback --target . --transaction .conductor/backups/<id>/transaction.json
 ```
 
 Add `--apply` for authorized rollback. It refuses subsequent edits. Keep exclusive
 access during setup: atomic per-file writes do not make a multi-file crash-atomic
 transaction or acquire a writer lock. Project commands never run during installation.
 Confirm effective precedence and discovery separately in a fresh native session;
-packaging checks do not confirm every assistant or hosted surface. The Codex and Claude
-Code mappings have executable references here; other native mappings remain drafts
+packaging checks do not confirm every assistant or hosted surface. Only the profiles in
+the helper's table have executable references here; other native mappings remain drafts
 until verified. Initialization grants no implementation, home/global editing, credential,
 schedule, publication, deployment or cloud-configuration authority.
+
+The generated skill still vendors the whole verified source tree under `assets/source/`
+so that `onboard` can re-verify its pin offline. Replacing that copy with a fetch at the
+pinned commit changes the generator's identity checks and is a separate record on the
+Backlog issue, not part of the single re-pin.
 
 ## Source maintenance and validation
 
@@ -213,16 +200,16 @@ Run isolated fixtures:
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 ```
 
-The Codex tests archive historical policy commit `9d7743620ee23c6e2219878fea314ea47b1941b1`
-and use disposable software/analytics projects. They check both stages, preservation,
-repeatability, trust/path boundaries, lifecycle/ownership and rollback. The Claude Code
-tests build their fixture from this package's own manifest-bound files, so the packaging
-check must be current; they cover the native layout, the `AGENTS.md` import, shared
-records across both assistants and rollback. The `claude-code-projects` tests build a
-fixture from this repository's own adoption record and compare the four outputs with
-`tests/golden/claude-code-projects/`; regenerate that fixture with
-`python3 tests/test_conductor_init_projects.py --write-golden` as a reviewed change when the
-pin or the template changes. Tests are not installed into generated projects.
+Every suite builds its fixture from this package's own manifest-bound files at the
+current `HEAD`, so the packaging check must be current and no historical commit needs to
+be reachable. The suites use disposable software/analytics projects and cover both
+stages, preservation, repeatability, trust/path boundaries, lifecycle/ownership, the
+`shared/`-only snapshot, the recorded policy digest, migration and rollback. The
+`claude-code-projects` tests build a fixture from this repository's own adoption record
+and compare the four outputs with `tests/golden/claude-code-projects/`; regenerate that
+fixture with `python3 tests/test_conductor_init_projects.py --write-golden` as a reviewed
+change when the pin or the template changes. Tests are not installed into generated
+projects.
 
 See the [validation record](initializer-validation.md) for actual test results and the
 independent forward evaluation's scope and limitations.

@@ -11,11 +11,10 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
-import subprocess
 import tempfile
 import unittest
 
-from test_conductor_init import initializer, tree_state  # noqa: E402
+from test_conductor_init import initializer, manifest_source, tree_state  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
 SHA_B = "1234567890abcdef1234567890abcdef12345678"
@@ -39,14 +38,7 @@ class MigrationTests(unittest.TestCase):
         cls.temp_sources = tempfile.TemporaryDirectory(prefix="conductor-test-migration-sources-")
         base = Path(cls.temp_sources.name)
         cls.source_a = base / "a"
-        manifest = json.loads((REPO / "MANIFEST.json").read_bytes())
-        for relative in sorted(set(manifest["files"]) | {"MANIFEST.json"}):
-            destination = cls.source_a / relative
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            destination.write_bytes((REPO / relative).read_bytes())
-        cls.sha_a = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO, check=True,
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True).stdout.strip()
-        cls.manifest_a = sha256((cls.source_a / "MANIFEST.json").read_bytes())
+        cls.sha_a, cls.manifest_a = manifest_source(cls.source_a)
         cls.source_b = base / "b"
         shutil.copytree(cls.source_a, cls.source_b)
         manifest = json.loads((cls.source_b / "MANIFEST.json").read_bytes())
@@ -78,9 +70,6 @@ class MigrationTests(unittest.TestCase):
         self.claude = {"assistant": "claude-code", "surface": "desktop", "execution": "local",
                        "native_skills": ".claude/skills", "native_instructions": "CLAUDE.md",
                        "verified": True, "evidence_ref": "https://code.claude.com/docs/en/skills"}
-        self.codex = {"assistant": "codex", "surface": "cli", "execution": "local",
-                      "native_skills": ".agents/skills", "native_instructions": "AGENTS.md",
-                      "verified": True, "evidence_ref": "https://learn.chatgpt.com/docs/build-skills"}
         self.facts = {"name": "Example service", "kind": "software", "purpose": "Serve a documented fixture API",
                       "repository": "https://github.com/example/service", "lifecycle": "Active",
                       "task_records": ["TASKS.md"], "checkpoint": ".conductor/HANDOFF.md", "architecture": "unknown",
@@ -118,6 +107,8 @@ class MigrationTests(unittest.TestCase):
         self.assertEqual(actions[f".conductor/policy/{SHA_B}/shared/WORKFLOW.md"], "create")
         self.assertEqual(actions[f".conductor/policy/{self.sha_a}/shared/WORKFLOW.md"], "remove")
         self.assertEqual(actions[".claude/skills/project-verification/SKILL.md"], "update")
+        self.assertFalse(any(path.startswith(f".conductor/policy/{SHA_B}/") and not
+                             path.startswith(f".conductor/policy/{SHA_B}/shared/") for path in actions))
         installed = self.migrate(self.claude)
         self.assertEqual(installed["status"], "installed")
         self.assertNotIn("notes", installed)
@@ -134,6 +125,7 @@ class MigrationTests(unittest.TestCase):
         self.assertEqual((self.root(self.claude) / "assets/source/shared/WORKFLOW.md").read_bytes(), new_policy)
         record = self.adoption()
         self.assertEqual(record["policy_commit"], SHA_B)
+        self.assertEqual(record["policy_sha256"], sha256(new_policy))
         self.assertEqual(record["assistant_pins"], {"claude-code": SHA_B})
         self.assertEqual(record["migrations"], [{"from": self.sha_a, "to": SHA_B, "assistant": "claude-code"}])
         self.assertFalse(any(key.startswith(f".conductor/policy/{self.sha_a}/") for key in record["files"]))
@@ -149,30 +141,36 @@ class MigrationTests(unittest.TestCase):
         self.assertEqual(self.onboard(self.claude)["status"], "unchanged")
         self.assertEqual(tree_state(self.target), before)
 
-    def test_second_assistant_follows_the_shared_pin(self):
-        self.adopt(self.codex)
+    def test_migration_removes_a_wider_previous_snapshot(self):
+        """An adoption whose snapshot held the whole source tree is reduced to shared/."""
         self.adopt(self.claude)
+        record = self.target / ".conductor/adoption.json"
+        adoption = json.loads(record.read_text())
+        extra = self.target / f".conductor/policy/{self.sha_a}/docs/contributing.md"
+        extra.parent.mkdir(parents=True)
+        extra.write_bytes(b"older snapshots carried the whole tree\n")
+        adoption["files"][str(extra.relative_to(self.target))] = sha256(extra.read_bytes())
+        record.write_text(json.dumps(adoption, indent=2, sort_keys=True) + "\n")
+        installed = self.migrate(self.claude)
+        self.assertEqual(installed["status"], "installed")
+        self.assertFalse((self.target / f".conductor/policy/{self.sha_a}").exists())
+        self.assertFalse((self.target / f".conductor/policy/{SHA_B}/docs").exists())
+        self.assertFalse(any(key.startswith(f".conductor/policy/{self.sha_a}/") for key in self.adoption()["files"]))
+
+    def test_other_assistant_recorded_at_the_previous_pin_is_reported(self):
+        self.adopt(self.claude)
+        record = self.target / ".conductor/adoption.json"
+        adoption = json.loads(record.read_text())
+        adoption["assistants"] = ["claude-code", "codex"]
+        adoption["assistant_pins"]["codex"] = self.sha_a
+        record.write_text(json.dumps(adoption, indent=2, sort_keys=True) + "\n")
         first = self.migrate(self.claude)
         self.assertEqual(first["status"], "installed")
         self.assertEqual(first["notes"], ["Assistants still on the previous pin must run migrate for their own skill: codex"])
         self.assertEqual(self.adoption()["assistant_pins"], {"claude-code": SHA_B, "codex": self.sha_a})
-        blocked = self.onboard(self.codex)
-        self.assertEqual(blocked["status"], "blocked")
-        self.assertIn("migrate", blocked["blockers"][0])
-        agents_before = (self.target / "AGENTS.md").read_bytes()
-        second = self.migrate(self.codex)
-        self.assertEqual(second["status"], "installed")
-        self.assertNotIn("notes", second)
-        self.assertEqual((self.target / "AGENTS.md").read_bytes(), agents_before)
-        self.assertEqual(json.loads((self.root(self.codex) / "generation.json").read_text())["policy_commit"], SHA_B)
-        record = self.adoption()
-        self.assertEqual(record["assistant_pins"], {"claude-code": SHA_B, "codex": SHA_B})
-        self.assertEqual(len(record["migrations"]), 1)
-        self.assertEqual(record["assistants"], ["claude-code", "codex"])
+        self.assertEqual(self.adoption()["assistants"], ["claude-code", "codex"])
         before = tree_state(self.target)
-        self.assertEqual(self.onboard(self.codex)["status"], "unchanged")
         self.assertEqual(self.onboard(self.claude)["status"], "unchanged")
-        self.assertEqual(self.migrate(self.codex)["status"], "unchanged")
         self.assertEqual(tree_state(self.target), before)
 
     def test_edited_managed_section_blocks_migration_without_writes(self):

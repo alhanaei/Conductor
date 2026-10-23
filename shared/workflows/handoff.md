@@ -1,6 +1,6 @@
 # Checkpoint and quota handoff workflow
 
-Maintain an up-to-date HANDOFF.md for nontrivial work. Checkpoint at coherent milestones, before expensive/long steps and before ending a session. Do not wait until the last available message or token.
+Maintain an up-to-date HANDOFF.md for nontrivial work. One copy per decision: the comment on the task record is the record of a decision or approval; a decision record (ADR) that is changed later carries an "Amended by" line pointing at its successor instead of being rewritten; the checkpoint is a pointer, not a copy: branch, head, claimed task, policy pin and next action, with links to the records that hold the rest. Text that exists in two places is wrong in one of them. Checkpoint at coherent milestones, before expensive/long steps and before ending a session. Do not wait until the last available message or token.
 
 When usage/context/time is nearly exhausted or a platform becomes unavailable:
 1. Stop expanding scope. Preserve current files without reverting unrelated work. Record the exact base/head and dirty/untracked state.

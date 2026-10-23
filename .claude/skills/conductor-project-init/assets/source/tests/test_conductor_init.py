@@ -2,7 +2,9 @@
 
 Run with ``python3 -m unittest discover -s tests -v``.  Development may point
 CONDUCTOR_INIT_IMPL at another checkout; the default is repository-relative.
-All targets and the pinned published-source artifact are disposable directories.
+The pinned source fixture is this package's own reviewed file set as listed by
+MANIFEST.json, so ``tests/package_conductor_init.py`` must be up to date. All targets
+are disposable directories; no project command runs.
 """
 
 from __future__ import annotations
@@ -10,19 +12,16 @@ from __future__ import annotations
 import copy
 import hashlib
 import importlib.util
-import io
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
-import tarfile
 import tempfile
 import unittest
 
 
 REPO = Path(__file__).resolve().parents[1]
-SOURCE_SHA = "9d7743620ee23c6e2219878fea314ea47b1941b1"
 IMPL = Path(os.environ.get("CONDUCTOR_INIT_IMPL", str(
     REPO / "shared/skills/conductor-init/scripts/conductor_init.py")))
 SPEC = importlib.util.spec_from_file_location("conductor_init_under_test", IMPL)
@@ -30,6 +29,15 @@ assert SPEC is not None and SPEC.loader is not None
 initializer = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = initializer
 SPEC.loader.exec_module(initializer)
+
+PROFILE = {
+    "assistant": "claude-code", "surface": "desktop", "execution": "local",
+    "native_skills": ".claude/skills", "native_instructions": "CLAUDE.md",
+    "verified": True, "evidence_ref": "https://code.claude.com/docs/en/skills",
+}
+NATIVE_SKILLS = PROFILE["native_skills"]
+NATIVE_INSTRUCTIONS = PROFILE["native_instructions"]
+VERIFICATION_SKILL = "assistants/claude-code/project/skills/project-verification/SKILL.md"
 
 
 def tree_state(root: Path) -> dict[str, tuple[bytes, int]]:
@@ -40,30 +48,24 @@ def tree_state(root: Path) -> dict[str, tuple[bytes, int]]:
     }
 
 
+def manifest_source(destination: Path) -> tuple[str, str]:
+    """Copy the manifest-bound working tree into destination; return (HEAD sha, manifest sha)."""
+    manifest = json.loads((REPO / "MANIFEST.json").read_bytes())
+    for relative in sorted(set(manifest["files"]) | {"MANIFEST.json"}):
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((REPO / relative).read_bytes())
+    sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO, check=True,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True).stdout.strip()
+    return sha, hashlib.sha256((destination / "MANIFEST.json").read_bytes()).hexdigest()
+
+
 class InitializerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.artifact_temp = tempfile.TemporaryDirectory(prefix="conductor-test-source-")
         cls.artifact = Path(cls.artifact_temp.name)
-        archive = subprocess.run(
-            ["git", "archive", SOURCE_SHA], cwd=REPO, check=True,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        ).stdout
-        # git archive emits only reviewed tracked files; no user files enter fixtures.
-        with tarfile.open(fileobj=io.BytesIO(archive)) as bundle:
-            for entry in bundle.getmembers():
-                destination = cls.artifact / entry.name
-                if entry.isfile():
-                    destination.parent.mkdir(parents=True, exist_ok=True)
-                    stream = bundle.extractfile(entry)
-                    assert stream is not None
-                    destination.write_bytes(stream.read())
-                elif entry.isdir():
-                    destination.mkdir(parents=True, exist_ok=True)
-                else:
-                    raise AssertionError("Published fixture unexpectedly contains a link")
-        cls.manifest_sha = hashlib.sha256(
-            (cls.artifact / "MANIFEST.json").read_bytes()).hexdigest()
+        cls.source_sha, cls.manifest_sha = manifest_source(cls.artifact)
 
     @classmethod
     def tearDownClass(cls):
@@ -74,14 +76,7 @@ class InitializerTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.target = Path(self.temp.name) / "project"
         self.target.mkdir()
-        self.capabilities = {
-            "assistant": "codex", "surface": "cli", "execution": "local",
-            "native_skills": ".agents/skills", "native_instructions": "AGENTS.md",
-            "verified": True,
-            "evidence_ref": "https://learn.chatgpt.com/docs/build-skills",
-            "source_codex_checksums_sha256": hashlib.sha256(
-                (self.artifact / "codex/SHA256SUMS").read_bytes()).hexdigest(),
-        }
+        self.capabilities = dict(PROFILE)
         self.facts = {
             "name": "Example service", "kind": "software",
             "purpose": "Serve a documented fixture API",
@@ -100,12 +95,12 @@ class InitializerTests(unittest.TestCase):
 
     @property
     def skill_root(self):
-        return self.target / ".agents/skills/conductor-project-init"
+        return self.target / NATIVE_SKILLS / "conductor-project-init"
 
     def generate(self, *, apply=True, **kwargs):
         options = {
             "target": self.target, "source": self.artifact,
-            "source_sha": SOURCE_SHA, "capabilities": self.capabilities,
+            "source_sha": self.source_sha, "capabilities": self.capabilities,
             "manifest_sha": self.manifest_sha, "apply": apply,
         }
         options.update(kwargs)
@@ -139,19 +134,20 @@ class InitializerTests(unittest.TestCase):
         self.assertTrue(result["changes"])
         self.assertEqual(tree_state(self.target), before)
 
-    def test_generated_codex_skill_is_self_contained_and_portable(self):
+    def test_generated_skill_is_self_contained_and_portable(self):
         self.assertEqual(self.generate()["status"], "installed")
         for relative in ("SKILL.md", "scripts/conductor_init.py", "generation.json",
                          "assets/source/shared/WORKFLOW.md"):
             self.assertTrue((self.skill_root / relative).is_file(), relative)
         metadata = json.loads((self.skill_root / "generation.json").read_text())
-        self.assertIn(SOURCE_SHA, json.dumps(metadata))
+        self.assertIn(self.source_sha, json.dumps(metadata))
         for path in self.skill_root.rglob("*"):
             if path.is_file() and path.suffix in {".md", ".json", ".yaml"}:
                 text = path.read_text()
                 self.assertNotIn(str(self.target), text, str(path))
                 self.assertNotIn(str(self.artifact), text, str(path))
         self.assertFalse((self.target / "AGENTS.md").exists())
+        self.assertFalse((self.target / NATIVE_INSTRUCTIONS).exists())
 
     def test_repeat_generation_preserves_bytes_and_mtimes(self):
         self.generate()
@@ -174,22 +170,40 @@ class InitializerTests(unittest.TestCase):
         result = self.generate(capabilities=profile)
         self.assertEqual(result["status"], "installed")
         self.assertTrue((self.skill_root / "SKILL.md").exists())
-        self.assertFalse((self.target / ".codex/AGENTS.md").exists())
+        self.assertFalse((self.target / NATIVE_INSTRUCTIONS).exists())
 
     def test_software_onboarding_pins_policy_and_never_executes_commands(self):
         result = self.install()
         self.assertEqual(result["status"], "installed")
-        snapshot = self.target / ".conductor/policy" / SOURCE_SHA
+        snapshot = self.target / ".conductor/policy" / self.source_sha
         self.assertEqual((snapshot / "shared/WORKFLOW.md").read_bytes(),
                          (self.artifact / "shared/WORKFLOW.md").read_bytes())
         agents = (self.target / "AGENTS.md").read_text()
         project = (self.target / "PROJECT.md").read_text()
-        self.assertIn(SOURCE_SHA, agents)
+        self.assertIn(self.source_sha, agents)
         self.assertIn("Active", project)
         self.assertIn("TASKS.md", project)
         self.assertTrue((self.target / ".conductor/adoption.json").is_file())
-        self.assertTrue((self.target / ".agents/skills/project-verification/SKILL.md").is_file())
+        self.assertTrue((self.target / NATIVE_SKILLS / "project-verification/SKILL.md").is_file())
         self.assertFalse((self.target / "CHECK_WAS_RUN").exists())
+
+    def test_snapshot_holds_only_the_shared_policy_tree(self):
+        self.install()
+        snapshot = self.target / ".conductor/policy" / self.source_sha
+        files = {str(p.relative_to(snapshot)) for p in snapshot.rglob("*") if p.is_file()}
+        self.assertIn("shared/WORKFLOW.md", files)
+        self.assertIn("shared/workflows/backlog.md", files)
+        self.assertTrue(all(name.startswith("shared/") for name in files), sorted(files)[:5])
+        self.assertNotIn("MANIFEST.json", files)
+        self.assertFalse(any(name.startswith(("tests/", "docs/", "assistants/")) for name in files))
+
+    def test_adoption_records_the_policy_file_digest_as_the_pin(self):
+        self.install()
+        adoption = json.loads((self.target / ".conductor/adoption.json").read_text())
+        policy = hashlib.sha256((self.artifact / "shared/WORKFLOW.md").read_bytes()).hexdigest()
+        self.assertEqual(adoption["policy_commit"], self.source_sha)
+        self.assertEqual(adoption["policy_sha256"], policy)
+        self.assertIn(policy, (self.target / "AGENTS.md").read_text())
 
     def test_analytics_only_project_has_no_inferred_software_checks(self):
         self.generate()
@@ -212,18 +226,18 @@ class InitializerTests(unittest.TestCase):
         self.assertNotIn("npm test", content)
         self.assertNotIn("pytest", content)
 
-    def test_preserves_existing_native_instructions_and_custom_files(self):
-        native = "# Personal rules\nAlways use the fixture review process.\n"
-        claude = b"# Claude-specific project rules\nKeep this untouched.\n"
+    def test_preserves_existing_instructions_and_custom_files(self):
+        shared = "# Personal rules\nAlways use the fixture review process.\n"
+        native = "# Native project rules\nKeep this untouched.\n"
         custom = b"custom project facts outside managed ownership\n"
-        (self.target / "AGENTS.md").write_text(native)
-        (self.target / "CLAUDE.md").write_bytes(claude)
+        (self.target / "AGENTS.md").write_text(shared)
+        (self.target / NATIVE_INSTRUCTIONS).write_text(native)
         (self.target / "user-notes.txt").write_bytes(custom)
         before = tree_state(self.target)
         self.assertEqual(self.install()["status"], "installed")
-        self.assertIn(native, (self.target / "AGENTS.md").read_text())
-        for name in ("CLAUDE.md", "user-notes.txt"):
-            self.assertEqual(tree_state(self.target)[name], before[name])
+        self.assertIn(shared, (self.target / "AGENTS.md").read_text())
+        self.assertIn(native, (self.target / NATIVE_INSTRUCTIONS).read_text())
+        self.assertEqual(tree_state(self.target)["user-notes.txt"], before["user-notes.txt"])
 
     def test_repeat_onboarding_is_exact_noop(self):
         self.install()
@@ -300,8 +314,8 @@ class InitializerTests(unittest.TestCase):
         self.install()
         agents = self.target / "AGENTS.md"
         content = agents.read_text()
-        self.assertIn(SOURCE_SHA, content)
-        agents.write_text(content.replace(SOURCE_SHA, "f" * 40, 1))
+        self.assertIn(self.source_sha, content)
+        agents.write_text(content.replace(self.source_sha, "f" * 40, 1))
         self.assert_rejected_without_writes(self.onboard)
 
     def test_user_edit_to_generated_skill_is_not_overwritten(self):
@@ -310,7 +324,7 @@ class InitializerTests(unittest.TestCase):
         skill.write_text(skill.read_text() + "\nUser customization.\n")
         self.assert_rejected_without_writes(self.generate)
 
-    def test_rollback_restores_original_native_file_and_keeps_unrelated_changes(self):
+    def test_rollback_restores_original_shared_file_and_keeps_unrelated_changes(self):
         original = b"# Original project rules\nDo not discard me.\n"
         (self.target / "AGENTS.md").write_bytes(original)
         self.generate()
@@ -358,12 +372,12 @@ class InitializerTests(unittest.TestCase):
     def test_symlinked_destination_does_not_write_outside_project(self):
         outside = self.target.parent / "outside"
         outside.mkdir()
-        (self.target / ".agents").symlink_to(outside, target_is_directory=True)
+        (self.target / NATIVE_SKILLS.split("/")[0]).symlink_to(outside, target_is_directory=True)
         before = tree_state(outside)
         self.assert_rejected_without_writes(self.generate)
         self.assertEqual(tree_state(outside), before)
 
-    def test_symlinked_native_rules_are_not_followed(self):
+    def test_symlinked_shared_rules_are_not_followed(self):
         self.generate()
         outside = self.target.parent / "outside-rules.md"
         outside.write_text("# Other project rules\n")
@@ -384,24 +398,24 @@ class InitializerTests(unittest.TestCase):
         self.assert_rejected_without_writes(lambda: self.generate(manifest_sha="0" * 64))
 
     def test_moving_or_abbreviated_source_revision_is_rejected(self):
-        for revision in ("main", SOURCE_SHA[:7]):
+        for revision in ("main", self.source_sha[:7]):
             with self.subTest(revision=revision):
                 self.assert_rejected_without_writes(lambda: self.generate(source_sha=revision))
 
-    def test_corrupted_native_codex_skill_is_rejected(self):
+    def test_corrupted_native_verification_skill_is_rejected(self):
         import shutil
         source = self.target.parent / "corrupted-native-source"
         shutil.copytree(self.artifact, source)
-        native = source / "codex/project/skills/project-verification/SKILL.md"
+        native = source / VERIFICATION_SKILL
         native.write_text(native.read_text() + "\nUnreviewed native addition.\n")
         self.assert_rejected_without_writes(lambda: self.generate(source=source))
 
-
     def test_checkpoint_reserved_paths_cannot_replace_managed_outputs(self):
         self.generate()
-        for checkpoint in ("AGENTS.md", "./PROJECT.md", ".conductor", ".conductor/policy",
-                           ".conductor/policy/" + SOURCE_SHA + "/shared/WORKFLOW.md",
-                           ".agents/skills/conductor-project-init/SKILL.md", ".git/config"):
+        for checkpoint in ("AGENTS.md", "./PROJECT.md", NATIVE_INSTRUCTIONS, ".conductor",
+                           ".conductor/policy",
+                           ".conductor/policy/" + self.source_sha + "/shared/WORKFLOW.md",
+                           NATIVE_SKILLS + "/conductor-project-init/SKILL.md", ".git/config"):
             with self.subTest(checkpoint=checkpoint):
                 self.assert_rejected_without_writes(lambda: self.onboard(
                     facts=dict(self.facts, checkpoint=checkpoint)))
@@ -428,52 +442,62 @@ class InitializerTests(unittest.TestCase):
 
     def test_custom_verification_skill_is_preserved_as_whole_directory(self):
         self.generate()
-        skill=self.target / '.agents/skills/project-verification'
-        skill.mkdir()
-        custom=skill / 'SKILL.md'
+        skill = self.target / NATIVE_SKILLS / 'project-verification'
+        skill.mkdir(parents=True)
+        custom = skill / 'SKILL.md'
         custom.write_text('Custom verification instructions.\n')
-        before=tree_state(skill)
-        result=self.onboard()
+        before = tree_state(skill)
+        result = self.onboard()
         self.assertEqual(result['status'], 'installed')
         self.assertTrue(result['notes'])
         self.assertEqual(tree_state(skill), before)
-        self.assertFalse((skill / 'agents/openai.yaml').exists())
 
     def test_modified_generation_pin_cannot_mislabel_policy(self):
         self.generate()
-        path=self.skill_root / 'generation.json'
-        metadata=json.loads(path.read_text())
-        metadata['policy_commit']='f' * 40
+        path = self.skill_root / 'generation.json'
+        metadata = json.loads(path.read_text())
+        metadata['policy_commit'] = 'f' * 40
         path.write_text(json.dumps(metadata))
         self.assert_rejected_without_writes(self.onboard)
 
     def test_generation_metadata_requires_complete_asset_coverage(self):
         self.generate()
-        path=self.skill_root / 'generation.json'
-        metadata=json.loads(path.read_text())
+        path = self.skill_root / 'generation.json'
+        metadata = json.loads(path.read_text())
         del metadata['files']['assets/source/shared/WORKFLOW.md']
         path.write_text(json.dumps(metadata))
         self.assert_rejected_without_writes(self.onboard)
 
     def test_project_generation_rejects_global_scope(self):
-        profile=dict(self.capabilities, scope='global')
+        profile = dict(self.capabilities, scope='global')
         self.assert_rejected_without_writes(lambda: self.generate(capabilities=profile))
 
-    def test_legacy_artifact_needs_independent_native_checksum_identity(self):
-        profile=dict(self.capabilities)
-        del profile['source_codex_checksums_sha256']
-        self.assert_rejected_without_writes(lambda: self.generate(capabilities=profile))
+    def test_artifact_without_bound_checksums_needs_independent_native_identity(self):
+        import shutil
+        source = self.target.parent / 'unbound-source'
+        shutil.copytree(self.artifact, source)
+        checksums = 'assistants/claude-code/SHA256SUMS'
+        manifest = json.loads((source / 'MANIFEST.json').read_text())
+        del manifest['files'][checksums]
+        (source / 'MANIFEST.json').write_text(json.dumps(manifest, indent=2) + '\n')
+        manifest_sha = hashlib.sha256((source / 'MANIFEST.json').read_bytes()).hexdigest()
+        self.assert_rejected_without_writes(
+            lambda: self.generate(source=source, manifest_sha=manifest_sha))
+        profile = dict(self.capabilities, source_native_checksums_sha256=hashlib.sha256(
+            (source / checksums).read_bytes()).hexdigest())
+        result = self.generate(source=source, manifest_sha=manifest_sha, capabilities=profile)
+        self.assertEqual(result['status'], 'installed')
 
     def test_non_directory_managed_ancestor_is_rejected_before_writes(self):
-        (self.target / '.agents').write_text('User file, not a directory\n')
+        (self.target / NATIVE_SKILLS.split("/")[0]).write_text('User file, not a directory\n')
         self.assert_rejected_without_writes(self.generate)
 
     def test_atomic_replacement_failure_preserves_original_and_restores_prior_writes(self):
         from unittest.mock import patch
         self.generate()
-        original=b'Original project rules\n'
+        original = b'Original project rules\n'
         (self.target / 'AGENTS.md').write_bytes(original)
-        replace=initializer.os.replace
+        replace = initializer.os.replace
         def fail_native(source, destination):
             if Path(destination).name == 'AGENTS.md':
                 raise OSError('simulated replacement failure')
@@ -483,20 +507,20 @@ class InitializerTests(unittest.TestCase):
                 self.onboard()
         self.assertEqual((self.target / 'AGENTS.md').read_bytes(), original)
         self.assertFalse((self.target / 'PROJECT.md').exists())
-        self.assertFalse((self.target / '.conductor/policy' / SOURCE_SHA / 'shared/WORKFLOW.md').exists())
+        self.assertFalse((self.target / '.conductor/policy' / self.source_sha / 'shared/WORKFLOW.md').exists())
         self.assertFalse(list(self.target.rglob('.conductor-write-*')))
 
     def test_new_custom_owner_conflict_is_respected_on_repeat_adoption(self):
         self.generate()
-        facts=dict(self.facts, owner={'name': 'Alice', 'ref': 'TASKS.md', 'confirmed': True})
+        facts = dict(self.facts, owner={'name': 'Alice', 'ref': 'TASKS.md', 'confirmed': True})
         self.assertEqual(self.onboard(facts=facts)['status'], 'installed')
-        project=self.target / 'PROJECT.md'
+        project = self.target / 'PROJECT.md'
         project.write_text(project.read_text() + '\n- **Owner:** Bob\n')
         self.assert_rejected_without_writes(lambda: self.onboard(facts=facts))
 
     def git_source_fixture(self):
         import shutil
-        source=self.target.parent / 'git-source'
+        source = self.target.parent / 'git-source'
         shutil.copytree(self.artifact, source)
         (source / '.gitattributes').write_text('*.md filter=fixture-unsafe\n')
         def git(*args):
@@ -511,9 +535,9 @@ class InitializerTests(unittest.TestCase):
 
     def test_clean_git_source_verifies_raw_blobs_without_artifact_digests(self):
         source, sha, _ = self.git_source_fixture()
-        result=self.generate(source=source, source_sha=sha, manifest_sha=None)
+        result = self.generate(source=source, source_sha=sha, manifest_sha=None)
         self.assertEqual(result['status'], 'installed')
-        metadata=json.loads((self.skill_root / 'generation.json').read_text())
+        metadata = json.loads((self.skill_root / 'generation.json').read_text())
         self.assertEqual(metadata['policy_commit'], sha)
         self.assertEqual((self.skill_root / 'assets/source/shared/WORKFLOW.md').read_bytes(),
                          (source / 'shared/WORKFLOW.md').read_bytes())
@@ -521,11 +545,11 @@ class InitializerTests(unittest.TestCase):
     def test_dirty_git_source_rejected_without_executing_configured_filter(self):
         import shlex
         source, sha, git = self.git_source_fixture()
-        marker=self.target.parent / 'FILTER_WAS_RUN'
-        code="from pathlib import Path; Path(" + repr(str(marker)) + ").write_text('bad')"
+        marker = self.target.parent / 'FILTER_WAS_RUN'
+        code = "from pathlib import Path; Path(" + repr(str(marker)) + ").write_text('bad')"
         git('config', 'filter.fixture-unsafe.clean', 'python3 -c ' + shlex.quote(code))
         git('config', 'core.fsmonitor', 'python3 -c ' + shlex.quote(code))
-        policy=source / 'shared/WORKFLOW.md'
+        policy = source / 'shared/WORKFLOW.md'
         policy.write_text(policy.read_text() + '\nUnreviewed source edit.\n')
         self.assert_rejected_without_writes(lambda: self.generate(
             source=source, source_sha=sha, manifest_sha=None))
@@ -533,8 +557,8 @@ class InitializerTests(unittest.TestCase):
 
     def test_staged_git_source_change_rejected_even_when_file_bytes_restored(self):
         source, sha, git = self.git_source_fixture()
-        file=source / 'shared/WORKFLOW.md'
-        original=file.read_bytes()
+        file = source / 'shared/WORKFLOW.md'
+        original = file.read_bytes()
         file.write_bytes(original + b'\nStaged change.\n')
         git('add', 'shared/WORKFLOW.md')
         file.write_bytes(original)
@@ -543,11 +567,11 @@ class InitializerTests(unittest.TestCase):
 
     def test_matching_custom_owner_preserves_exact_repeat_noop(self):
         self.generate()
-        facts=dict(self.facts, owner={'name': 'Alice', 'ref': 'TASKS.md', 'confirmed': True})
+        facts = dict(self.facts, owner={'name': 'Alice', 'ref': 'TASKS.md', 'confirmed': True})
         self.onboard(facts=facts)
-        project=self.target / 'PROJECT.md'
+        project = self.target / 'PROJECT.md'
         project.write_text(project.read_text() + '\n- Owner: Alice\n')
-        before=tree_state(self.target)
+        before = tree_state(self.target)
         self.assertEqual(self.onboard(facts=facts)['status'], 'unchanged')
         self.assertEqual(tree_state(self.target), before)
 
@@ -555,23 +579,23 @@ class InitializerTests(unittest.TestCase):
         import shutil
         from unittest.mock import patch
         self.generate()
-        scratch=self.target.parent / 'new-generator'
-        package=IMPL.parent.parent
+        scratch = self.target.parent / 'new-generator'
+        package = IMPL.parent.parent
         shutil.copytree(package, scratch)
-        template=scratch / 'assets/project-skill.md'
+        template = scratch / 'assets/project-skill.md'
         template.write_text(template.read_text() + '\nReviewed template clarification.\n')
-        before=tree_state(self.target)
+        before = tree_state(self.target)
         with patch.object(initializer, '__file__', str(scratch / 'scripts/conductor_init.py')):
-            blocked=self.generate()
+            blocked = self.generate()
             self.assertEqual(blocked['status'], 'blocked')
             self.assertEqual(tree_state(self.target), before)
-            planned=self.generate(apply=False, update=True)
+            planned = self.generate(apply=False, update=True)
             self.assertEqual(planned['status'], 'planned')
             self.assertEqual(tree_state(self.target), before)
-            installed=self.generate(update=True)
+            installed = self.generate(update=True)
             self.assertEqual(installed['status'], 'installed')
-            metadata=json.loads((self.skill_root / 'generation.json').read_text())
-            self.assertEqual(metadata['policy_commit'], SOURCE_SHA)
+            metadata = json.loads((self.skill_root / 'generation.json').read_text())
+            self.assertEqual(metadata['policy_commit'], self.source_sha)
             self.assertEqual(self.generate(update=True)['status'], 'unchanged')
         self.assertEqual((self.target / 'TASKS.md').read_bytes(), before['TASKS.md'][0])
 

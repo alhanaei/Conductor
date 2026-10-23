@@ -1,4 +1,0 @@
-interface:
-  display_name: "Conductor Init"
-  short_description: "Generate a native project initializer for Conductor"
-  default_prompt: "Use $conductor-init to generate a Codex project initializer and then onboard this project."

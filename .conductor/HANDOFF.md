@@ -42,10 +42,15 @@ facts are folded in below where they still hold.
 
 ## Policy binding
 
-- Pinned policy `.conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/WORKFLOW.md`,
-  SHA-256 `adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2`, recorded in
-  `AGENTS.md`, `CLAUDE.md` and `.conductor/adoption.json`. Unchanged by every change above
-  (`shared/WORKFLOW.md` itself is untouched since 2a14788).
+- Pinned policy `.conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/WORKFLOW.md`,
+  SHA-256 `539902dd4198ebd101bb0b49a4211949ab031f5b2766497213d734e175133f6c`, recorded as
+  `policy_commit` and `policy_sha256` in `.conductor/adoption.json` and in the managed section
+  of `AGENTS.md` (`CLAUDE.md` imports it). Single re-pin of 2026-10-22/23 (#45, from 2a14788
+  `adefbfa6…` via the interim release d447a4b `7be78c35…`, superseded when `main`'s sprint
+  work #44, #46 and #47 was merged in): roles, owner gates, task boundaries, `status:ready`
+  check, one kit, sub-issue rule. The snapshot holds the `shared/` tree only;
+  `.conductor/backups/` is local and ignored.
+  Migration record: the comment on #45. Checkpoint pointer rule: `shared/workflows/handoff.md`.
 
 ## Owner decisions pending, in order; the planning session's first job is to ready these
 

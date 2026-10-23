@@ -5,11 +5,11 @@ Use [shared policy](../../shared/WORKFLOW.md); current jobs belong in project is
 
 Conductor is the canonical shared-practice library. This folder holds the thin Claude Code
 adapter: how Claude Code discovers instructions and skills, the installable templates, and
-the adoption record. It mirrors the [Codex kit](../../codex/README.md) so that both
-assistants read one project record; the two kits carry the same `conductor-init`,
-`conductor-handoff` and `project-verification` names and bodies, and this kit also carries
-native copies of the shared wrappers and generated copies of the two task boundary skills
-that the Codex kit does not yet have. Each actual
+the adoption record. It is the one kit Conductor distributes since ADR 0002 (the former sibling kit for another assistant is recoverable from the tag on the last multi-kit commit), laid out so that
+every assistant reads one project record; it carries the `conductor-init`,
+`conductor-handoff` and `project-verification` skills, generated copies of the two task
+boundary skills and a native copy of every shared task wrapper, checked for drift by the
+packaging test. Each actual
 project repository owns its state, plans, issues, current task owner, checkpoints, code
 and data deliverables. This kit creates no runtime, hook, credential or integration.
 
@@ -41,12 +41,12 @@ not launch project work from inside the template folders.
 For repeatable project setup, use [conductor-init](global/skills/conductor-init/SKILL.md).
 Its helper, recipe and template are generated copies of the canonical sources under
 `shared/`; the helper accepts a verified Claude Code profile and writes the same
-`AGENTS.md` and `PROJECT.md` record as the Codex copy. See
+`AGENTS.md` and `PROJECT.md` record for every assistant. See
 [usage and validation](../../docs/project-initialization.md).
 
 ## Unified project record
 
-Claude Code reads `CLAUDE.md`; Codex and several other assistants read `AGENTS.md`. The
+Claude Code reads `CLAUDE.md`; several other assistants read `AGENTS.md`. The
 project adapter therefore starts with the line `@AGENTS.md`, which imports the project's
 vendor-neutral `AGENTS.md` at launch. The project facts, boundaries and verification
 contract are filled once, in `AGENTS.md`, and every assistant sees the same text. The

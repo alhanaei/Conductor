@@ -8,6 +8,6 @@
 6. Inspect the final diff, generated files, lockfile changes and unintended side effects. Verify no secrets are included. Record each check against the tested SHA or identified working-tree snapshot.
 7. Save a checkpoint with completion status and next steps. If push/PR is explicitly authorized, publish only to the specified repository/branch and verify the resulting URL/SHA and required CI. Otherwise provide the local patch/artifact and ask for the exact publication action.
 8. Submit the immutable implementation to a separate reviewer. Address findings within scope; obtain re-review for materially changed code. The integrator handles conflicts and re-runs combined checks after integration.
-9. Stop at the task's authorized completion gate. Do not merge, release or deploy because the implementation looks good or CI is green. Preserve existing manual staging and production approvals.
+9. Stop at the task finish boundary and the owner gate Merge. Do not merge, release or deploy because the implementation looks good or CI is green. Preserve existing manual staging and production approvals.
 
 On long work: maintain momentum through recoverable failures, but do not loop unchanged tests without a hypothesis. Checkpoint before expensive steps, major context loss or a usage limit. Use the handoff workflow when another agent must continue.
