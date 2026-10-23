@@ -10,17 +10,21 @@ recorded in the project's own instructions; this file defines the dimensions and
 1. Every change starts from a tracked task: feature, fix, documentation, chore or spike.
    A plan agreed in chat is not a backlog until it is recorded. The pull request or
    deliverable names the task it closes.
-2. Propose before filing. State the title, the problem in one or two sentences, and why it
-   needs its own record rather than a comment on an existing one, then wait for the
-   owner's approval. Delegated agents and workflows propose records in their reports and
-   never create them. Comments on existing records (findings, audit notes, verification
-   results) need no approval.
-3. A part of tracked work is a sub-task of that parent, not a sibling: a phase, one
-   surface of a sweep, a checklist row. It is a separate task when it stands alone:
-   workable without reading the parent, touching different files, or the parent is
-   already closed. A sub-task carries its own priority and category because it is worked
-   independently. A parent that exists only to hold children is a tracking record and
-   needs no priority.
+2. Propose before filing. State the title, the problem in one or two sentences, and the
+   open record the work belongs to, or why it stands alone rather than being a comment on
+   an existing record, then wait for the owner's approval. Delegated agents and workflows
+   propose records in their reports and never create them. Comments on existing records
+   (findings, audit notes, verification results) need no approval.
+3. Work that relates to an open record is filed as a sub-task of that record, never as a
+   sibling: a phase, one surface of a sweep, a checklist row, a follow-up, a fix the record
+   uncovered, a spike it needs. It stands alone only when no open record covers it or the
+   related record is already closed; then its body links the closed record. Use the
+   platform's native parent and child relationship where one exists (on GitHub, the
+   sub-issue link), otherwise a Parent line in the body. A sub-task carries its own
+   priority and category because it is worked independently. A parent that exists only to
+   hold children is a tracking record and needs no priority; it closes after its children,
+   never before. A sprint or a plan is such a parent: its records are filed as its
+   sub-tasks.
 
 ## Readiness
 
@@ -62,8 +66,8 @@ recorded in the project's own instructions; this file defines the dimensions and
     than a status dump, and record it in the project's review document in a fixed format:
     tasks without a priority or category; priorities untouched since the last review; the
     highest open priority against what was actually worked; owner-blocked tasks and whether
-    the blocker still holds; tracking parents with no open children; ownership claims with
-    no update. The review is a read-and-report observation under the common workflow; the
+    the blocker still holds; tracking parents with no open children; records that name an
+    open parent in prose without the native relationship; ownership claims with no update. The review is a read-and-report observation under the common workflow; the
     changes it proposes follow steps 2 and 4.
 
 Project templates for GitHub live in [shared/templates/github/](../templates/github/): an
