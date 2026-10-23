@@ -1,0 +1,187 @@
+{
+  "adapters": {
+    "claude-code-projects": {
+      "always_on_lines": [
+        "Pinned policy: `.conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/WORKFLOW.md` (SHA-256 `adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2`); `PROJECT.md` holds the facts and the verification contract.",
+        "Every task starts with `/task-start #N` on a record carrying `status:ready` and ends with `/task-finish`; between them your own practice runs.",
+        "Never merge, mark a draft ready, approve, force-push, change CI or push to `main`; verification is the recorded commands run on the exact head, nothing inferred."
+      ],
+      "discovery": "unverified; run the owner checklist's discovery step from a thread",
+      "inputs": {
+        "default_branch": "main",
+        "max_parallel_threads": 2
+      },
+      "owner_checklist": ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md",
+      "owner_checklist_sha256": "edd7fd1a49f82716fbac162b04204fccae9cdf886710c7ebb93ef1343adcd5aa",
+      "policy_commit": "2a14788454aab84a5c4dbba1fcefc7f21697f07f",
+      "policy_sha256": "adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2",
+      "profile": "claude-code-projects",
+      "project_instructions": ".conductor/adapters/claude-code-projects/project-instructions.md",
+      "project_instructions_chars": 5225,
+      "project_instructions_sha256": "1f6f0a981e81db68855f64af95cbd1e395466b64e76dd4396a49b24235908d6f"
+    }
+  },
+  "assistant_pins": {
+    "claude-code": "2a14788454aab84a5c4dbba1fcefc7f21697f07f"
+  },
+  "assistants": [
+    "claude-code"
+  ],
+  "facts": {
+    "architecture": "README.md (Structure section): shared/ holds canonical policy, workflows, skills, techniques, patterns, harness and templates; codex/ and assistants/claude-code/ hold thin assistant kits with generated copies of the initializer; docs/ holds usage, validation, contributing and release notes; tests/ holds the initializer test suites and packaging script.",
+    "checkpoint": ".conductor/HANDOFF.md",
+    "data_sources": "unknown",
+    "kind": "software",
+    "lifecycle": "Active",
+    "name": "Conductor",
+    "purpose": "Shared GitHub workflow and practice library for coding and analytics assistants: common workflow, status definitions, reusable skills, techniques, patterns, harness contracts and a two-stage project initializer. Documentation and templates only; no application runtime.",
+    "repository": "https://github.com/alhanaei/Conductor",
+    "storage": "unknown",
+    "task_records": [
+      "https://github.com/alhanaei/Conductor/issues",
+      "https://github.com/alhanaei/Conductor/pulls",
+      "docs/contributing.md"
+    ],
+    "verification": [
+      {
+        "command": "python3 tests/package_conductor_init.py",
+        "cwd": ".",
+        "expected": "Exit 0 and a 'Verified ... outputs' line; regenerate with --write only as a reviewed change",
+        "name": "Package integrity check",
+        "prerequisites": "Python 3 standard library",
+        "source": "tests/package_conductor_init.py"
+      },
+      {
+        "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests",
+        "cwd": ".",
+        "expected": "OK with all tests passing (57 at the validated revision)",
+        "name": "Initializer test suites",
+        "prerequisites": "Python 3 standard library and Git; packaging check current",
+        "source": "tests/test_conductor_init.py"
+      },
+      {
+        "command": "git diff --check",
+        "cwd": ".",
+        "expected": "No output, exit 0",
+        "name": "Whitespace and conflict-marker check",
+        "prerequisites": "Git",
+        "source": "docs/initializer-validation.md"
+      }
+    ]
+  },
+  "files": {
+    ".claude/skills/project-verification/SKILL.md": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063",
+    ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md": "edd7fd1a49f82716fbac162b04204fccae9cdf886710c7ebb93ef1343adcd5aa",
+    ".conductor/adapters/claude-code-projects/project-instructions.md": "1f6f0a981e81db68855f64af95cbd1e395466b64e76dd4396a49b24235908d6f",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/GUIDE.md": "efb964fb589e2fb670f030ac48ca0eb46f058747bf82fb0a20a410b1cc930458",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/MANIFEST.json": "7127c8cdbd483dc85e21b8182cc60906dbcd00fc6c989aa647f2ee561bb70bfc",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/README.md": "958df57c93bee997113cda0406071461bcdebed7585e07c2abc731dfde14046a",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/README.md": "ca10546f66e540d9e687a028731ae2e17699ea327658ec7a841bc875cc21487b",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/chatgpt/README.md": "7ba3ba1c254fb8137da9c643a689168671e02f0caf75bd198d3e518a2b597ea8",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/CLOUD-SETUP.md": "6d5710bd6083f545025adc1383ae79448531bbe75be9b292624b10495519b9b0",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/LOCAL-SETUP.md": "ef77c6b1cd1af776ca74e2e6a83241b27168c05516a4ca92ed3935daf8957f2b",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/MANIFEST.md": "f6350d40351b626ef3cc221af5a725252e4ccd9f09c28ea1e8ddd04fd4ff5f14",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/README.md": "61a94729d301021ff351c1b92a565ca8683a44c8630bcc9feec8153c410fb329",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/SHA256SUMS": "9da228ed8185ae6ae0b5859365a487da8ebf76e208d2c34764a1d7dd639c8de1",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/global/CLAUDE.md": "011115c4d3a754e9d2829fdaba0d7393d9b00d9df39e4d948f8e0520524d18b3",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/global/skills/conductor-handoff/SKILL.md": "c76368ef05b3d3d6376c893472a5b6322f92e292ff3c723bd2577b7b75704fac",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/global/skills/conductor-init/SKILL.md": "176b6178ea988464b8cb760469a10b1fa5e7dad876ac79350b3c43bf69d13195",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/global/skills/conductor-init/assets/project-skill.md": "a1477db8e5fbf5d5da23bdad3ffb3388c6868dbd41d255c867c6549ed5f3e2d8",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/global/skills/conductor-init/references/project-init.md": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/global/skills/conductor-init/scripts/conductor_init.py": "e0dd4c6b1d2719952dac58c4d82c023adc0683d2957275eba6b661de9200255d",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/project/CLAUDE.md": "a3a71103b92e9608582e16663b360c80f1c17023b0d5ad4c6db8ff1b6badaef1",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/claude-code/project/skills/project-verification/SKILL.md": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/codex/README.md": "1b3df676bd6ca509e9b91092e998d3145ebc2751623b05a77b5a4ac3fb3d579a",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/copilot/README.md": "0b81caa48856c437d8190ebc6edd769964e3e49efe6f633c15d5775be711ca70",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/google/README.md": "9565fcbb01210215376ad1d44eda613f35fd04c8a1bbe5be618d746eaf562b58",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/grok-build/README.md": "708a1e1813605c71f4a1029a391970cb9935e85b2b55bb07f9f94d719222ae04",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/assistants/kilo-code/README.md": "261fb8eea0088e6532bd080792f41b4ac0750df3b2209552588097fad73b93e6",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/CLOUD-SETUP.md": "0a4a7cf65344f668eb23e4d82260990cb6962f66bc4415975b46da06ea454a05",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/LOCAL-SETUP.md": "8a439e488f264452f3dbc55660828678af2a44329bb87fab5df7d0823fd86a46",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/MANIFEST.md": "3ad65f5d17487df275f56661e0405e989801765b1c708529e0b0cf010c84da0d",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/README.md": "c680591b2bd38d303842be71b87c1c745d1f62abdcbc7292f14682db05d78a40",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/SHA256SUMS": "ddb0434ef39bc11fec7b5ac9c366cdccaab5641402e973a522ef3ab779aa589c",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/AGENTS.md": "7911417c42d72d7b41b3b4912e5b070e8283d49de8d3e1527456afbad2f93892",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-handoff/SKILL.md": "c76368ef05b3d3d6376c893472a5b6322f92e292ff3c723bd2577b7b75704fac",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-handoff/agents/openai.yaml": "b9fce49a76ba610b8e92b7aa080719a008f20c82706b60696abf1edc41d325ed",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-init/SKILL.md": "2926dbf78a9e5b05e9ee93011bf1358718b465a805016a5868123102a9d37a53",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-init/agents/openai.yaml": "731d4ff8af35bb61fac97f91ff914bb8119dde8f62a2f310b6010742a4326504",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-init/assets/project-skill.md": "a1477db8e5fbf5d5da23bdad3ffb3388c6868dbd41d255c867c6549ed5f3e2d8",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-init/references/project-init.md": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/global/skills/conductor-init/scripts/conductor_init.py": "e0dd4c6b1d2719952dac58c4d82c023adc0683d2957275eba6b661de9200255d",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/project/AGENTS.md": "8bba859260f88edba5a31cdad9a77e624e9b0e1b5bba36984e40d5ea3a84ad13",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/project/skills/project-verification/SKILL.md": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/project/skills/project-verification/agents/openai.yaml": "5237c6b47a74aa1ff645419315a9bdde914154d23d9568fbc85aadf2450852c2",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/codex/shared/PRACTICE.md": "982631f01b6ec08ca071d1ed91578979dd32b235e9c894ce6baac01c1b4b73eb",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/docs/RELEASE.md": "3b6f7af62845b8e1ff569bfcee264eda248a642d279c69439bb19af72c212b51",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/docs/contributing.md": "d1cbb4292e82accfbd77593c3e88db5c45f045babb9975bd6642f5eb1756882e",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/docs/initializer-validation.md": "ad6b6c288f023d549ee78766cbb7316d729d02bb651bae9ccf973baf111ef728",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/docs/project-initialization.md": "70d0a7f7ea610d2162a4bc269d90dfdba2059e04d21ef915e69ede76db036703",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/docs/shared-github-workflow-coding-analytics.docx": "cd326b1b43f2fc9e6f939fb428f2fc46f21c06d6e9a47335e8fe91861df5b8fe",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/WORKFLOW.md": "adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/harness/README.md": "62e491e62694e181d2309258fc55d18e7c2a03ad941d5442b1c1efe7b9b03ff1",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/harness/examples/analytics-review-checkpoint.json": "1d3f3d1c06950aa26666a4f59ff373be6431ac5e08b6f683c6d1ac47b3c19c18",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/harness/examples/coding-quota-checkpoint.json": "0f9b335d0a78105272d8d0f4989da667512d3945f8fdec4be8021408fae29e8d",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/harness/run-contract.schema.json": "f827ec9dde656be6096e5ecdb6c5cd53b739bafa4aa4ad4a22726c3ff77f91bb",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/patterns/architecture-patterns.md": "6f1ea1090c10ea7478c0961c15f3cadd3de07ab770c54c06ae07cfbf39bf87fe",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/prompts/bootstrap.md": "7e38e9cd5fc88352ec73cb32516e1cec3ec6a02514cac3bddd1fe9f488dc7a5b",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/prompts/coordination.md": "8a356e8bb28333825ed93c35bb951f611d7cc4912d61a190a05dbcc5bec584cb",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/prompts/resume.md": "e160b71e40a97ac640bbd875c01e87a42aac611bf27ab3a185b148941b9e3998",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/prompts/reviewer.md": "1cc192203cb27607bb04b158571bcd97178c852c8fa2ec5294f0de4e22b32d07",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/prompts/worker.md": "537e42077094be6a1c3a90998d6bc7061ccfa36388502333dfb6eb8414d1cc9e",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/analytics-task/SKILL.md": "d71269b57af76c5385cff322f2bb49fe962cfbaa9fd271f7fee4da07d5afd813",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/checkpoint-handoff/SKILL.md": "f3e5929f0bec8e5cb5ffb79ab85e92c981d966ff3e8757c7f3b5f9897d90053f",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/coding-task/SKILL.md": "60e363e503012e01432d0b977ed87d90daecabc3d99248570aa1d62e98631a48",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/conductor-init/SKILL.md": "c24c12c69122509aab555e210b48d646ef3b02998d45d2750d5dec7c4771079e",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/conductor-init/assets/project-skill.md": "a1477db8e5fbf5d5da23bdad3ffb3388c6868dbd41d255c867c6549ed5f3e2d8",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/conductor-init/references/project-init.md": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/conductor-init/scripts/conductor_init.py": "e0dd4c6b1d2719952dac58c4d82c023adc0683d2957275eba6b661de9200255d",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/skills/independent-review/SKILL.md": "b2f9c6916e1b736b3b96bea75606d15c4d6dc488921499387f10cfb7f46d7cd8",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/techniques/verification.md": "bf671e9d3dc2a7d9ec613785a7eb1f5d69df32ed412a6199fbd35af7490bdc12",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/ADAPTER-MANIFEST.example.json": "804c199eadf7298a736c43cd0481e01294f0a80bce69cd51da912d6be2d40957",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/AGENTS.template.md": "7369013bb2c4ac4bdd39d6a947d38712886f0a4089cca25fcb982b32f577def9",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/HANDOFF.md": "1dbd2df383cf8063223dce7a3f02add69fd006c29f32ea8efd3c41ac4acb7412",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/INSTRUCTION-VERSION.md": "6470be17c44ab984ceb2416ea494e4ebc86105b60b977b73d5afe6230bada95d",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/PROJECT.md": "8c6faddb431b81a9896c20c6c87a1b6997c5a36374460476b3bbc7061e8d0184",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/STATUS-UPDATE.md": "f79089962e97b4b8ec9980fd69429b2a9777a0fe902dcf4b021b32efed751296",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/TASK.md": "e17d6b42a4684825ca4936999d7a355c96fad28a147d568b169fef268dbf94c0",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/github/ISSUE_TEMPLATE/task.yml": "cf3f05b3a6e68882e3938acf15eedd08f50c38c9c9eea2b0eae4f803d938b1d7",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/github/pull_request_template.md": "d20ce8e69db6893032d2982e147265d0007edf3184278477b5ae8f1808e58f1c",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/github/workflows/backlog-review.yml": "fba8ad03c938c5e742562b23c4b7305a7f31a583a96081b90ba0f7fca5b12630",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/templates/github/workflows/pr-policy.yml": "a68bef87fb0865b2d6c1eaa6af6b58bbdc315c254e29d9124bd84415e50a5ae2",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/analytics.md": "06548ee659bf12be71fb3a04dcca511f20fd1ca55937d13ce10b1d7c89fcca69",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/backlog.md": "57e8e660a69e3498f3b179827a0e49f8333c302b6362d8dd8eb4f8dcae9620f7",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/coding.md": "aef48d97a87e40aaadf1b8eabe24569a841f1a03c01bb15eeb800a4832441b31",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/handoff.md": "40588830fb285b0e0c9e9b0748bddd0a5c186e237a42271dcac9423d226fd993",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/migration.md": "3b73f4aecc0dc296411031a5ecb9de949e40f48b69754cc3c9fc08afd5800cb2",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/project-init.md": "e18c7fb35d9c69f1b587e76e19ae052fd232a61eb02c9f53f73ec0c35a82a3cc",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/workflows/review.md": "754483f7d6e8e8e764d7396991df365d52235bab283efafc9c8e642a11cd4ba7",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/sources/SOURCE-REGISTER.md": "5751e49972a02dab512d5a7096d0579b629264eeaf14962f6bc549b9b67462a1",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/tests/package_conductor_init.py": "516a570096439670a266ffc22f68398e02728537c1fe0588bdb550ed1fdd0c65",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/tests/test_conductor_init.py": "c7130214cab9fdfdf413df6314828947aa1183cacefcc87429823ee4cfc96fd1",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/tests/test_conductor_init_claude.py": "8be782c35a5a928fd29e2b021dc080c4eb20a29d90aa412437eb27c835437524",
+    ".conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/tests/test_conductor_init_migration.py": "97b437cbc3c58f3db7e7622c79bb4c404732c8bb04ca9740525668dbee45d9fa"
+  },
+  "generator_sha256": {
+    "claude-code": "e0dd4c6b1d2719952dac58c4d82c023adc0683d2957275eba6b661de9200255d"
+  },
+  "managed_blocks": {
+    "AGENTS.md": "d8a6832a57f14d8992e3dd6c17524d28bbe5f80141d2555f69282988e71eb400",
+    "CLAUDE.md": "f324667fc3406178a580338aee43d480f40205fd90e46a97d480a792f6e86de0",
+    "PROJECT.md": "311dc117aa419fcc8fae625c309312d2f96888da42ddc0cf3114417b2c0b8326"
+  },
+  "migrations": [
+    {
+      "assistant": "claude-code",
+      "from": "aa235f87dd5f3c23dc7f14ec00fcdc505c58d6b6",
+      "to": "2a14788454aab84a5c4dbba1fcefc7f21697f07f"
+    }
+  ],
+  "native_discovery": {
+    "claude-code": "unverified; check in a fresh native session"
+  },
+  "policy_commit": "2a14788454aab84a5c4dbba1fcefc7f21697f07f",
+  "policy_manifest_sha256": "7127c8cdbd483dc85e21b8182cc60906dbcd00fc6c989aa647f2ee561bb70bfc",
+  "scope": "project",
+  "version": 1
+}

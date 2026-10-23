@@ -1,0 +1,20 @@
+{
+  "files": {
+    ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md": {
+      "after": "be265c55c34daeefac972ed41697384edb3d54d757f6c83fa8e1738712eee250",
+      "backup": ".conductor/backups/a73e16a4ad8d4652b7f9a5fe7675475b/before/.conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md",
+      "before": "edd7fd1a49f82716fbac162b04204fccae9cdf886710c7ebb93ef1343adcd5aa"
+    },
+    ".conductor/adapters/claude-code-projects/project-instructions.md": {
+      "after": "78c7551d0a64b5605ec8b053b7ba2a64ddee80f528caffbace2ae347710f9830",
+      "backup": ".conductor/backups/a73e16a4ad8d4652b7f9a5fe7675475b/before/.conductor/adapters/claude-code-projects/project-instructions.md",
+      "before": "1f6f0a981e81db68855f64af95cbd1e395466b64e76dd4396a49b24235908d6f"
+    },
+    ".conductor/adoption.json": {
+      "after": "fab0834116d26e5d8a995aa6f2a2494d6c99a62800a96bf685df8dd9f948e492",
+      "backup": ".conductor/backups/a73e16a4ad8d4652b7f9a5fe7675475b/before/.conductor/adoption.json",
+      "before": "21bd717b706c199ba70d875da06ddae68e82a0a639bf9739d44a5a6fbca46ae2"
+    }
+  },
+  "version": 1
+}
