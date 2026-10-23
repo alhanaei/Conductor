@@ -6,6 +6,7 @@
 - Purpose: Shared GitHub workflow and practice library for coding and analytics assistants: common workflow, status definitions, reusable skills, techniques, patterns, harness contracts and a two-stage project initializer. Documentation and templates only; no application runtime.
 - Repository: https://github.com/alhanaei/Conductor
 - Lifecycle: Active
+- Approval mode: auto
 - Authoritative tasks: [https://github.com/alhanaei/Conductor/issues](https://github.com/alhanaei/Conductor/issues), [https://github.com/alhanaei/Conductor/pulls](https://github.com/alhanaei/Conductor/pulls), [docs/contributing.md](docs/contributing.md)
 - Checkpoint: [.conductor/HANDOFF.md](.conductor/HANDOFF.md)
 - Architecture: "README.md (Structure section): shared/ holds canonical policy, workflows, skills, techniques, patterns, harness and templates; assistants/claude-code/ holds the one distributed kit with generated copies of the initializer and the task boundary skills; docs/ holds usage, validation, contributing and release notes; tests/ holds the initializer test suites and packaging script."

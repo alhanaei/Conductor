@@ -97,7 +97,7 @@
     "tests/test_conductor_init.py": "a946c1b3c05f887b64f0553535f93cabe2c7eeeed1d015b50ca6bc0b25e96457",
     "tests/test_conductor_init_claude.py": "e05d7a83484cba62aa2fe4c8408c243c74c56d7e0569d755daeb3c488ea06949",
     "tests/test_conductor_init_migration.py": "bbd47d31e7297ee845784720f9b8935e243089dd814cf48c9cecf44863c6b90a",
-    "tests/test_conductor_init_projects.py": "433b4ade09c786aafe5d3ce5baff08ce294c0ed0c62af3450d3e2c4940a9f1d7",
+    "tests/test_conductor_init_projects.py": "68c575250df45b055b8211bb30b675191e71fc7eda905917ca91a7528cc7e891",
     "tests/test_package_check.py": "f2ac403894336ab6b2ca2a559c7fffd7c600c872da799d87be6965b9b22fa551",
     "tests/test_task_boundary.py": "e8261dce5062b0c77088f17738ac6cb21380564dcc69942c38209a651979375b"
   }

@@ -13,16 +13,19 @@ Roles
 
 - The coordinator is the Planner: it files and grills task records and proposes threads. A
   thread is the Implementer of exactly one task. A thread asked to review a pull request is the
-  Reviewer and changes nothing. The owner alone files, readies and merges (approval mode
-  `manual`).
+  Reviewer and changes nothing. Approval mode `auto`: the owner files and readies top-level
+  records, sets priorities; the coordinator files and readies sub-issues of a readied parent;
+  GitHub squash-merges a green pull request; CI deploys on merge.
 
 Tasks and ownership
 
 - Every thread starts from one labelled task record that carries `status:ready`. If no record
   exists for what you were asked, propose the title, the problem in one or two sentences and the
-  open record it belongs to, then wait; do not file it. The owner files work related to an open
-  record as a sub-issue of that record, never as a separate issue; a parent that only holds
-  sub-issues is a tracking record. If the record is not ready, say so and stop.
+  open record it belongs to. When that record is open and carries `status:ready`, the
+  coordinator files the work as its sub-issue with the Ready facts and the native parent link
+  and applies `status:ready` with a comment naming the parent; a top-level record waits for the
+  owner. A parent that only holds sub-issues is a tracking record; the coordinator closes it
+  after its last child. If the record is not ready, say so and stop.
 - Before changing anything, record the claim on the task record: this project, the thread
   reference, the time and your role. Do not treat labels or a note as an exclusive lock.
 - Take exactly the task you were given. Anything found mid-task is proposed and left as a
@@ -51,9 +54,10 @@ Branches and pull requests
   run on the exact head; fill the repository's pull request template, including the verification
   table with tested SHAs.
 - Never merge by hand, never mark a draft ready, never approve, force-push, rewrite history,
-  edit branch protection or required checks, or push to `main` without a pull request. Merge is
-  the owner's gate. Commit and push work in progress on long tasks; a resumed sandbox can lose
-  uncommitted changes.
+  edit branch protection or required checks, or push to `main` without a pull request. After
+  opening the pull request, enable GitHub auto-merge with squash; GitHub merges it when `verify`
+  and `linked-task` are green. The owner never clicks merge for a sub-issue. Commit and push
+  work in progress on long tasks; a resumed sandbox can lose uncommitted changes.
 
 Verification before done
 

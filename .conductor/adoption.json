@@ -3,7 +3,7 @@
     "claude-code-projects": {
       "always_on_lines": [
         "Pinned policy: `.conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/WORKFLOW.md` (SHA-256 `539902dd4198ebd101bb0b49a4211949ab031f5b2766497213d734e175133f6c`); `PROJECT.md` holds the facts and the verification contract.",
-        "Every task starts with `/task-start #N` on a record carrying `status:ready` and ends with `/task-finish`; between them your own practice runs. Approval mode `manual`: the owner files, readies and merges.",
+        "Every task starts with `/task-start #N` on a record carrying `status:ready` and ends with `/task-finish`; between them your own practice runs. Approval mode `auto`: the owner files and readies top-level records; sub-issues of a readied parent are filed and readied by the Planner and squash-merged by GitHub on green.",
         "Never merge by hand, mark a draft ready, approve, force-push, edit branch protection or push to `main` without a pull request; verification is the recorded commands run on the exact head, nothing inferred."
       ],
       "discovery": "unverified; run the owner checklist's discovery step from a thread",
@@ -13,13 +13,13 @@
         "max_parallel_threads": 2
       },
       "owner_checklist": ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md",
-      "owner_checklist_sha256": "cfb120be0886e75fdd67aa0b209dac23f5351afabb1256196fdc5a07d03b7aa4",
+      "owner_checklist_sha256": "6967772a40a759b67919ea03976e31e4a531126ad76e1e14f4cf32893ce6cb60",
       "policy_commit": "084387daacd2bae8a307ab4671e3d4d95f135f56",
       "policy_sha256": "539902dd4198ebd101bb0b49a4211949ab031f5b2766497213d734e175133f6c",
       "profile": "claude-code-projects",
       "project_instructions": ".conductor/adapters/claude-code-projects/project-instructions.md",
-      "project_instructions_chars": 5540,
-      "project_instructions_sha256": "a26d6cca78efbb2cb85e7a9db074edbba94418d550bce08c4c03bcc405710bd9"
+      "project_instructions_chars": 6011,
+      "project_instructions_sha256": "586b84bf3566c6974f289a38e81ed79a29f97113a54a93336c8091de00e31df3"
     }
   },
   "assistant_pins": {
@@ -29,6 +29,7 @@
     "claude-code"
   ],
   "facts": {
+    "approval_mode": "auto",
     "architecture": "README.md (Structure section): shared/ holds canonical policy, workflows, skills, techniques, patterns, harness and templates; assistants/claude-code/ holds the one distributed kit with generated copies of the initializer and the task boundary skills; docs/ holds usage, validation, contributing and release notes; tests/ holds the initializer test suites and packaging script.",
     "checkpoint": ".conductor/HANDOFF.md",
     "data_sources": "unknown",
@@ -72,8 +73,8 @@
   },
   "files": {
     ".claude/skills/project-verification/SKILL.md": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063",
-    ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md": "cfb120be0886e75fdd67aa0b209dac23f5351afabb1256196fdc5a07d03b7aa4",
-    ".conductor/adapters/claude-code-projects/project-instructions.md": "a26d6cca78efbb2cb85e7a9db074edbba94418d550bce08c4c03bcc405710bd9",
+    ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md": "6967772a40a759b67919ea03976e31e4a531126ad76e1e14f4cf32893ce6cb60",
+    ".conductor/adapters/claude-code-projects/project-instructions.md": "586b84bf3566c6974f289a38e81ed79a29f97113a54a93336c8091de00e31df3",
     ".conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/WORKFLOW.md": "539902dd4198ebd101bb0b49a4211949ab031f5b2766497213d734e175133f6c",
     ".conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/harness/README.md": "62e491e62694e181d2309258fc55d18e7c2a03ad941d5442b1c1efe7b9b03ff1",
     ".conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/harness/examples/analytics-review-checkpoint.json": "d06273f4eac82c66baa5ca418e8d7cd733c5492472add28fd47e30447da7300f",
@@ -129,8 +130,8 @@
   },
   "managed_blocks": {
     "AGENTS.md": "d1c2042e9a24e333e97fc82d1f585bff29f738132b72aa2a0b4e9c9a33440a1f",
-    "CLAUDE.md": "e44d04dc207f2dd19a6934ccd531ded4af049c2878475f845ac443ee177fb3c3",
-    "PROJECT.md": "be50fad81106851271bdf09752f45d1b41dc811ff7d61c13a4f97cabeda0c1d5"
+    "CLAUDE.md": "c6222d69572a8eab3b682de97a2585755c4897cc0313996926d30e9a596a945a",
+    "PROJECT.md": "ee66d34a34e6573df344bd9800312d67b1c30a7b6449e576ed7ab21308ea6027"
   },
   "migrations": [
     {
@@ -155,6 +156,21 @@
   "policy_commit": "084387daacd2bae8a307ab4671e3d4d95f135f56",
   "policy_manifest_sha256": "e5191f21b315f78f9255e7616333898ccb479db9d5f4b32e885025daf64a76c1",
   "policy_sha256": "539902dd4198ebd101bb0b49a4211949ab031f5b2766497213d734e175133f6c",
+  "protection": {
+    "main": {
+      "allow_force_pushes": false,
+      "approvals_required": false,
+      "bypass_allowed": false,
+      "evidence": "https://github.com/alhanaei/Conductor/issues/48",
+      "required_checks": [
+        "verify",
+        "linked-task"
+      ],
+      "strict_status_checks": false,
+      "verified": "2026-10-23",
+      "verified_by": "project thread \"Approval modes per project\", gh api repos/alhanaei/Conductor/branches/main/protection"
+    }
+  },
   "scope": "project",
   "version": 1
 }
