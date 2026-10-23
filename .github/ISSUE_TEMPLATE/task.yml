@@ -37,6 +37,18 @@ body:
         - tracking
     validations:
       required: true
+  - type: dropdown
+    id: assistant
+    attributes:
+      label: Assistant
+      description: Optional. Which assistant may claim this record; "any" or blank means any assistant. The Planner mirrors the choice as an agent:* label.
+      options:
+        - any
+        - claude
+        - codex
+        - gemini
+    validations:
+      required: false
   - type: input
     id: parent
     attributes:
