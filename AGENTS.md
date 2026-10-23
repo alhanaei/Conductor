@@ -125,7 +125,9 @@ labelled together with one comment naming the round.
 3. Open the pull request against the integration branch from the repository template:
    `Closes #n`, the verification ledger, merge danger, "Found and left". One branch and one
    pull request per task.
-4. In `auto`, enable GitHub auto-merge with squash; GitHub merges when `verify` and
+4. In `auto`, enable GitHub auto-merge with squash as soon as the pull request is open,
+   while the checks still run: GitHub refuses to arm it on a pull request that is already
+   green, and then only the owner's click can land it. GitHub merges when `verify` and
    `linked-task` are green and the owner never clicks for a sub-issue. In `manual`, stop at
    the Merge gate.
 5. Post the milestone comment on the record: head SHA, checks, pull request, proposals, and
