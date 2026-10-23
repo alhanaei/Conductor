@@ -2,12 +2,16 @@
 """Regenerate/check distributed initializer assets and package identities."""
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMON = "shared/skills/conductor-init/"
+# Kit files whose text lives in the generator; regenerated here like the other copies.
+PROJECT_INSTRUCTIONS = "assistants/claude-code/PROJECT-INSTRUCTIONS.template.md"
 # Task boundary skills: written once in shared/skills, copied byte for byte into each kit
 # that carries them (task-start holds the helper source; task-finish gets a generated copy).
 BOUNDARY_SKILLS = ("task-start", "task-finish")
@@ -120,12 +124,27 @@ def check_skill_resources(content):
         raise ValueError("Claude Code skill must name its native path and the AGENTS.md import")
 
 
+def generator_module():
+    """The canonical generator, imported for the text constants it carries."""
+    spec = importlib.util.spec_from_file_location("conductor_init_packaged", ROOT / (COMMON + "scripts/conductor_init.py"))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def project_instructions_template(generator):
+    """The kit's project-instructions template: heading block plus the generator's wrapped text."""
+    return (generator.PROJECT_INSTRUCTIONS_HEADING + generator.rewrap(generator.PROJECT_INSTRUCTIONS_TEMPLATE)).encode()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
     recipe = (ROOT / "shared/workflows/project-init.md").read_bytes()
-    outputs = {COMMON + "references/project-init.md": recipe}
+    outputs = {COMMON + "references/project-init.md": recipe,
+               PROJECT_INSTRUCTIONS: project_instructions_template(generator_module())}
     helper = (ROOT / BOUNDARY_HELPER).read_bytes()
     for skill in BOUNDARY_SKILLS:
         source = (ROOT / f"shared/skills/{skill}/SKILL.md").read_bytes()

@@ -1,12 +1,17 @@
 # Project instructions template for Claude Code Projects
 
 Source template for the **Project settings > Memory > Project instructions** field of a Claude
-Code project (beta). Fill every `{{PLACEHOLDER}}`, delete this heading block, and paste the rest
-into the field. The field accepts up to 16,000 characters; this brief is well under that. The
-field is not in Git: record the filled text, or a digest of it, in the project's installation
-record so a later session can tell whether it changed. Repository rules stay in that repository's
-`CLAUDE.md`; shared policy stays the pinned snapshot named below. Project memory is notes Claude
-writes for itself, never policy.
+Code project (beta). Generated copy: the text below is `PROJECT_INSTRUCTIONS_TEMPLATE` in
+`shared/skills/conductor-init/scripts/conductor_init.py`, and `tests/package_conductor_init.py
+--write` regenerates this file; edit the generator, not this file. Do not fill it by hand: run
+`conductor_init.py generate --profile claude-code-projects --target <repo>` in an adopted
+repository. That fills every `{{PLACEHOLDER}}` from `PROJECT.md`, `.conductor/adoption.json` and
+the pinned policy, writes the text to `.conductor/adapters/claude-code-projects/` with an owner
+checklist, records the text's SHA-256 in `.conductor/adoption.json`, and refuses a text over the
+field's 16,000 characters. The field is not in Git: `check --profile claude-code-projects`
+compares the recorded digest with the generated text and the file on disk and names what
+differs. Repository rules stay in that repository's `CLAUDE.md`; shared policy stays the pinned
+snapshot named below. Project memory is notes Claude writes for itself, never policy.
 
 ---
 
@@ -16,26 +21,47 @@ records at {{TASK_RECORDS_URL}}. Shared practice is the pinned policy at
 `AGENTS.md` and `PROJECT.md`. Read them before dependent work; if the snapshot is missing or its
 digest differs, say so in your first message and stop.
 
+Roles
+
+- The coordinator is the Planner: it files and grills task records and proposes threads. A
+  thread is the Implementer of exactly one task. A thread asked to review a pull request is the
+  Reviewer and changes nothing. The owner alone files, readies and merges.
+
 Tasks and ownership
 
-- Every thread starts from one labelled task record. If no record exists for what you were
-  asked, propose the title and the problem in one or two sentences and wait; do not file it.
-- Before changing anything, record the selection on the task record: this project, the thread
-  reference, and the time. Do not treat labels or a note as an exclusive lock.
+- Every thread starts from one labelled task record that carries `status:ready`. If no record
+  exists for what you were asked, propose the title and the problem in one or two sentences and
+  wait; do not file it. If the record is not ready, say so and stop.
+- Before changing anything, record the claim on the task record: this project, the thread
+  reference, the time and your role. Do not treat labels or a note as an exclusive lock.
 - Take exactly the task you were given. Anything found mid-task is proposed and left as a
   comment on the record it belongs to.
 - Each task carries exactly one priority and exactly one category before it is worked.
+
+Task boundaries
+
+- Start with `/task-start #N` when that skill is in your skill list. Without it, do the same by
+  hand: refuse without `status:ready` on #N and name the missing Ready fact; post the claim
+  comment on #N (runtime, thread reference, time, role) before changing anything; branch from
+  `{{DEFAULT_BRANCH}}`; write `.git/conductor-local/claim.json` with the task number, the branch
+  and the allowed paths copied from the record, and stay inside those paths.
+- Finish with `/task-finish`, or `/task-finish --stopped` when blocked. Without the skill: run
+  the verification contract below on the exact head and write
+  `.git/conductor-local/verification.json` with the tested SHAs; open or update the pull request
+  with `Closes #N` and the ledger; update the checkpoint with branch, head, task and next
+  action; post the milestone on #N; list anything found mid-task under "Found and left" on the
+  record. When stopping, post the blocker and the next step and open no pull request.
 
 Branches and pull requests
 
 - Branch from `{{DEFAULT_BRANCH}}`. One branch and one pull request per thread, closing exactly
   the task it names with `Closes #N`.
 - Open the pull request only when the task's acceptance is met and the verification below has
-  run on the exact head; fill the repository's pull request template, including the
-  verification table with tested SHAs.
-- Never merge, force-push, rewrite history, change CI configuration, or push to
-  `{{DEFAULT_BRANCH}}`. Merge is the owner's gate. Commit and push work in progress on long
-  tasks; a resumed sandbox can lose uncommitted changes.
+  run on the exact head; fill the repository's pull request template, including the verification
+  table with tested SHAs.
+- Never merge, never mark a draft ready, never approve, force-push, rewrite history, change CI
+  configuration, or push to `{{DEFAULT_BRANCH}}`. Merge is the owner's gate. Commit and push
+  work in progress on long tasks; a resumed sandbox can lose uncommitted changes.
 
 Verification before done
 
@@ -48,16 +74,16 @@ When something is missing
 
 - If you cannot reach a repository, file, secret, service, connector, or the pinned policy, say
   exactly what is missing in your first message and stop. Do not substitute, mock, or guess.
-- Pause for the owner before any deployment, spending, credential or access change,
-  publication outside GitHub, or destructive action.
+- Pause for the owner before any deployment, spending, credential or access change, publication
+  outside GitHub, or destructive action.
 
 Checkpoints and memory
 
 - Before ending, or when context runs low, update `{{CHECKPOINT_PATH}}` with head SHA, checks
   run, decisions, blocker, and next action, and post the milestone on the task record.
 - Decisions go to the task record or the repository's decision records; pitfalls go to the
-  repository's docs or `CLAUDE.md`. Project memory may hold reminders of them, but it is not
-  the record and can be pruned without loss.
+  repository's docs or `CLAUDE.md`. Project memory may hold reminders of them, but it is not the
+  record and can be pruned without loss.
 
 Coordination
 
