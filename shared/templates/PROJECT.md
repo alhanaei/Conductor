@@ -10,6 +10,7 @@ Fill this from observed repository files and current official documentation. Do 
 - Task progress: Backlog / Ready / In progress / Review / Done (in the linked records)
 - Execution state: Ready / Running / Waiting quota / Blocked / Needs approval / null (separate from progress)
 - Default branch and protected branches:
+- Approval mode (manual, or auto once branch protection is recorded) and integration branch:
 - Runtime/tool versions and authoritative version files:
 - Package managers and lockfiles:
 - Install/bootstrap command and prerequisites:

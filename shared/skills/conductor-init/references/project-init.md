@@ -59,9 +59,9 @@ The helper rejects unknown mappings; it does not claim a universal adapter.
 
 Invoke the generated skill. Discover facts from project-owned files, approved input
 references and user choices: name, software/analytics kind, purpose, repository,
-lifecycle, authoritative task records, checkpoint path, and verification commands or
-procedures with cwd, prerequisites, expected results and source evidence. Unknown
-optional facts stay unknown. Do not invent architecture, tools, CI, datasets, storage,
+lifecycle, approval mode (`manual` unless the owner chooses `auto`; ADR 0005), authoritative
+task records, checkpoint path, and verification commands or procedures with cwd,
+prerequisites, expected results and source evidence. Unknown optional facts stay unknown. Do not invent architecture, tools, CI, datasets, storage,
 deployment gates or tests. Missing essential facts leave an inactive draft with exact
 gaps reported.
 

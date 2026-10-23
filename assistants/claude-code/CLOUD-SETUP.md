@@ -135,15 +135,20 @@ it writes four things, each a reviewed change in Git:
    and `task-finish` account skills are missing.
 2. Its SHA-256 and character count under `adapters.claude-code-projects` in
    `.conductor/adoption.json`, with the inputs used (`--default-branch`, default `main`;
-   `--max-parallel-threads`, default 2, neither of which `PROJECT.md` holds) and a
-   `discovery` field for the thread check.
+   `--max-parallel-threads`, default 2; `--integration-branch`, default the default branch;
+   none of which `PROJECT.md` holds) and a `discovery` field for the thread check. The
+   `Approval mode` fact (`manual` or `auto`, ADR 0005) shapes the text: `auto` delegates
+   sub-issues of a readied parent to the coordinator and their green pull requests to GitHub
+   squash auto-merge, and is refused until the record holds the branch protection evidence.
 3. The repository `CLAUDE.md`: the three always-on lines (policy pin and digest, the two task
    boundaries, the never-merge rule) appended to the managed section. A later `onboard`
    keeps them.
 4. `.conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md`: the one-time owner steps
    (paste the text and record its digest, enable the two boundary skills on the account,
    create and pin the Backlog issue, set `CONDUCTOR_BACKLOG_REVIEW_ISSUE`, turn bypass off on
-   the default branch, run the discovery check from a thread).
+   the default and integration branches and record the protection, set
+   `CONDUCTOR_APPROVAL_MODE` and, for `auto`, allow auto-merge; run the discovery check from
+   a thread).
 
 `check --profile claude-code-projects` regenerates the text and reports each mismatch by
 name: a recorded digest that differs from the generated text, a file on disk that differs

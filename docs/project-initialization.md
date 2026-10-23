@@ -151,8 +151,13 @@ instruction file's managed section, and records the text's SHA-256, its inputs a
 `discovery` field under `adapters.<profile>` in the adoption record; `--apply` writes, and a
 rerun is an exact no-op. `check --profile` regenerates and names every mismatch between the
 record, the files on disk and the managed section. Inputs the facts do not hold
-(`--default-branch`, `--max-parallel-threads`) have defaults, are recorded, and are compared
-by `check`. The procedure and the owner steps are in the Claude Code kit's
+(`--default-branch`, `--max-parallel-threads`, `--integration-branch`) have defaults, are
+recorded, and are compared by `check`. The project's approval mode (ADR 0005) is a fact:
+`Approval mode: manual | auto` in `PROJECT.md`, `manual` when absent; `generate --approval-mode`
+overrides it and writes the fact back to `PROJECT.md` and the record so the two agree. `auto`
+is refused until the record holds `protection.<branch>` evidence (bypass off, approvals off,
+`verify` and `linked-task` required, a verified date) for the integration and default branches,
+and its owner checklist adds the `CONDUCTOR_APPROVAL_MODE` variable and the auto-merge setting. The procedure and the owner steps are in the Claude Code kit's
 [CLOUD-SETUP.md](../assistants/claude-code/CLOUD-SETUP.md#generating-the-project-instructions-the-claude-code-projects-profile).
 
 ## Reruns, rollback and limitations

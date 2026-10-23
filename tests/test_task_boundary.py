@@ -154,9 +154,22 @@ class TaskBoundaryTests(unittest.TestCase):
         self.assertIn("Closes #46", body)
         self.assertIn("| echo | `echo ok`, `.` | passed | `" + evidence["sha"][:12] + "` |", body)
         self.assertIn("- retire the old wrapper", body)
+        self.assertIn("- Merge: the owner's gate.", body)
+        self.assertFalse(json.loads(self.local("claim.json").read_text())["auto_merge"])
         self.assertIn("Head: `" + evidence["sha"] + "`", self.local("checkpoint.md").read_text())
         self.assertIn("**Finished.** Task #46", self.local("milestone-comment.md").read_text())
         self.assertEqual(self.run_helper("verify-evidence")[0], 0)
+
+    def test_finish_records_auto_merge_without_merging(self):
+        """Approval mode auto: the body and milestone say GitHub merges; nothing merges here."""
+        self.start()
+        code, out, _ = self.run_helper("finish", "--check", "echo=echo ok", "--summary", "did it", "--auto-merge")
+        self.assertEqual(code, 0, out)
+        body = self.local("pr-body.md").read_text()
+        self.assertIn("GitHub auto-merge (squash) enabled by task-finish", body)
+        self.assertIn("integration branch `main`", body)
+        self.assertTrue(json.loads(self.local("claim.json").read_text())["auto_merge"])
+        self.assertEqual(git(self.root, "log", "--oneline", "main..HEAD"), "")  # nothing merged, nothing committed
 
     def test_finish_stops_on_a_failed_check_or_a_dirty_tree(self):
         self.start()

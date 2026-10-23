@@ -16,6 +16,15 @@
 #                               "docs/adr/,.conductor/HANDOFF.md"; a pull request whose
 #                               changed files all match may reference its task with
 #                               "Refs #n" instead of closing one
+#   CONDUCTOR_APPROVAL_MODE     "manual" (default) or "auto" (ADR 0005), the project's
+#                               `Approval mode` fact. In auto, a sub-issue's parent must
+#                               carry the readiness label too (the owner readied the parent
+#                               once; the children inherit), and the pull request must target
+#                               the integration branch unless it promotes that branch into
+#                               the default branch
+#   CONDUCTOR_INTEGRATION_BRANCH
+#                               the branch task pull requests land on; default the
+#                               repository's default branch
 name: PR policy
 on:
   pull_request:
@@ -36,6 +45,11 @@ jobs:
       TRACKING_LABEL: ${{ vars.CONDUCTOR_TRACKING_LABEL || 'kind:tracking' }}
       READY_LABEL: ${{ vars.CONDUCTOR_READY_LABEL || 'status:ready' }}
       RECORD_PATHS: ${{ vars.CONDUCTOR_RECORD_PATHS || 'docs/adr/,.conductor/HANDOFF.md' }}
+      APPROVAL_MODE: ${{ vars.CONDUCTOR_APPROVAL_MODE || 'manual' }}
+      INTEGRATION_BRANCH: ${{ vars.CONDUCTOR_INTEGRATION_BRANCH || github.event.repository.default_branch }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
     steps:
       - name: Require a linked Ready task with one priority and one category
         shell: python
@@ -46,6 +60,18 @@ jobs:
               return subprocess.run(["gh", *args], check=True, capture_output=True, text=True).stdout
 
           repo = os.environ["GITHUB_REPOSITORY"]
+          mode = os.environ["APPROVAL_MODE"].strip().lower()
+          if mode not in ("manual", "auto"):
+              print(f"::error::CONDUCTOR_APPROVAL_MODE must be 'manual' or 'auto', not {mode!r}")
+              sys.exit(1)
+          integration, default_branch = os.environ["INTEGRATION_BRANCH"], os.environ["DEFAULT_BRANCH"]
+          base_ref, head_ref = os.environ["BASE_REF"], os.environ["HEAD_REF"]
+          if mode == "auto":
+              promotion = head_ref == integration and base_ref == default_branch and integration != default_branch
+              if base_ref != integration and not promotion:
+                  print(f"::error::Approval mode auto: pull requests target the integration branch '{integration}', not '{base_ref}'; only the promotion of '{integration}' into '{default_branch}' may target the default branch.")
+                  sys.exit(1)
+              print(f"Approval mode auto: base '{base_ref}' accepted" + (" (promotion)" if promotion else "") + ".")
           body = json.loads(gh("pr", "view", os.environ["PR_NUMBER"], "--repo", repo, "--json", "body"))["body"] or ""
           numbers = sorted({int(n) for n in re.findall(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)", body, re.I)})
           record_paths = [p.strip() for p in os.environ["RECORD_PATHS"].split(",") if p.strip()]
@@ -105,6 +131,8 @@ jobs:
               parent_problems = label_problems(parent_labels)
               if parent_state.upper() != "OPEN":
                   parent_problems.append("parent is closed")
+              if mode == "auto" and ready not in parent_labels:
+                  parent_problems.append(f"missing the '{ready}' label; in approval mode auto a sub-issue inherits readiness only from a readied parent")
               if parent_problems:
                   failed = True
                   print(f"::error::Parent #{parent} of task #{number} is not a workable record: " + "; ".join(parent_problems) + f" (labels: {', '.join(parent_labels) or 'none'})")
