@@ -23,7 +23,7 @@ inside the checkout's Git metadata (`<git-dir>/conductor-local/`).
      --check "Package integrity=python3 tests/package_conductor_init.py" \
      --check "Tests=PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests" \
      --summary "<what changed and why>" [--proposal "<finding left for the owner>"]... \
-     [--title "<pull request title>"] [--open] [--post]
+     [--title "<pull request title>"] [--open] [--post] [--auto-merge]
    ```
 
    The helper runs every check, writes `conductor-local/verification.json` with the head
@@ -37,7 +37,12 @@ inside the checkout's Git metadata (`<git-dir>/conductor-local/`).
    With `--open` it pushes the branch and opens the pull request through `gh`; with
    `--post` it posts the milestone. Without them, or when `gh` is unavailable, open the pull
    request and post the comment through your own GitHub access from the drafted files,
-   keeping `Closes #n` and the ledger intact. The pull request's base is the claim's base;
+   keeping `Closes #n` and the ledger intact. When the project's approval mode is `auto`
+   (the `Approval mode` fact in `PROJECT.md`; ADR 0005) and the task is a sub-issue of a
+   readied parent, pass `--auto-merge`: the body records it and, with `--open`, the helper
+   runs `gh pr merge --auto --squash` so GitHub merges the pull request once `verify` and
+   `linked-task` are green. Without `gh`, enable auto-merge through your own GitHub access.
+   The helper never merges; in `manual` the owner does. The pull request's base is the claim's base;
    the owner merges.
 3. If a check fails, the helper records the failure as a blocker, writes no pull request body
    and exits 4. Fix, commit and run it again. Never skip, disable or quarantine a check to

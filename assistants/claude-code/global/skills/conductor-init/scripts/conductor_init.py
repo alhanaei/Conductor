@@ -51,7 +51,14 @@ ADAPTER_PROFILES = {
         "backlog_variable": "CONDUCTOR_BACKLOG_REVIEW_ISSUE",
     },
 }
-ADAPTER_DEFAULTS = {"default_branch": "main", "max_parallel_threads": 2}
+ADAPTER_DEFAULTS = {"default_branch": "main", "max_parallel_threads": 2, "integration_branch": None}
+# Approval modes (ADR 0005): the project fact `approval_mode` in PROJECT.md, `manual` when
+# absent. `auto` delegates everything below a top-level record to the assistants and GitHub;
+# the generator refuses it until the adoption record holds the branch protection evidence.
+APPROVAL_MODES = ("manual", "auto")
+REQUIRED_CHECKS = ("verify", "linked-task")
+APPROVAL_MODE_VARIABLE = "CONDUCTOR_APPROVAL_MODE"
+INTEGRATION_BRANCH_VARIABLE = "CONDUCTOR_INTEGRATION_BRANCH"
 
 # Source of the Claude Code Projects project-instructions text. The kit copy
 # assistants/claude-code/PROJECT-INSTRUCTIONS.template.md is generated from this constant
@@ -67,16 +74,12 @@ Roles
 
 - The coordinator is the Planner: it files and grills task records and proposes threads. A
   thread is the Implementer of exactly one task. A thread asked to review a pull request is
-  the Reviewer and changes nothing. The owner alone files, readies and merges.
+  the Reviewer and changes nothing. {{GATES_SENTENCE}}
 
 Tasks and ownership
 
-- Every thread starts from one labelled task record that carries `status:ready`. If no record
-  exists for what you were asked, propose the title, the problem in one or two sentences
-  and the open record it belongs to, then wait; do not file it. The owner files work
-  related to an open record as a sub-issue of that record, never as a separate issue; a
-  parent that only holds sub-issues is a tracking record. If the record is not ready, say
-  so and stop.
+- Every thread starts from one labelled task record that carries `status:ready`. {{FILING_RULE}}
+  If the record is not ready, say so and stop.
 - Before changing anything, record the claim on the task record: this project, the thread
   reference, the time and your role. Do not treat labels or a note as an exclusive lock.
 - Take exactly the task you were given. Anything found mid-task is proposed and left as a
@@ -88,7 +91,7 @@ Task boundaries
 - Start with `/task-start #N` when that skill is in your skill list. Without it, do the same
   by hand: refuse without `status:ready` on #N and name the missing Ready fact; post the claim
   comment on #N (runtime, thread reference, time, role) before changing anything; branch from
-  `{{DEFAULT_BRANCH}}`; write `.git/conductor-local/claim.json` with the task number, the
+  `{{INTEGRATION_BRANCH}}`; write `.git/conductor-local/claim.json` with the task number, the
   branch and the allowed paths copied from the record, and stay inside those paths.
 - Finish with `/task-finish`, or `/task-finish --stopped` when blocked. Without the skill:
   run the verification contract below on the exact head and write
@@ -99,14 +102,15 @@ Task boundaries
 
 Branches and pull requests
 
-- Branch from `{{DEFAULT_BRANCH}}`. One branch and one pull request per thread, closing exactly
-  the task it names with `Closes #N`.
+- Branch from `{{INTEGRATION_BRANCH}}` and open the pull request against it. One branch and
+  one pull request per thread, closing exactly the task it names with `Closes #N`.
 - Open the pull request only when the task's acceptance is met and the verification below has
   run on the exact head; fill the repository's pull request template, including the
   verification table with tested SHAs.
-- Never merge, never mark a draft ready, never approve, force-push, rewrite history, change
-  CI configuration, or push to `{{DEFAULT_BRANCH}}`. Merge is the owner's gate. Commit and
-  push work in progress on long tasks; a resumed sandbox can lose uncommitted changes.
+- Never merge by hand, never mark a draft ready, never approve, force-push, rewrite history,
+  edit branch protection or required checks, or push to {{PROTECTED_BRANCHES}} without a pull
+  request. {{MERGE_RULE}} Commit and push work in progress on long tasks; a resumed sandbox can
+  lose uncommitted changes.
 
 Verification before done
 
@@ -540,6 +544,8 @@ def facts_blockers(target, facts):
         missing.append("kind: software or analytics")
     if facts.get("lifecycle") not in ("Active", "Parked", "Closed"):
         missing.append("lifecycle: Active, Parked, or Closed")
+    if facts.get("approval_mode") is not None and facts["approval_mode"] not in APPROVAL_MODES:
+        missing.append("approval_mode: " + " or ".join(APPROVAL_MODES))
     if not facts.get("verification"):
         missing.append("evidenced verification contract")
     if missing:
@@ -584,11 +590,14 @@ def project_record(facts):
     lines = ["# Conductor project facts", ""]
     for key in ("name", "kind", "purpose", "repository", "lifecycle"):
         lines.append(f"- {key.title()}: {facts[key]}")
+    if facts.get("approval_mode"):
+        lines.append(f"- Approval mode: {facts['approval_mode']}")
     links = ", ".join(f"[{value}]({value})" for value in facts["task_records"])
     lines.append("- Authoritative tasks: " + links)
     lines.append(f"- Checkpoint: [{facts['checkpoint']}]({facts['checkpoint']})")
     for key, value in facts.items():
-        if key not in ("name", "kind", "purpose", "repository", "lifecycle", "task_records", "checkpoint", "verification"):
+        if key not in ("name", "kind", "purpose", "repository", "lifecycle", "approval_mode",
+                       "task_records", "checkpoint", "verification"):
             lines.append(f"- {key.replace('_', ' ').title()}: {json.dumps(value, ensure_ascii=False)}")
     lines.extend(("", "## Verification contract", ""))
     for check in facts["verification"]:
@@ -619,12 +628,68 @@ def native_adapter(spec, previous, always_on=None):
     return body
 
 
-def always_on_lines(sha, policy_sha256, default_branch):
+def approval_mode(facts, override=None):
+    """The project's approval mode: the override, else the fact, else manual."""
+    mode = override or facts.get("approval_mode") or APPROVAL_MODES[0]
+    if mode not in APPROVAL_MODES:
+        raise InitError("approval_mode must be one of " + ", ".join(APPROVAL_MODES))
+    return mode
+
+
+def protected_branches(default_branch, integration_branch):
+    """The branches a pull request lands on, default branch last, each named once."""
+    branches = [integration_branch] if integration_branch != default_branch else []
+    return branches + [default_branch]
+
+
+def branch_phrase(default_branch, integration_branch):
+    return " or ".join(f"`{name}`" for name in protected_branches(default_branch, integration_branch))
+
+
+def mode_text(mode, default_branch, integration_branch):
+    """The mode-dependent sentences of the project instructions and the always-on lines."""
+    promotion = (f" and promotes `{integration_branch}` into `{default_branch}`"
+                 if integration_branch != default_branch else "")
+    if mode == "manual":
+        return {
+            "GATES_SENTENCE": "The owner alone files, readies and merges (approval mode `manual`).",
+            "FILING_RULE": ("If no record exists for what you were asked, propose the title, the problem in one or two "
+                            "sentences and the open record it belongs to, then wait; do not file it. The owner files work "
+                            "related to an open record as a sub-issue of that record, never as a separate issue; a parent "
+                            "that only holds sub-issues is a tracking record."),
+            "MERGE_RULE": "Merge is the owner's gate.",
+            "SHORT": "the owner files, readies and merges.",
+        }
+    return {
+        "GATES_SENTENCE": (f"Approval mode `auto`: the owner files and readies top-level records, sets priorities{promotion}; "
+                           "the coordinator files and readies sub-issues of a readied parent; GitHub squash-merges a green "
+                           "pull request; CI deploys on merge."),
+        "FILING_RULE": ("If no record exists for what you were asked, propose the title, the problem in one or two "
+                        "sentences and the open record it belongs to. When that record is open and carries `status:ready`, "
+                        "the coordinator files the work as its sub-issue with the Ready facts and the native parent link "
+                        "and applies `status:ready` with a comment naming the parent; a top-level record waits for the "
+                        "owner. A parent that only holds sub-issues is a tracking record; the coordinator closes it after "
+                        "its last child."),
+        "MERGE_RULE": ("After opening the pull request, enable GitHub auto-merge with squash; GitHub merges it when "
+                       f"`{REQUIRED_CHECKS[0]}` and `{REQUIRED_CHECKS[1]}` are green."
+                       + (f" Promotion of `{integration_branch}` into `{default_branch}` is the owner's merge."
+                          if integration_branch != default_branch else " The owner never clicks merge for a sub-issue.")),
+        "SHORT": ("the owner files and readies top-level records; sub-issues of a readied parent are filed and "
+                  "readied by the Planner and squash-merged by GitHub on green."),
+    }
+
+
+def always_on_lines(sha, policy_sha256, default_branch, integration_branch=None, mode="manual"):
     """The three lines every session of an adapter profile reads; task-start prints the same."""
+    integration_branch = integration_branch or default_branch
+    text = mode_text(mode, default_branch, integration_branch)
     return (
         f"Pinned policy: `{policy_path(sha)}` (SHA-256 `{policy_sha256}`); `PROJECT.md` holds the facts and the verification contract.",
-        "Every task starts with `/task-start #N` on a record carrying `status:ready` and ends with `/task-finish`; between them your own practice runs.",
-        f"Never merge, mark a draft ready, approve, force-push, change CI or push to `{default_branch}`; verification is the recorded commands run on the exact head, nothing inferred.",
+        "Every task starts with `/task-start #N` on a record carrying `status:ready` and ends with `/task-finish`; "
+        f"between them your own practice runs. Approval mode `{mode}`: {text['SHORT']}",
+        f"Never merge by hand, mark a draft ready, approve, force-push, edit branch protection or push to "
+        f"{branch_phrase(default_branch, integration_branch)} without a pull request; verification is the recorded "
+        "commands run on the exact head, nothing inferred.",
     )
 
 
@@ -638,8 +703,10 @@ def recorded_always_on(adoption, spec):
         entry = (adoption or {}).get("adapters", {}).get(name)
         if entry and profile["native_profile"] == spec["name"]:
             inputs = entry.get("inputs", {})
-            return always_on_lines(adoption["policy_commit"], entry["policy_sha256"],
-                                   inputs.get("default_branch", ADAPTER_DEFAULTS["default_branch"]))
+            default_branch = inputs.get("default_branch", ADAPTER_DEFAULTS["default_branch"])
+            return always_on_lines(adoption["policy_commit"], entry["policy_sha256"], default_branch,
+                                   inputs.get("integration_branch") or default_branch,
+                                   approval_mode(adoption.get("facts", {})))
     return None
 
 
@@ -667,7 +734,38 @@ def adapter_inputs(options):
         raise InitError("default_branch must be a plain branch name")
     if not isinstance(inputs["max_parallel_threads"], int) or inputs["max_parallel_threads"] < 1:
         raise InitError("max_parallel_threads must be a positive integer")
+    inputs["integration_branch"] = inputs["integration_branch"] or inputs["default_branch"]
+    if not re.fullmatch(r"[A-Za-z0-9._/-]+", str(inputs["integration_branch"])):
+        raise InitError("integration_branch must be a plain branch name")
     return inputs
+
+
+def protection_blockers(adoption, branches):
+    """Why approval mode auto cannot be generated: each branch without recorded protection evidence.
+
+    The record is `protection.<branch>` in .conductor/adoption.json, written from a thread's
+    reading of the live settings: bypass_allowed false, approvals_required false, the
+    required checks, a verified date and an evidence link."""
+    recorded = adoption.get("protection", {}) or {}
+    blockers = []
+    for branch in branches:
+        entry = recorded.get(branch)
+        if not isinstance(entry, dict):
+            blockers.append(f"`{branch}` has no `protection` entry")
+            continue
+        problems = []
+        if entry.get("bypass_allowed") is not False:
+            problems.append("bypass_allowed is not false")
+        if entry.get("approvals_required") not in (False, 0):
+            problems.append("approvals_required is not false")
+        missing = [check for check in REQUIRED_CHECKS if check not in (entry.get("required_checks") or [])]
+        if missing:
+            problems.append("required_checks lack " + ", ".join(missing))
+        if not entry.get("verified"):
+            problems.append("no verified date")
+        if problems:
+            blockers.append(f"`{branch}`: " + "; ".join(problems))
+    return blockers
 
 
 def project_instructions(facts, sha, policy_sha256, inputs):
@@ -675,7 +773,12 @@ def project_instructions(facts, sha, policy_sha256, inputs):
     commands = "; ".join(
         f"`{check['command']}` from `{check['cwd']}` (expect: {check['expected']})"
         for check in facts["verification"])
+    mode = approval_mode(facts)
+    text = mode_text(mode, inputs["default_branch"], inputs["integration_branch"])
     values = {
+        "APPROVAL_MODE": mode, "INTEGRATION_BRANCH": inputs["integration_branch"],
+        "PROTECTED_BRANCHES": branch_phrase(inputs["default_branch"], inputs["integration_branch"]),
+        "GATES_SENTENCE": text["GATES_SENTENCE"], "FILING_RULE": text["FILING_RULE"], "MERGE_RULE": text["MERGE_RULE"],
         "PROJECT_NAME": facts["name"], "ONE_LINE_GOAL": facts["purpose"].rstrip("."),
         "REPOSITORY": facts["repository"], "TASK_RECORDS_URL": ", ".join(facts["task_records"]),
         "POLICY_SNAPSHOT_PATH": policy_path(sha), "POLICY_SHA256": policy_sha256,
@@ -714,6 +817,24 @@ def owner_checklist(profile, facts, sha, policy_sha256, inputs, instructions_sha
     """One-time owner steps the generator cannot do; each is recorded on the task record."""
     paths = adapter_paths(profile)
     skills = " and ".join(f"`{name}`" for name in profile["boundary_skills"])
+    mode = approval_mode(facts)
+    default_branch, integration_branch = inputs["default_branch"], inputs["integration_branch"]
+    branches = " and ".join(f"`{name}`" for name in protected_branches(default_branch, integration_branch))
+    checks = " and ".join(f"`{name}`" for name in REQUIRED_CHECKS)
+    mode_steps = [
+        f"Set the repository variable `{APPROVAL_MODE_VARIABLE}` to `{mode}`, the `Approval mode` fact of `PROJECT.md`, "
+        "so the `linked-task` check applies the same gates as the instructions.",
+    ]
+    if integration_branch != default_branch:
+        mode_steps.append(
+            f"Set the repository variable `{INTEGRATION_BRANCH_VARIABLE}` to `{integration_branch}`, and name the staging "
+            f"deploy job that runs on merge to `{integration_branch}` in the verification contract of `PROJECT.md`.")
+    if mode == "auto":
+        mode_steps.append(
+            "Allow auto-merge in the repository settings (Settings > General > Pull Requests); GitHub squash-merges "
+            "a sub-issue's pull request when the required checks are green, and the owner's click is kept for "
+            + (f"promoting `{integration_branch}` into `{default_branch}`." if integration_branch != default_branch
+               else "top-level records only."))
     checklist = "\n".join(f"- [ ] {item}" for item in (
         f"Paste [{paths['instructions']}]({paths['instructions']}) into **Project settings > Memory > Project instructions** "
         f"({length} of {profile['instructions_limit']} characters) and record its SHA-256 `{instructions_sha256}` on the task record.",
@@ -721,8 +842,11 @@ def owner_checklist(profile, facts, sha, policy_sha256, inputs, instructions_sha
         "and record the SHA-256 of each uploaded `SKILL.md` from the kit `SHA256SUMS`; repository skills do not load in a thread.",
         "Create the Backlog issue, pin it, and keep it the only queue.",
         f"Set the repository variable `{profile['backlog_variable']}` to that issue's number so the backlog review names it.",
-        f"On `{inputs['default_branch']}`, require a pull request, turn **Do not allow bypassing** on, keep approvals off, "
-        "and require the `verify` and `linked-task` checks; merging stays the owner's own action.",
+        f"On {branches}, require a pull request, turn **Do not allow bypassing** on, keep approvals off, "
+        f"and require the {checks} checks; then have a thread read the live protection and record it under "
+        "`protection.<branch>` in `.conductor/adoption.json` (bypass_allowed, approvals_required, required_checks, "
+        "verified date, evidence link). Approval mode `auto` is generated only from that record.",
+        *mode_steps,
         "From one new thread, have it quote its loaded memory files and its skill list, confirm "
         f"`{policy_path(sha)}` resolves with SHA-256 `{policy_sha256}`, run "
         f"`conductor_init.py check --profile {profile['name']} --target .`, and record the result and date under "
@@ -760,6 +884,12 @@ def adapter_outputs(target, profile, adoption, inputs, strict=True):
         raise InitError("; ".join(blockers))
     sha = adoption["policy_commit"]
     policy_sha256 = adoption_policy_sha256(target, adoption)
+    mode = approval_mode(facts)
+    if mode == "auto":
+        missing = protection_blockers(adoption, protected_branches(inputs["default_branch"], inputs["integration_branch"]))
+        if missing:
+            raise InitError("Approval mode auto needs recorded branch protection in .conductor/adoption.json: "
+                            + "; ".join(missing) + ". Have a thread read the live settings and record them first (owner checklist).")
     text = project_instructions(facts, sha, policy_sha256, inputs)
     if len(text) > profile["instructions_limit"]:
         raise InitError(f"Project instructions would be {len(text)} characters, over the {profile['instructions_limit']} field limit; "
@@ -768,7 +898,7 @@ def adapter_outputs(target, profile, adoption, inputs, strict=True):
     instructions = text.encode()
     checklist = owner_checklist(profile, facts, sha, policy_sha256, inputs, digest(instructions), len(text)).encode()
     outputs = {paths["instructions"]: instructions, paths["checklist"]: checklist}
-    lines = always_on_lines(sha, policy_sha256, inputs["default_branch"])
+    lines = always_on_lines(sha, policy_sha256, inputs["default_branch"], inputs["integration_branch"], mode)
     outputs[native["native_instructions"]], section = append_block(
         read(target, native["native_instructions"]), native_adapter(native, read(target, native["native_instructions"]), lines))
     entry = {"profile": profile["name"], "policy_commit": sha, "policy_sha256": policy_sha256,
@@ -780,18 +910,31 @@ def adapter_outputs(target, profile, adoption, inputs, strict=True):
     return outputs, entry, {native["native_instructions"]: digest(section)}
 
 
-def generate_adapter(target, name, options=None, apply=False):
-    """Emit an adapter profile's always-on text, owner checklist and record entry."""
+def generate_adapter(target, name, options=None, apply=False, mode=None):
+    """Emit an adapter profile's always-on text, owner checklist and record entry.
+
+    mode: an approval-mode override; it becomes the `approval_mode` fact in the adoption
+    record and the managed PROJECT.md section, so the fact and the generated text agree."""
     target = Path(target)
     profile = adapter_profile(name)
     inputs = adapter_inputs(options)
     if not read(target, ".conductor/adoption.json"):
         return result("blocked", blockers=["No adoption record; onboard the project before generating an adapter"])
     adoption = load(target, ".conductor/adoption.json")
+    facts_changed = {}
+    if mode and approval_mode(adoption["facts"], mode) != adoption["facts"].get("approval_mode"):
+        adoption = dict(adoption, facts=dict(adoption["facts"], approval_mode=approval_mode({}, mode)))
+        managed_blocks_intact(target, adoption)
+        facts_changed["PROJECT.md"], section = append_block(read(target, "PROJECT.md"), project_record(adoption["facts"]))
+        facts_changed_digest = {"PROJECT.md": digest(section)}
     outputs, entry, managed = adapter_outputs(target, profile, adoption, inputs)
+    if facts_changed:
+        outputs.update(facts_changed)
+        managed.update(facts_changed_digest)
     hashes = dict(adoption.get("files", {}))
     owned_outputs(target, {key: value for key, value in outputs.items() if key not in managed}, hashes)
     updated = dict(adoption)
+    updated["facts"] = adoption["facts"]
     updated["adapters"] = dict(adoption.get("adapters", {}), **{profile["name"]: entry})
     updated["managed_blocks"] = dict(adoption.get("managed_blocks", {}), **managed)
     files = dict(hashes)
@@ -1140,6 +1283,9 @@ def main():
                              help="Adapter profile generated from the adoption record instead of a source tree")
         command.add_argument("--default-branch", help="Branch threads start from (adapter profiles; default main)")
         command.add_argument("--max-parallel-threads", type=int, help="Thread limit written into the instructions (adapter profiles; default 2)")
+        command.add_argument("--integration-branch", help="Branch pull requests target (adapter profiles; default the default branch)")
+    first.add_argument("--approval-mode", choices=APPROVAL_MODES,
+                       help="Override the project's approval_mode fact; recorded in PROJECT.md and the adoption record (ADR 0005)")
     second = sub.add_parser("onboard")
     second.add_argument("--facts", type=Path, required=True)
     second.add_argument("--skill-root", type=Path, help="Generated skill folder when more than one assistant has generated one")
@@ -1158,7 +1304,8 @@ def main():
     try:
         if args.operation == "generate" and args.profile:
             response = generate_adapter(args.target, args.profile, {
-                "default_branch": args.default_branch, "max_parallel_threads": args.max_parallel_threads}, args.apply)
+                "default_branch": args.default_branch, "max_parallel_threads": args.max_parallel_threads,
+                "integration_branch": args.integration_branch}, args.apply, args.approval_mode)
         elif args.operation == "generate":
             if not (args.source and args.source_sha and args.capabilities):
                 parser.error("generate needs --source, --source-sha and --capabilities, or --profile")
@@ -1168,7 +1315,8 @@ def main():
             if not args.profile:
                 parser.error("check needs --profile")
             response = check_adapter(args.target, args.profile, {
-                "default_branch": args.default_branch, "max_parallel_threads": args.max_parallel_threads})
+                "default_branch": args.default_branch, "max_parallel_threads": args.max_parallel_threads,
+                "integration_branch": args.integration_branch})
         elif args.operation == "onboard":
             response = onboard(args.target, json.loads(args.facts.read_text()), args.skill_root, apply=args.apply)
         elif args.operation == "migrate":

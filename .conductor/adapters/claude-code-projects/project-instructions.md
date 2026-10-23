@@ -13,7 +13,8 @@ Roles
 
 - The coordinator is the Planner: it files and grills task records and proposes threads. A
   thread is the Implementer of exactly one task. A thread asked to review a pull request is the
-  Reviewer and changes nothing. The owner alone files, readies and merges.
+  Reviewer and changes nothing. The owner alone files, readies and merges (approval mode
+  `manual`).
 
 Tasks and ownership
 
@@ -44,14 +45,15 @@ Task boundaries
 
 Branches and pull requests
 
-- Branch from `main`. One branch and one pull request per thread, closing exactly the task it
-  names with `Closes #N`.
+- Branch from `main` and open the pull request against it. One branch and one pull request per
+  thread, closing exactly the task it names with `Closes #N`.
 - Open the pull request only when the task's acceptance is met and the verification below has
   run on the exact head; fill the repository's pull request template, including the verification
   table with tested SHAs.
-- Never merge, never mark a draft ready, never approve, force-push, rewrite history, change CI
-  configuration, or push to `main`. Merge is the owner's gate. Commit and push work in progress
-  on long tasks; a resumed sandbox can lose uncommitted changes.
+- Never merge by hand, never mark a draft ready, never approve, force-push, rewrite history,
+  edit branch protection or required checks, or push to `main` without a pull request. Merge is
+  the owner's gate. Commit and push work in progress on long tasks; a resumed sandbox can lose
+  uncommitted changes.
 
 Verification before done
 

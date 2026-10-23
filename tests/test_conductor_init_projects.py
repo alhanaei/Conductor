@@ -77,8 +77,8 @@ class ProjectsProfileTests(unittest.TestCase):
         self.target.mkdir()
         self.adoption = fixture_from_repo(self.target)
 
-    def generate(self, *, apply=True, **options):
-        return initializer.generate_adapter(self.target, PROFILE, options, apply=apply)
+    def generate(self, *, apply=True, mode=None, **options):
+        return initializer.generate_adapter(self.target, PROFILE, options, apply=apply, mode=mode)
 
     def check(self, **options):
         return initializer.check_adapter(self.target, PROFILE, options)
@@ -110,11 +110,12 @@ class ProjectsProfileTests(unittest.TestCase):
         self.assertIn(sha((self.target / policy).read_bytes()), text)
         for check in self.adoption["facts"]["verification"]:
             self.assertIn(f"`{check['command']}` from `{check['cwd']}`", text)
-        for phrase in ("`status:ready`", "Branch from `main`", "Never merge, never mark a draft ready",
+        for phrase in ("`status:ready`", "Branch from `main`", "Never merge by hand, never mark a draft ready",
+                       "approval mode `manual`", "Merge is the owner's gate",
                        "`Closes #N`", "`/task-start #N`", "`/task-finish --stopped`",
                        "`.git/conductor-local/claim.json`", "`.git/conductor-local/verification.json`",
                        "Found and left", self.adoption["facts"]["checkpoint"], "at most 2"):
-            self.assertIn(phrase, text)
+            self.assertIn(phrase, " ".join(text.split()))
         self.assertNotIn("{{", text)
         self.assertTrue(all(len(line) <= 96 or " " not in line.strip() for line in text.splitlines()), "ragged line")
 
@@ -168,6 +169,81 @@ class ProjectsProfileTests(unittest.TestCase):
         self.assertEqual(result["status"], "blocked")
         self.assertTrue(any("recorded inputs" in item for item in result["blockers"]), result)
         self.assertEqual(self.check()["status"], "verified")
+
+    def protection(self, *branches, **overrides):
+        """Record branch protection evidence the way the owner checklist asks a thread to."""
+        adoption = self.adoption_now()
+        adoption["protection"] = {branch: dict({
+            "bypass_allowed": False, "approvals_required": False,
+            "required_checks": ["verify", "linked-task"], "verified": "2026-10-23",
+            "evidence": "https://example.invalid/protection"}, **overrides) for branch in branches}
+        (self.target / ".conductor/adoption.json").write_bytes(initializer.encoded(adoption))
+
+    def test_auto_mode_is_refused_until_protection_is_recorded(self):
+        """ADR 0005: auto needs bypass off and the two checks required on every landing branch."""
+        with self.assertRaises(initializer.InitError) as caught:
+            self.generate(apply=False, mode="auto")
+        self.assertIn("`main` has no `protection` entry", str(caught.exception))
+        self.protection("main", required_checks=["verify"])
+        with self.assertRaises(initializer.InitError) as caught:
+            self.generate(apply=False, mode="auto")
+        self.assertIn("required_checks lack linked-task", str(caught.exception))
+        self.protection("main")
+        with self.assertRaises(initializer.InitError) as caught:
+            self.generate(apply=False, mode="auto", integration_branch="staging")
+        self.assertIn("`staging` has no `protection` entry", str(caught.exception))
+        self.assertEqual(self.generate(apply=False, mode="auto")["status"], "planned")
+        with self.assertRaises(initializer.InitError):
+            self.generate(apply=False, mode="later")
+
+    def test_auto_mode_writes_the_fact_and_the_delegated_text(self):
+        self.protection("main", "staging")
+        result = self.generate(mode="auto", integration_branch="staging")
+        self.assertEqual(result["status"], "installed", result)
+        self.assertIn("PROJECT.md", [change["path"] for change in result["changes"]])
+        adoption = self.adoption_now()
+        self.assertEqual(adoption["facts"]["approval_mode"], "auto")
+        self.assertIn("- Approval mode: auto", (self.target / "PROJECT.md").read_text())
+        self.assertEqual(initializer.block((self.target / "PROJECT.md").read_bytes()) is not None, True)
+        self.assertEqual(sha(initializer.block((self.target / "PROJECT.md").read_bytes())), adoption["managed_blocks"]["PROJECT.md"])
+        entry = adoption["adapters"][PROFILE]
+        self.assertEqual(entry["inputs"]["integration_branch"], "staging")
+        text = (self.target / entry["project_instructions"]).read_text()
+        for phrase in ("Approval mode `auto`", "the coordinator files and readies sub-issues", "Branch from `staging`",
+                       "enable GitHub auto-merge with squash", "Promotion of `staging` into `main` is the owner's merge",
+                       "push to `staging` or `main` without a pull request"):
+            self.assertIn(phrase, " ".join(text.split()))
+        self.assertNotIn("do not file it", text)
+        lines = entry["always_on_lines"]
+        self.assertIn("Approval mode `auto`", lines[1])
+        self.assertIn("push to `staging` or `main` without a pull request", lines[2])
+        checklist = (self.target / entry["owner_checklist"]).read_text()
+        for phrase in ("`CONDUCTOR_APPROVAL_MODE` to `auto`", "`CONDUCTOR_INTEGRATION_BRANCH` to `staging`",
+                       "Allow auto-merge", "On `staging` and `main`"):
+            self.assertIn(phrase, checklist)
+        # The fact now drives the text: a rerun without the override is a no-op, check passes,
+        # and a different integration branch is a named input mismatch.
+        self.assertEqual(self.generate(integration_branch="staging")["status"], "unchanged")
+        self.assertEqual(self.check()["status"], "verified")
+        result = self.check(integration_branch="main")
+        self.assertEqual(result["status"], "blocked")
+        self.assertTrue(any("recorded inputs" in item for item in result["blockers"]), result)
+        # Back to manual: the fact, PROJECT.md and the text follow.
+        self.assertEqual(self.generate(mode="manual", integration_branch="staging")["status"], "installed")
+        self.assertEqual(self.adoption_now()["facts"]["approval_mode"], "manual")
+        self.assertIn("- Approval mode: manual", (self.target / "PROJECT.md").read_text())
+        self.assertIn("Merge is the owner's gate", (self.target / self.adoption_now()["adapters"][PROFILE]["project_instructions"]).read_text())
+
+    def test_manual_default_records_no_fact_and_names_the_variable(self):
+        self.generate()
+        self.assertNotIn("approval_mode", self.adoption_now()["facts"])
+        entry = self.adoption_now()["adapters"][PROFILE]
+        self.assertEqual(entry["inputs"]["integration_branch"], "main")
+        checklist = (self.target / entry["owner_checklist"]).read_text()
+        self.assertIn("`CONDUCTOR_APPROVAL_MODE` to `manual`", checklist)
+        self.assertNotIn("CONDUCTOR_INTEGRATION_BRANCH", checklist)
+        self.assertNotIn("Allow auto-merge", checklist)
+        self.assertIn("record it under `protection.<branch>`", checklist)
 
     def test_check_before_generation_and_without_adoption_is_blocked(self):
         self.assertEqual(self.check()["status"], "blocked")

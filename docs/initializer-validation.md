@@ -1,5 +1,28 @@
 # Initializer validation
 
+## 23 October 2026 — approval modes (#60, ADR 0005)
+
+The `claude-code-projects` profile now reads the project's `approval_mode` fact (`manual`
+when absent) and a new `integration_branch` input (default the default branch). `manual`
+generates the previous text with two wording changes: "never merge by hand" and "push to
+`<branch>` without a pull request". `auto` generates the delegated text (the coordinator
+files and readies sub-issues of a readied parent; task-finish enables GitHub squash
+auto-merge; CI deploys on merge; promotion stays the owner's) and is refused until the
+adoption record holds `protection.<branch>` evidence for every landing branch (bypass off,
+approvals off, `verify` and `linked-task` required, a verified date). `generate
+--approval-mode` writes the fact back to the managed `PROJECT.md` section and the record,
+so a rerun without the override is a no-op. The owner checklist adds the
+`CONDUCTOR_APPROVAL_MODE` step, the integration-branch variable and protection when it
+differs, and the auto-merge setting for `auto`. `pr-policy.yml` reads the two variables: in
+`auto` a sub-issue's parent must carry the readiness label and the pull request must target
+the integration branch unless it promotes it. `task_boundary.py finish --auto-merge` records
+the mode in the body and, with `--open`, runs `gh pr merge --auto --squash`; it never
+merges. Suite: 97 tests (`tests/test_conductor_init_projects.py` 11,
+`tests/test_task_boundary.py` 12, the rest unchanged); packaging 96 root digests, 22 kit
+digests. This repository's adapter was regenerated (its instructions digest changed, so
+the owner re-pastes the project instructions); the golden fixture was regenerated.
+Verification against the pull request head is recorded in the pull request ledger.
+
 ## 22 October 2026 — single re-pin (#45)
 
 The helper keeps one native profile (Claude Code); the retired kit's profile, checksums

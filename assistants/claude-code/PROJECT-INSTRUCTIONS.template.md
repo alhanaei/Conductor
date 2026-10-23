@@ -25,15 +25,12 @@ Roles
 
 - The coordinator is the Planner: it files and grills task records and proposes threads. A
   thread is the Implementer of exactly one task. A thread asked to review a pull request is the
-  Reviewer and changes nothing. The owner alone files, readies and merges.
+  Reviewer and changes nothing. {{GATES_SENTENCE}}
 
 Tasks and ownership
 
-- Every thread starts from one labelled task record that carries `status:ready`. If no record
-  exists for what you were asked, propose the title, the problem in one or two sentences and the
-  open record it belongs to, then wait; do not file it. The owner files work related to an open
-  record as a sub-issue of that record, never as a separate issue; a parent that only holds
-  sub-issues is a tracking record. If the record is not ready, say so and stop.
+- Every thread starts from one labelled task record that carries `status:ready`. {{FILING_RULE}}
+  If the record is not ready, say so and stop.
 - Before changing anything, record the claim on the task record: this project, the thread
   reference, the time and your role. Do not treat labels or a note as an exclusive lock.
 - Take exactly the task you were given. Anything found mid-task is proposed and left as a
@@ -45,8 +42,8 @@ Task boundaries
 - Start with `/task-start #N` when that skill is in your skill list. Without it, do the same by
   hand: refuse without `status:ready` on #N and name the missing Ready fact; post the claim
   comment on #N (runtime, thread reference, time, role) before changing anything; branch from
-  `{{DEFAULT_BRANCH}}`; write `.git/conductor-local/claim.json` with the task number, the branch
-  and the allowed paths copied from the record, and stay inside those paths.
+  `{{INTEGRATION_BRANCH}}`; write `.git/conductor-local/claim.json` with the task number, the
+  branch and the allowed paths copied from the record, and stay inside those paths.
 - Finish with `/task-finish`, or `/task-finish --stopped` when blocked. Without the skill: run
   the verification contract below on the exact head and write
   `.git/conductor-local/verification.json` with the tested SHAs; open or update the pull request
@@ -56,14 +53,15 @@ Task boundaries
 
 Branches and pull requests
 
-- Branch from `{{DEFAULT_BRANCH}}`. One branch and one pull request per thread, closing exactly
-  the task it names with `Closes #N`.
+- Branch from `{{INTEGRATION_BRANCH}}` and open the pull request against it. One branch and one
+  pull request per thread, closing exactly the task it names with `Closes #N`.
 - Open the pull request only when the task's acceptance is met and the verification below has
   run on the exact head; fill the repository's pull request template, including the verification
   table with tested SHAs.
-- Never merge, never mark a draft ready, never approve, force-push, rewrite history, change CI
-  configuration, or push to `{{DEFAULT_BRANCH}}`. Merge is the owner's gate. Commit and push
-  work in progress on long tasks; a resumed sandbox can lose uncommitted changes.
+- Never merge by hand, never mark a draft ready, never approve, force-push, rewrite history,
+  edit branch protection or required checks, or push to {{PROTECTED_BRANCHES}} without a pull
+  request. {{MERGE_RULE}} Commit and push work in progress on long tasks; a resumed sandbox can
+  lose uncommitted changes.
 
 Verification before done
 

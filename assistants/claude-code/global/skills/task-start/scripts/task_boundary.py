@@ -261,8 +261,11 @@ def ledger_rows(evidence: dict) -> str:
     return "\n".join(rows) or "| none run | | not run | |"
 
 
-def pr_body(claim: dict, evidence: dict, summary: str, proposals: list[str]) -> str:
+def pr_body(claim: dict, evidence: dict, summary: str, proposals: list[str], auto_merge: bool = False) -> str:
     found = "\n".join(f"- {p}" for p in proposals) or "- none"
+    merge = ("- Merge: GitHub auto-merge (squash) enabled by task-finish; GitHub merges when the required checks are green "
+             f"(approval mode auto, integration branch `{claim['base']}`)." if auto_merge
+             else "- Merge: the owner's gate.")
     return "\n".join([
         "## Task", "", f"Closes #{claim['task']}", "",
         "## What changed and why", "", summary or claim["title"], "",
@@ -273,7 +276,7 @@ def pr_body(claim: dict, evidence: dict, summary: str, proposals: list[str]) -> 
         "## Merge danger", "",
         "- Door: state two-way or one-way and why.",
         "- Blast radius: what else breaks if this is wrong, and who notices first.", "",
-        "## Review", "", "- Independent reviewer and reviewed SHA (advisory; merge remains the owner's gate):", "",
+        "## Review", "", "- Independent reviewer and reviewed SHA (advisory; merge remains the owner's gate):", merge, "",
         "## Found and left", "", found, "",
     ])
 
@@ -287,7 +290,7 @@ def milestone(claim: dict, evidence: dict | None, state: str, pr_url: str | None
         checks = "; ".join(f"{c['name']}: {'passed' if c['passed'] else 'failed'}" for c in evidence["checks"])
         lines.append(f"Checks: {checks}.")
     if pr_url:
-        lines.append(f"Pull request: {pr_url}.")
+        lines.append(f"Pull request: {pr_url}." + (" Auto-merge (squash) enabled." if claim.get("auto_merge") else ""))
     elif state == "finished":
         lines.append(f"Pull request: opened from `{LOCAL_DIR}/{PR_BODY}` by the assistant's own access.")
     if blocker:
@@ -358,10 +361,13 @@ def cmd_finish(args: argparse.Namespace) -> int:
 
     pr_url = None
     if state == "finished":
-        body = pr_body(claim, evidence, args.summary, proposals)
+        body = pr_body(claim, evidence, args.summary, proposals, args.auto_merge)
         (folder / PR_BODY).write_text(body)
         if args.open:
             pr_url = open_pr(root, claim, args.title or f"#{claim['task']} {claim['title']}", folder / PR_BODY)
+            if pr_url and args.auto_merge:
+                enable_auto_merge(root, pr_url)
+        claim["auto_merge"] = bool(args.auto_merge)
         claim["finished_at"] = now()
         claim_path.write_text(json.dumps(claim, indent=2) + "\n")
     note = milestone(claim, evidence, state, pr_url, proposals, blocker, next_action)
@@ -391,6 +397,16 @@ def open_pr(root: Path, claim: dict, title: str, body_file: Path) -> str | None:
     if result.returncode != 0:
         raise BoundaryError(f"gh pr create failed: {result.stderr.strip()}", 6)
     return result.stdout.strip().splitlines()[-1]
+
+
+def enable_auto_merge(root: Path, pr_url: str) -> None:
+    """Approval mode auto: ask GitHub to squash-merge the pull request once its checks are green.
+
+    The helper never merges; GitHub does, under the branch protection the owner set."""
+    result = subprocess.run(["gh", "pr", "merge", pr_url, "--auto", "--squash"],
+                            cwd=root, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise BoundaryError(f"gh pr merge --auto failed: {result.stderr.strip()}", 6)
 
 
 def cmd_verify_evidence(args: argparse.Namespace) -> int:
@@ -428,7 +444,7 @@ def build_parser() -> argparse.ArgumentParser:
     start.add_argument("--repo", help="owner/name; default from the origin remote")
     start.add_argument("--record", help="JSON file with the task record (number, title, body, labels)")
     start.add_argument("--branch", help="use this branch instead of <assistant>/<slug>-<date>")
-    start.add_argument("--base", default="main")
+    start.add_argument("--base", default="main", help="the project's integration branch (default main)")
     start.add_argument("--no-fetch", action="store_true", help="do not fetch the base branch first")
     start.add_argument("--post", action="store_true", help="post the claim comment with gh")
     start.set_defaults(func=cmd_start)
@@ -441,6 +457,8 @@ def build_parser() -> argparse.ArgumentParser:
     finish.add_argument("--blocker")
     finish.add_argument("--next", help="next action")
     finish.add_argument("--open", action="store_true", help="push and open the pull request with gh")
+    finish.add_argument("--auto-merge", action="store_true",
+                        help="approval mode auto: record it in the body and, with --open, enable GitHub squash auto-merge")
     finish.add_argument("--post", action="store_true", help="post the milestone comment with gh")
     finish.set_defaults(func=cmd_finish)
     verify = sub.add_parser("verify-evidence", help="exit 0 only if the evidence matches HEAD and passed")

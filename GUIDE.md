@@ -59,7 +59,7 @@ Optional cross-project GitHub Project views may show existing project records wi
 
 ### Keep adapters thin
 
-A native entry file should identify the canonical release, point to the necessary procedures and restate essential ownership and authority boundaries. Preserve useful project instructions and inspect narrower overrides. The assistant-specific folder records setup, supported actions, known limits and last verification. Its “adopted version” describes a tested adapter configuration, not an assertion that every project has adopted it.
+A native entry file should identify the canonical release, point to the necessary procedures and restate essential ownership and authority boundaries, including the project's approval mode (`manual` or `auto`, a project fact from ADR 0005 that says what the owner delegated below top-level records; the adapter carries it, never invents it). Preserve useful project instructions and inspect narrower overrides. The assistant-specific folder records setup, supported actions, known limits and last verification. Its “adopted version” describes a tested adapter configuration, not an assertion that every project has adopted it.
 
 Some platforms need local files to discover instructions or skills. Generate the minimum required snapshot or adapter with a manifest of upstream path, commit and checksum. Validate that it actually loads in a fresh session. If a generated copy is edited, reconcile it upstream or mark it divergent; never silently treat it as the canonical source.
 

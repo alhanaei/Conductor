@@ -3,22 +3,23 @@
     "claude-code-projects": {
       "always_on_lines": [
         "Pinned policy: `.conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/WORKFLOW.md` (SHA-256 `539902dd4198ebd101bb0b49a4211949ab031f5b2766497213d734e175133f6c`); `PROJECT.md` holds the facts and the verification contract.",
-        "Every task starts with `/task-start #N` on a record carrying `status:ready` and ends with `/task-finish`; between them your own practice runs.",
-        "Never merge, mark a draft ready, approve, force-push, change CI or push to `main`; verification is the recorded commands run on the exact head, nothing inferred."
+        "Every task starts with `/task-start #N` on a record carrying `status:ready` and ends with `/task-finish`; between them your own practice runs. Approval mode `manual`: the owner files, readies and merges.",
+        "Never merge by hand, mark a draft ready, approve, force-push, edit branch protection or push to `main` without a pull request; verification is the recorded commands run on the exact head, nothing inferred."
       ],
       "discovery": "unverified; run the owner checklist's discovery step from a thread",
       "inputs": {
         "default_branch": "main",
+        "integration_branch": "main",
         "max_parallel_threads": 2
       },
       "owner_checklist": ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md",
-      "owner_checklist_sha256": "49120358cc73306719372032efc60a3a990e5155d031b5ae99e47fbd47e67718",
+      "owner_checklist_sha256": "cfb120be0886e75fdd67aa0b209dac23f5351afabb1256196fdc5a07d03b7aa4",
       "policy_commit": "084387daacd2bae8a307ab4671e3d4d95f135f56",
       "policy_sha256": "539902dd4198ebd101bb0b49a4211949ab031f5b2766497213d734e175133f6c",
       "profile": "claude-code-projects",
       "project_instructions": ".conductor/adapters/claude-code-projects/project-instructions.md",
-      "project_instructions_chars": 5425,
-      "project_instructions_sha256": "82a113fcc0e70e61fde7591c1f0b3a9da09b4a485562b429ce6d0b259f337604"
+      "project_instructions_chars": 5540,
+      "project_instructions_sha256": "a26d6cca78efbb2cb85e7a9db074edbba94418d550bce08c4c03bcc405710bd9"
     }
   },
   "assistant_pins": {
@@ -71,8 +72,8 @@
   },
   "files": {
     ".claude/skills/project-verification/SKILL.md": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063",
-    ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md": "49120358cc73306719372032efc60a3a990e5155d031b5ae99e47fbd47e67718",
-    ".conductor/adapters/claude-code-projects/project-instructions.md": "82a113fcc0e70e61fde7591c1f0b3a9da09b4a485562b429ce6d0b259f337604",
+    ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md": "cfb120be0886e75fdd67aa0b209dac23f5351afabb1256196fdc5a07d03b7aa4",
+    ".conductor/adapters/claude-code-projects/project-instructions.md": "a26d6cca78efbb2cb85e7a9db074edbba94418d550bce08c4c03bcc405710bd9",
     ".conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/WORKFLOW.md": "539902dd4198ebd101bb0b49a4211949ab031f5b2766497213d734e175133f6c",
     ".conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/harness/README.md": "62e491e62694e181d2309258fc55d18e7c2a03ad941d5442b1c1efe7b9b03ff1",
     ".conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/harness/examples/analytics-review-checkpoint.json": "d06273f4eac82c66baa5ca418e8d7cd733c5492472add28fd47e30447da7300f",
@@ -128,7 +129,7 @@
   },
   "managed_blocks": {
     "AGENTS.md": "d1c2042e9a24e333e97fc82d1f585bff29f738132b72aa2a0b4e9c9a33440a1f",
-    "CLAUDE.md": "62f74d2f366fa483c5602c7c52ad9ac38953beb0abfe852503581097bdbf9932",
+    "CLAUDE.md": "e44d04dc207f2dd19a6934ccd531ded4af049c2878475f845ac443ee177fb3c3",
     "PROJECT.md": "be50fad81106851271bdf09752f45d1b41dc811ff7d61c13a4f97cabeda0c1d5"
   },
   "migrations": [

@@ -21,8 +21,12 @@ inside the checkout's Git metadata (`<git-dir>/conductor-local/`).
    ```
    python3 <skill-dir>/scripts/task_boundary.py start <n> --role <Owner|Planner|Implementer|Reviewer> \
      --runtime "<runtime, for example Claude Code project thread>" --reference "<session, thread or task URL>" \
-     [--assistant <branch prefix, default claude>] [--branch <branch the runtime assigned>] [--record <file>] [--post]
+     [--assistant <branch prefix, default claude>] [--branch <branch the runtime assigned>] [--record <file>] [--post] \
+     [--base <integration branch, default main>]
    ```
+
+   `--base` names the project's integration branch when it is not the default branch
+   (ADR 0005): the task branch starts there and its pull request targets it.
 
    The helper refuses (exit 2) when #n is not open or lacks the `status:ready` label. The
    owner applies that label; never add it, never start without it, and tell the owner which
