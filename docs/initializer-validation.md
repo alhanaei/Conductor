@@ -13,6 +13,19 @@ Allowlist at the first green run on `main`: the Codex kit for `coding-task`, `an
 `independent-review` and `backlog-task` (copies requested on #15); the Claude Code kit for
 `backlog-task` only, the other three having landed with PR #23.
 
+## 22 October 2026 — Task boundary skills (#46)
+
+`shared/skills/task-start/` and `shared/skills/task-finish/` carry the two task boundaries
+with one helper, `task-start/scripts/task_boundary.py` (Python 3 standard library, writes only
+under `<git-dir>/conductor-local/`). The packaging script copies both `SKILL.md` files and the
+helper byte for byte into `assistants/claude-code/global/skills/` and the helper into
+`task-finish/scripts/`, so the kit copies are generated, not hand-maintained; a hand edit fails
+the package check. `coding-task` and `analytics-task` are retired from `shared/`, the kit, the
+Codex allowlist and `MANIFEST.json`; the manifest now drops entries whose file no longer
+exists. `tests/test_task_boundary.py` covers the `status:ready` refusal, the claim file with its
+allowed paths, the evidence SHA check, the failed-check and dirty-tree stops and `--stopped`.
+Codex native copies of the two skills are allowlisted as a sprint 3 and 4 non-goal of #46.
+
 ## 12 October 2026 — Claude Code mapping added
 
 Validated the helper after adding the Claude Code native profile, on disposable projects

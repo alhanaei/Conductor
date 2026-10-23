@@ -8,7 +8,8 @@ adapter: how Claude Code discovers instructions and skills, the installable temp
 the adoption record. It mirrors the [Codex kit](../../codex/README.md) so that both
 assistants read one project record; the two kits carry the same `conductor-init`,
 `conductor-handoff` and `project-verification` names and bodies, and this kit also carries
-native copies of the shared task wrappers that the Codex kit does not yet have. Each actual
+native copies of the shared wrappers and generated copies of the two task boundary skills
+that the Codex kit does not yet have. Each actual
 project repository owns its state, plans, issues, current task owner, checkpoints, code
 and data deliverables. This kit creates no runtime, hook, credential or integration.
 
@@ -20,8 +21,8 @@ and data deliverables. This kit creates no runtime, hook, credential or integrat
 | [project/CLAUDE.md](project/CLAUDE.md) | Thin project adapter → target repository root `CLAUDE.md`; imports the project `AGENTS.md` |
 | [conductor-handoff](global/skills/conductor-handoff/SKILL.md) | General skill → user `~/.claude/skills/conductor-handoff/` |
 | [project-verification](project/skills/project-verification/SKILL.md) | Project skill → repository `.claude/skills/project-verification/` |
-| [coding-task](global/skills/coding-task/SKILL.md) | General skill → user `~/.claude/skills/coding-task/`; native copy of the shared `coding-task` wrapper |
-| [analytics-task](global/skills/analytics-task/SKILL.md) | General skill → user `~/.claude/skills/analytics-task/`; native copy of the shared `analytics-task` wrapper |
+| [task-start](global/skills/task-start/SKILL.md) | General skill → user `~/.claude/skills/task-start/` (or enabled on the account for project threads); generated copy of the shared `task-start` boundary skill and its `scripts/task_boundary.py` helper |
+| [task-finish](global/skills/task-finish/SKILL.md) | General skill → user `~/.claude/skills/task-finish/`; generated copy of the shared `task-finish` boundary skill and the same helper |
 | [independent-review](global/skills/independent-review/SKILL.md) | General skill → user `~/.claude/skills/independent-review/`; native copy of the shared `independent-review` wrapper |
 | [gate-review](global/skills/gate-review/SKILL.md) | General skill → user `~/.claude/skills/gate-review/`; native copy of the shared `gate-review` wrapper for the lifecycle workflow |
 | [grilling](global/skills/grilling/SKILL.md) | General skill → user `~/.claude/skills/grilling/`; native copy of the shared `grilling` technique wrapper |
