@@ -1,5 +1,19 @@
 # Initializer validation
 
+## 22 October 2026 — single re-pin (#45)
+
+The helper keeps one native profile (Claude Code); the retired kit's profile, checksums
+and drift allowlist are gone, and an adoption record that names another assistant is read
+as data so it can still migrate. New behaviour: `.conductor/adoption.json` records
+`policy_sha256`, the digest of `shared/WORKFLOW.md`; the pinned snapshot under
+`.conductor/policy/<sha>/` holds the `shared/` tree only; migration removes whatever the
+previous snapshot held. All three suites now build their fixture from the manifest-bound
+working tree at `HEAD`, so no historical commit needs to be reachable. Suite: 74 tests
+(`tests/test_conductor_init.py` 49, `tests/test_conductor_init_claude.py` 9,
+`tests/test_conductor_init_migration.py` 10, `tests/test_package_check.py` 6). Packaging:
+84 root digests, 20 Claude Code kit digests, empty wrapper allowlist. Verification
+against the pull request head is recorded in the pull request ledger.
+
 ## 17 October 2026 — wrapper copies rule
 
 `tests/package_conductor_init.py` now fails when a kit listed in `NATIVE` lacks a native

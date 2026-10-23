@@ -10,7 +10,6 @@ ROOT = Path(__file__).resolve().parents[1]
 COMMON = "shared/skills/conductor-init/"
 # Native distribution copies: kit prefix -> (skill folder, checksum file).
 NATIVE = {
-    "codex/": ("codex/global/skills/conductor-init/", "codex/SHA256SUMS"),
     "assistants/claude-code/": ("assistants/claude-code/global/skills/conductor-init/",
                                 "assistants/claude-code/SHA256SUMS"),
 }
@@ -21,20 +20,7 @@ TEMPLATE_PLACEHOLDERS = ("@SOURCE_SHA@", "@ASSISTANT@", "@NATIVE_SKILLS@", "@INV
 # name whose copy exists fails as stale, so the list shrinks as copies land.
 WRAPPER_SKILLS = "global/skills/"
 WRAPPER_ALIASES = {"checkpoint-handoff": "conductor-handoff"}
-WRAPPER_ALLOWLIST = {
-    "codex/": {
-        "coding-task": "Codex copies requested on #15",
-        "analytics-task": "Codex copies requested on #15",
-        "independent-review": "Codex copies requested on #15",
-        "backlog-task": "Codex copies requested on #15",
-        "gate-review": "Codex copy requested on #3 (PR #4)",
-        "grilling": "Codex copy requested on #25",
-        "to-tickets": "Codex copy requested on #25",
-    },
-    "assistants/claude-code/": {
-        "backlog-task": "Claude Code copy deferred by #15 until #14 (PR #17) landed; now due",
-    },
-}
+WRAPPER_ALLOWLIST = {}
 
 
 def sha(data):
@@ -103,13 +89,6 @@ def check_skill_resources(content):
                 linked = str((Path(key).parent / target).as_posix())
                 if linked not in content.outputs and not (ROOT / linked).is_file():
                     raise ValueError(f"Broken resource link: {key} -> {target}")
-    ui = content(NATIVE["codex/"][0] + "agents/openai.yaml").decode()
-    for field in ("display_name", "short_description", "default_prompt"):
-        match = re.search(r"^  " + field + r": (.+)$", ui, re.M)
-        if not match or not isinstance(json.loads(match[1]), str):
-            raise ValueError("UI metadata must use quoted string fields")
-    if "$conductor-init" not in ui:
-        raise ValueError("UI invocation must name the skill")
     claude = content(NATIVE["assistants/claude-code/"][0] + "SKILL.md").decode()
     if ".claude/skills/conductor-project-init" not in claude or "@AGENTS.md" not in claude:
         raise ValueError("Claude Code skill must name its native path and the AGENTS.md import")
@@ -143,7 +122,9 @@ def main():
         native_counts[checksums] = len(kit)
     manifest = json.loads((ROOT / "MANIFEST.json").read_bytes())
     keys = (set(manifest["files"]) | packaged("shared") | packaged("tests") | packaged("docs")
-            | packaged("assistants") | packaged("codex"))
+            | packaged("assistants"))
+    # Deleted paths drop out of the manifest instead of failing as missing sources.
+    keys = {key for key in keys if key in outputs or (ROOT / key).is_file()}
     keys.update(outputs)
     keys.update(("docs/project-initialization.md",))
     keys.discard("MANIFEST.json")

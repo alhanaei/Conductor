@@ -30,7 +30,7 @@
   "ownership": {
     "assignment_mode": "manual",
     "approved_by_ref": "EXAMPLE ONLY replace with actual approval",
-    "adapter": "codex",
+    "adapter": "example-assistant",
     "model": "record-actual-model",
     "adapter_version": "record-tested-version",
     "session_id": "example-session",
@@ -117,7 +117,7 @@
     "required_approval": null,
     "next_eligible_at": "2026-10-09T16:00:00Z",
     "exact_next_action": "Verify actual current issue, policy, authority and commit; obtain confirmed ownership; run the full approved baseline before requesting review.",
-    "reporting_app": "codex",
+    "reporting_app": "example-assistant",
     "freshness": "current"
   }
 }
