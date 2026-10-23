@@ -227,7 +227,7 @@ class ProjectsProfileTests(unittest.TestCase):
         self.assertIn("push to `staging` or `main` without a pull request", lines[2])
         checklist = (self.target / entry["owner_checklist"]).read_text()
         for phrase in ("`CONDUCTOR_APPROVAL_MODE` to `auto`", "`CONDUCTOR_INTEGRATION_BRANCH` to `staging`",
-                       "Allow auto-merge", "On `staging` and `main`"):
+                       "Allow auto-merge", "on `staging` and `main`", "In GitHub, repository Settings"):
             self.assertIn(phrase, checklist)
         # The fact now drives the text: a rerun without the override is a no-op, check passes,
         # and a different integration branch is a named input mismatch.

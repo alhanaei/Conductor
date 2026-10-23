@@ -822,16 +822,17 @@ def owner_checklist(profile, facts, sha, policy_sha256, inputs, instructions_sha
     branches = " and ".join(f"`{name}`" for name in protected_branches(default_branch, integration_branch))
     checks = " and ".join(f"`{name}`" for name in REQUIRED_CHECKS)
     mode_steps = [
-        f"Set the repository variable `{APPROVAL_MODE_VARIABLE}` to `{mode}`, the `Approval mode` fact of `PROJECT.md`, "
-        "so the `linked-task` check applies the same gates as the instructions.",
+        f"In GitHub, repository Settings > Secrets and variables > Actions > Variables, set `{APPROVAL_MODE_VARIABLE}` "
+        f"to `{mode}`, the `Approval mode` fact of `PROJECT.md`, so the `linked-task` check applies the same gates "
+        "as the instructions.",
     ]
     if integration_branch != default_branch:
         mode_steps.append(
-            f"Set the repository variable `{INTEGRATION_BRANCH_VARIABLE}` to `{integration_branch}`, and name the staging "
+            f"In the same GitHub variables page, set `{INTEGRATION_BRANCH_VARIABLE}` to `{integration_branch}`, and name the staging "
             f"deploy job that runs on merge to `{integration_branch}` in the verification contract of `PROJECT.md`.")
     if mode == "auto":
         mode_steps.append(
-            "Allow auto-merge in the repository settings (Settings > General > Pull Requests); GitHub squash-merges "
+            "In GitHub, repository Settings > General > Pull Requests, tick **Allow auto-merge**; GitHub squash-merges "
             "a sub-issue's pull request when the required checks are green, and the owner's click is kept for "
             + (f"promoting `{integration_branch}` into `{default_branch}`." if integration_branch != default_branch
                else "top-level records only."))
@@ -841,8 +842,9 @@ def owner_checklist(profile, facts, sha, policy_sha256, inputs, instructions_sha
         f"Enable the boundary skills {skills} on the claude.ai account from the kit's `global/skills/` "
         "and record the SHA-256 of each uploaded `SKILL.md` from the kit `SHA256SUMS`; repository skills do not load in a thread.",
         "Create the Backlog issue, pin it, and keep it the only queue.",
-        f"Set the repository variable `{profile['backlog_variable']}` to that issue's number so the backlog review names it.",
-        f"On {branches}, require a pull request, turn **Do not allow bypassing** on, keep approvals off, "
+        f"In GitHub, repository Settings > Secrets and variables > Actions > Variables, set `{profile['backlog_variable']}` "
+        "to that issue's number so the backlog review names it.",
+        f"In GitHub, repository Settings > Branches, on {branches}, require a pull request, turn **Do not allow bypassing** on, keep approvals off, "
         f"and require the {checks} checks; then have a thread read the live protection and record it under "
         "`protection.<branch>` in `.conductor/adoption.json` (bypass_allowed, approvals_required, required_checks, "
         "verified date, evidence link). Approval mode `auto` is generated only from that record.",

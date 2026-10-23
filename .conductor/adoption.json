@@ -13,7 +13,7 @@
         "max_parallel_threads": 2
       },
       "owner_checklist": ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md",
-      "owner_checklist_sha256": "6967772a40a759b67919ea03976e31e4a531126ad76e1e14f4cf32893ce6cb60",
+      "owner_checklist_sha256": "de8dfbcc0a8a52cb40c3ed5eb115f9d5c578ad233aa030ea98a51963e7493252",
       "policy_commit": "084387daacd2bae8a307ab4671e3d4d95f135f56",
       "policy_sha256": "539902dd4198ebd101bb0b49a4211949ab031f5b2766497213d734e175133f6c",
       "profile": "claude-code-projects",
@@ -73,7 +73,7 @@
   },
   "files": {
     ".claude/skills/project-verification/SKILL.md": "0d420c6e67d83c6f313c70672317c54ed847fc0d43884abb0c275ea8a75e6063",
-    ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md": "6967772a40a759b67919ea03976e31e4a531126ad76e1e14f4cf32893ce6cb60",
+    ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md": "de8dfbcc0a8a52cb40c3ed5eb115f9d5c578ad233aa030ea98a51963e7493252",
     ".conductor/adapters/claude-code-projects/project-instructions.md": "586b84bf3566c6974f289a38e81ed79a29f97113a54a93336c8091de00e31df3",
     ".conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/WORKFLOW.md": "539902dd4198ebd101bb0b49a4211949ab031f5b2766497213d734e175133f6c",
     ".conductor/policy/084387daacd2bae8a307ab4671e3d4d95f135f56/shared/harness/README.md": "62e491e62694e181d2309258fc55d18e7c2a03ad941d5442b1c1efe7b9b03ff1",
