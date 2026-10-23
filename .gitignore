@@ -6,6 +6,3 @@
 *.swp
 *~
 __pycache__/
-
-# Conductor setup transactions are local recovery data, never shared
-.conductor/backups/
