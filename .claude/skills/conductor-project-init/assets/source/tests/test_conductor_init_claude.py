@@ -11,12 +11,11 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import subprocess
 import sys
 import tempfile
 import unittest
 
-from test_conductor_init import initializer, tree_state  # noqa: E402
+from test_conductor_init import initializer, manifest_source, tree_state  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -26,16 +25,7 @@ class ClaudeCodeInitializerTests(unittest.TestCase):
     def setUpClass(cls):
         cls.artifact_temp = tempfile.TemporaryDirectory(prefix="conductor-test-claude-source-")
         cls.artifact = Path(cls.artifact_temp.name)
-        manifest = json.loads((REPO / "MANIFEST.json").read_bytes())
-        # The packaged identity of the working tree: only files the root manifest binds.
-        for relative in sorted(set(manifest["files"]) | {"MANIFEST.json"}):
-            destination = cls.artifact / relative
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            destination.write_bytes((REPO / relative).read_bytes())
-        cls.source_sha = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=REPO, check=True,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True).stdout.strip()
-        cls.manifest_sha = hashlib.sha256((cls.artifact / "MANIFEST.json").read_bytes()).hexdigest()
+        cls.source_sha, cls.manifest_sha = manifest_source(cls.artifact)
 
     @classmethod
     def tearDownClass(cls):
@@ -50,11 +40,6 @@ class ClaudeCodeInitializerTests(unittest.TestCase):
             "assistant": "claude-code", "surface": "desktop", "execution": "local",
             "native_skills": ".claude/skills", "native_instructions": "CLAUDE.md",
             "verified": True, "evidence_ref": "https://code.claude.com/docs/en/skills",
-        }
-        self.codex = {
-            "assistant": "codex", "surface": "cli", "execution": "local",
-            "native_skills": ".agents/skills", "native_instructions": "AGENTS.md",
-            "verified": True, "evidence_ref": "https://learn.chatgpt.com/docs/build-skills",
         }
         self.facts = {
             "name": "Example service", "kind": "software",
@@ -101,7 +86,7 @@ class ClaudeCodeInitializerTests(unittest.TestCase):
             self.assertTrue(result.get("blockers"), result)
         self.assertEqual(tree_state(self.target), before)
 
-    def test_generated_claude_skill_has_native_layout_without_codex_metadata(self):
+    def test_generated_claude_skill_has_native_layout_without_legacy_metadata(self):
         self.assertEqual(self.generate()["status"], "installed")
         root = self.skill_root(self.claude)
         for relative in ("SKILL.md", "scripts/conductor_init.py", "generation.json",
@@ -169,44 +154,32 @@ class ClaudeCodeInitializerTests(unittest.TestCase):
                 self.assert_rejected_without_writes(
                     lambda: self.generate(dict(self.claude, **{field: value})))
 
-    def test_codex_and_claude_share_one_project_record(self):
-        self.assertEqual(self.generate(self.codex)["status"], "installed")
-        self.assertEqual(self.onboard(self.codex)["status"], "installed")
-        agents_after_codex = (self.target / "AGENTS.md").read_bytes()
-        self.assertEqual(self.generate(self.claude)["status"], "installed")
-        result = self.onboard(self.claude)
+    def test_legacy_adoption_record_is_read_as_data(self):
+        """A record written by an earlier generator for another assistant still migrates."""
+        self.generate()
+        self.assertEqual(self.onboard()["status"], "installed")
+        record = self.target / ".conductor/adoption.json"
+        adoption = json.loads(record.read_text())
+        adoption["assistants"] = ["codex"]
+        adoption["generator_sha256"] = "0" * 64
+        adoption["native_discovery"] = "unverified"
+        del adoption["assistant_pins"]
+        adoption["managed_blocks"] = {key: value for key, value in adoption["managed_blocks"].items()
+                                      if key != "CLAUDE.md"}
+        record.write_text(json.dumps(adoption, indent=2, sort_keys=True) + "\n")
+        result = self.onboard()
         self.assertEqual(result["status"], "installed")
-        self.assertEqual((self.target / "AGENTS.md").read_bytes(), agents_after_codex)
-        self.assertEqual((self.target / "AGENTS.md").read_text().count(initializer.BEGIN), 1)
-        for relative in (".agents/skills/project-verification/SKILL.md",
-                         ".agents/skills/project-verification/agents/openai.yaml",
-                         ".claude/skills/project-verification/SKILL.md",
-                         ".claude/skills/conductor-project-init/SKILL.md",
-                         ".agents/skills/conductor-project-init/SKILL.md"):
-            self.assertTrue((self.target / relative).is_file(), relative)
-        adoption = json.loads((self.target / ".conductor/adoption.json").read_text())
+        adoption = json.loads(record.read_text())
         self.assertEqual(adoption["assistants"], ["claude-code", "codex"])
-        self.assertIn(".agents/skills/project-verification/SKILL.md", adoption["files"])
-        self.assertIn(".claude/skills/project-verification/SKILL.md", adoption["files"])
-        before = tree_state(self.target)
-        self.assertEqual(self.onboard(self.codex)["status"], "unchanged")
-        self.assertEqual(self.onboard(self.claude)["status"], "unchanged")
-        self.assertEqual(tree_state(self.target), before)
-
-    def test_second_assistant_cannot_change_shared_facts(self):
-        self.generate(self.codex)
-        self.onboard(self.codex)
-        self.generate(self.claude)
-        changed = dict(self.facts, purpose="A different purpose")
-        self.assert_rejected_without_writes(lambda: self.onboard(self.claude, facts=changed))
+        self.assertEqual(adoption["generator_sha256"]["codex"], "0" * 64)
+        self.assertIn("claude-code", adoption["generator_sha256"])
+        self.assertEqual(adoption["native_discovery"]["codex"], "unverified")
+        self.assertEqual(adoption["assistant_pins"], {"claude-code": self.source_sha})
 
     def test_onboarding_locates_single_generated_skill_without_explicit_root(self):
         self.generate()
         result = initializer.onboard(self.target, self.facts, apply=False)
         self.assertEqual(result["status"], "planned")
-        self.generate(self.codex)
-        with self.assertRaises(initializer.InitError):
-            initializer.onboard(self.target, self.facts, apply=False)
 
     def test_rollback_restores_original_claude_rules(self):
         original = b"# Original Claude rules\nDo not discard me.\n"

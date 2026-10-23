@@ -30,7 +30,7 @@
   "ownership": {
     "assignment_mode": "manual",
     "approved_by_ref": "EXAMPLE ONLY replace with actual approval",
-    "adapter": "codex",
+    "adapter": "example-assistant",
     "model": "record-actual-model",
     "adapter_version": "record-tested-version",
     "session_id": "example-session",
@@ -128,7 +128,7 @@
     "required_approval": "Independent review and approval to publish the final report to the named destination",
     "next_eligible_at": null,
     "exact_next_action": "Give the independent reviewer the exact approved snapshot, method and artifact; do not publish until approved.",
-    "reporting_app": "codex",
+    "reporting_app": "example-assistant",
     "freshness": "current"
   }
 }

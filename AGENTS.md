@@ -3,8 +3,8 @@
 <!-- conductor:init:begin -->
 # Conductor project adapter
 
-Read `.conductor/policy/2a14788454aab84a5c4dbba1fcefc7f21697f07f/shared/WORKFLOW.md` as the pinned common policy.
-Policy commit: `2a14788454aab84a5c4dbba1fcefc7f21697f07f`; SHA-256: `adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2`.
+Read `.conductor/policy/d447a4bd747969639ce5c0d5269f5a2e6c15c8bd/shared/WORKFLOW.md` as the pinned common policy.
+Policy commit: `d447a4bd747969639ce5c0d5269f5a2e6c15c8bd`; SHA-256: `7be78c359aaf6b0f7861c68b791024cca5c9d64c22b76e463b8ef69917463c83`.
 Read `PROJECT.md` for project facts, verification and authoritative task links.
 Verification contract: the Verification contract section in `PROJECT.md`; read its source evidence before executing checks.
 Keep project lifecycle separate from task progress and execution state.

@@ -26,6 +26,8 @@ Primary references checked on 9 October 2026. Design choices in this kit are pro
 
 - **P2** [Claude Code memory and instructions](https://code.claude.com/docs/en/memory) — Version-sensitive AGENTS and CLAUDE discovery
 
+- **P2a** [Claude Code Projects](https://code.claude.com/docs/en/claude-projects) — Coordinator conversation, cloud threads, project instructions and memory; checked 17 October 2026
+
 - **P3** [Copilot instruction support](https://docs.github.com/en/copilot/reference/custom-instructions-support) — Surface differences; skill source in ZIP
 
 - **P4** [Antigravity skills](https://www.antigravity.google/docs/skills) — Current native discovery; rules and plan sources in ZIP
@@ -35,5 +37,7 @@ Primary references checked on 9 October 2026. Design choices in this kit are pro
 - **P6** [Grok Build skills](https://docs.x.ai/build/features/skills-plugins-marketplaces) — Native skills and metadata limitations
 
 - **P7** [Kilo skills](https://kilo.ai/docs/customize/skills) — Current shared and native skill locations
+
+- **S1** [mattpocock/skills at 49dd158](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336) — MIT-licensed skill library consulted 18 October 2026; the pull request Merge danger section (#26) and the grilling and to-tickets procedures (#25) are adapted from it, not vendored
 
 Additional provider-specific primary links and dated caveats are in the corresponding assistants/ folder. Media-Studio is a project-specific source example; its release pipeline is not a universal policy.

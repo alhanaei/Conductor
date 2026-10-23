@@ -21,14 +21,9 @@ BEGIN = "<!-- conductor:init:begin -->"
 END = "<!-- conductor:init:end -->"
 SKILL_NAME = "conductor-project-init"
 # Verified native mappings. Policy stays canonical; only entrypoints and discovery differ.
+# This table is the only place the helper names a product; adoption records written by
+# earlier generators may name LEGACY_ASSISTANT and are read as data so they can migrate.
 PROFILES = {
-    "codex": {
-        "label": "Codex", "native_skills": ".agents/skills", "native_instructions": "AGENTS.md",
-        "kit": "codex", "checksums": "codex/SHA256SUMS",
-        "verification_skill": "codex/project/skills/project-verification",
-        "verification_assets": ("SKILL.md", "agents/openai.yaml"),
-        "ui_metadata": True, "invocation": "$conductor-project-init",
-    },
     "claude-code": {
         "label": "Claude Code", "native_skills": ".claude/skills", "native_instructions": "CLAUDE.md",
         "kit": "assistants/claude-code", "checksums": "assistants/claude-code/SHA256SUMS",
@@ -37,6 +32,10 @@ PROFILES = {
         "ui_metadata": False, "invocation": "/conductor-project-init",
     },
 }
+DEFAULT_PROFILE = "claude-code"
+LEGACY_ASSISTANT = "codex"
+# The pinned snapshot is the policy tree only: the common workflow and the files it links.
+SNAPSHOT_PREFIX = "shared/"
 
 
 def profile_for(capabilities):
@@ -59,8 +58,8 @@ def native_root(spec):
 
 
 def native_checksums(metadata):
-    """Earlier Codex-only generators recorded the checksum identity under a Codex key."""
-    return metadata.get("native_checksums_sha256", metadata.get("source_codex_checksums_sha256"))
+    """Earlier single-profile generators recorded the checksum identity under a legacy key."""
+    return metadata.get("native_checksums_sha256", metadata.get(f"source_{LEGACY_ASSISTANT}_checksums_sha256"))
 
 
 def digest(data):
@@ -117,7 +116,7 @@ def git(source, *args):
 
 
 def verified_source(source, sha, capabilities, manifest_sha=None, spec=None):
-    spec = spec or dict(PROFILES["codex"], name="codex")
+    spec = spec or dict(PROFILES[DEFAULT_PROFILE], name=DEFAULT_PROFILE)
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise InitError("Source revision must be an immutable full commit SHA")
     manifest_data = read(source, "MANIFEST.json")
@@ -135,8 +134,8 @@ def verified_source(source, sha, capabilities, manifest_sha=None, spec=None):
             raise InitError("Artifact manifest identity mismatch")
         bound = files.get(spec["checksums"])
         expected = bound or capabilities.get("source_native_checksums_sha256")
-        if not expected and spec["name"] == "codex":
-            expected = capabilities.get("source_codex_checksums_sha256")
+        if not expected and spec["name"] == LEGACY_ASSISTANT:
+            expected = capabilities.get(f"source_{LEGACY_ASSISTANT}_checksums_sha256")
         if not expected or digest(checks) != expected:
             raise InitError(f"Independent {spec['label']} checksum identity required or mismatched")
     else:
@@ -353,9 +352,9 @@ def build_generation(spec, source_files, source_sha, profile):
                 "capabilities": profile, "generator_sha256": digest(outputs["scripts/conductor_init.py"]),
                 "template_sha256": digest(template),
                 "files": {key: digest(value) for key, value in outputs.items()}}
-    if spec["name"] == "codex":
-        # Earlier Codex-only generators recorded this key; keep it so their pins stay recognizable.
-        metadata["source_codex_checksums_sha256"] = metadata["native_checksums_sha256"]
+    if spec["name"] == LEGACY_ASSISTANT:
+        # Earlier single-profile generators recorded this key; keep it so their pins stay recognizable.
+        metadata[f"source_{LEGACY_ASSISTANT}_checksums_sha256"] = metadata["native_checksums_sha256"]
     outputs["generation.json"] = encoded(metadata)
     return outputs, metadata
 
@@ -424,8 +423,11 @@ def facts_blockers(target, facts):
         return ["Missing essential facts: " + ", ".join(missing)]
     checkpoint = str(PurePosixPath(facts["checkpoint"]))
     safe(target, checkpoint)
+    reserved_roots = {"AGENTS.md", "PROJECT.md", "AGENTS.override.md", ".git"}
+    for spec in PROFILES.values():
+        reserved_roots.update((spec["native_instructions"], spec["native_skills"].split("/")[0]))
     if (checkpoint in (".", ".conductor", ".conductor/policy", ".conductor/backups")
-            or checkpoint.split("/")[0] in ("AGENTS.md", "PROJECT.md", "CLAUDE.md", "AGENTS.override.md", ".git", ".agents", ".claude", ".codex")
+            or checkpoint.split("/")[0] in reserved_roots
             or checkpoint == ".conductor/adoption.json"
             or checkpoint.startswith((".conductor/policy/", ".conductor/backups/"))):
         raise InitError("Checkpoint collides with a reserved managed/configuration path")
@@ -596,7 +598,8 @@ def onboard(target, facts, skill_root=None, apply=False):
         outputs[key], section = append_block(read(target, key), text)
         managed[key] = digest(section)
     for key, data in source_files.items():
-        outputs[pin + "/" + key] = data
+        if key.startswith(SNAPSHOT_PREFIX):
+            outputs[pin + "/" + key] = data
     # Preserve an existing custom/incomplete skill as a whole, without mixing assets.
     verification, native_compatible = verification_outputs(target, spec, source_files, old.get("files") if old else None)
     outputs.update(verification)
@@ -618,7 +621,7 @@ def onboard(target, facts, skill_root=None, apply=False):
     owned_outputs(target, {key: value for key, value in outputs.items()
                            if key not in managed}, hashes)
     # One project record serves every assistant: merge this assistant's entries into it.
-    assistants = sorted(set(old.get("assistants", ["codex"])) | {spec["name"]}) if old else [spec["name"]]
+    assistants = sorted(set(old.get("assistants", [LEGACY_ASSISTANT])) | {spec["name"]}) if old else [spec["name"]]
     managed_blocks = dict(old.get("managed_blocks", {})) if old else {}
     managed_blocks.update(managed)
     files = {key: value for key, value in hashes.items() if outputs.get(key, value) is not None}
@@ -626,10 +629,10 @@ def onboard(target, facts, skill_root=None, apply=False):
                   if value is not None and key not in managed and key != checkpoint})
     generators = old.get("generator_sha256", {}) if old else {}
     discovery = old.get("native_discovery", {}) if old else {}
-    if isinstance(generators, str):  # record written by the Codex-only generator
-        generators = {"codex": generators}
+    if isinstance(generators, str):  # record written by the single-profile generator
+        generators = {LEGACY_ASSISTANT: generators}
     if isinstance(discovery, str):
-        discovery = {"codex": discovery}
+        discovery = {LEGACY_ASSISTANT: discovery}
     generators = dict(generators, **{spec["name"]: metadata["generator_sha256"]})
     discovery = dict(discovery)
     discovery.setdefault(spec["name"], "unverified; check in a fresh native session")
@@ -638,6 +641,7 @@ def onboard(target, facts, skill_root=None, apply=False):
     # Keys written by other operations (migration history, other assistants' pins) are kept.
     adoption = dict(old) if old else {}
     adoption.update({"version": 1, "scope": "project", "assistants": assistants, "policy_commit": sha,
+                     "policy_sha256": digest(source_files["shared/WORKFLOW.md"]),
                      "policy_manifest_sha256": metadata["policy_manifest_sha256"],
                      "generator_sha256": generators, "facts": facts,
                      "managed_blocks": managed_blocks, "files": files,
@@ -689,7 +693,8 @@ def migrate(target, source, source_sha, apply=False, manifest_sha=None, skill_ro
         outputs["AGENTS.md"], section = append_block(read(target, "AGENTS.md"), adapter_body(new_pin, source_files, facts))
         managed["AGENTS.md"] = digest(section)
         for key, data in source_files.items():
-            outputs[".conductor/policy/" + new_pin + "/" + key] = data
+            if key.startswith(SNAPSHOT_PREFIX):
+                outputs[".conductor/policy/" + new_pin + "/" + key] = data
         for key in adoption.get("files", {}):
             if key.startswith(".conductor/policy/" + old_pin + "/"):
                 outputs[key] = None
@@ -703,7 +708,7 @@ def migrate(target, source, source_sha, apply=False, manifest_sha=None, skill_ro
     managed_blocks.update(managed)
     generators = adoption.get("generator_sha256", {})
     if isinstance(generators, str):
-        generators = {"codex": generators}
+        generators = {LEGACY_ASSISTANT: generators}
     generators = dict(generators, **{spec["name"]: metadata["generator_sha256"]})
     pins = dict(adoption.get("assistant_pins", {}))
     for name in adoption.get("assistants", []):
@@ -713,7 +718,8 @@ def migrate(target, source, source_sha, apply=False, manifest_sha=None, skill_ro
     if old_pin != new_pin:
         migrations.append({"from": old_pin, "to": new_pin, "assistant": spec["name"]})
     updated = dict(adoption)
-    updated.update({"policy_commit": new_pin, "policy_manifest_sha256": metadata["policy_manifest_sha256"],
+    updated.update({"policy_commit": new_pin, "policy_sha256": digest(source_files["shared/WORKFLOW.md"]),
+                    "policy_manifest_sha256": metadata["policy_manifest_sha256"],
                     "generator_sha256": generators, "managed_blocks": managed_blocks, "files": files,
                     "assistant_pins": pins, "migrations": migrations})
     outputs[".conductor/adoption.json"] = encoded(updated)

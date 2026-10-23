@@ -1,0 +1,123 @@
+{
+  "schema_version": "1.0.0-draft",
+  "run_id": "example-run-001",
+  "attempt_id": "example-attempt-002",
+  "parent_attempt_id": "example-attempt-001",
+  "task": {
+    "issue_url": "https://example.invalid/repo/issues/42",
+    "kind": "implementation",
+    "objective": "Correct the synthetic sample parser validation",
+    "status": "In progress",
+    "execution_state": "Waiting quota",
+    "acceptance": [
+      "Reject malformed sample input with an explicit error",
+      "Preserve valid sample behavior"
+    ],
+    "non_goals": [
+      "No release or schema migration"
+    ],
+    "dependencies": [],
+    "conflict_keys": [
+      "sample-parser"
+    ],
+    "project_record_ref": "https://example.invalid/repo/project-record"
+  },
+  "policy": {
+    "repository_url": "https://example.invalid/engineering-workflow",
+    "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "release": "0.4.0-draft-example"
+  },
+  "ownership": {
+    "assignment_mode": "manual",
+    "approved_by_ref": "EXAMPLE ONLY replace with actual approval",
+    "adapter": "example-assistant",
+    "model": "record-actual-model",
+    "adapter_version": "record-tested-version",
+    "session_id": "example-session",
+    "github_actor": null
+  },
+  "environment": {
+    "host_alias": "approved-cpu-worker",
+    "architecture": "arm64",
+    "runtime_lock_ref": "example-lockfile-sha",
+    "capabilities": [
+      "git",
+      "python",
+      "unit-tests"
+    ]
+  },
+  "authority": {
+    "approval_ref": "EXAMPLE ONLY no actual authorization",
+    "allowed_actions": [
+      "local edits in approved isolated workspace",
+      "local tests"
+    ],
+    "allowed_paths": [
+      "src/sample_parser.py",
+      "tests/test_sample_parser.py"
+    ],
+    "forbidden_actions": [
+      "push",
+      "open PR",
+      "merge",
+      "deploy",
+      "spend",
+      "credential changes"
+    ],
+    "approved_data_destinations": [],
+    "budget": {
+      "currency": "USD",
+      "maximum_additional_spend": 0,
+      "remaining_approved_spend": 0,
+      "max_wall_minutes": 120
+    }
+  },
+  "code": {
+    "repository_url": "https://example.invalid/repo",
+    "base_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "head_sha": "cccccccccccccccccccccccccccccccccccccccc",
+    "branch": "task/example-42",
+    "pr_url": null,
+    "working_tree": "clean",
+    "patch_artifact_ref": null
+  },
+  "data_snapshots": [],
+  "artifacts": [
+    {
+      "kind": "sanitized-test-log",
+      "uri": "https://example.invalid/artifacts/test-log.txt",
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "retention_until": "2027-01-01"
+    }
+  ],
+  "verification": [
+    {
+      "criterion": "Reject malformed sample input",
+      "command_or_method": "python -m pytest tests/test_sample_parser.py",
+      "result": "passed",
+      "exit_code": 0,
+      "tested_identity": "cccccccccccccccccccccccccccccccccccccccc",
+      "recorded_at": "2026-10-09T12:00:00Z",
+      "evidence_ref": "https://example.invalid/artifacts/test-log.txt"
+    }
+  ],
+  "review": {
+    "reviewer": null,
+    "reviewed_identity": null,
+    "verdict": "pending",
+    "evidence_ref": null
+  },
+  "checkpoint": {
+    "recorded_at": "2026-10-09T12:05:00Z",
+    "decisions": [
+      "Use existing error type"
+    ],
+    "failed_approach_findings": [],
+    "blocker": "Example quota exhaustion",
+    "required_approval": null,
+    "next_eligible_at": "2026-10-09T16:00:00Z",
+    "exact_next_action": "Verify actual current issue, policy, authority and commit; obtain confirmed ownership; run the full approved baseline before requesting review.",
+    "reporting_app": "example-assistant",
+    "freshness": "current"
+  }
+}
