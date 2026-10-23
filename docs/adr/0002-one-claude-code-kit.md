@@ -1,6 +1,8 @@
 # ADR 0002: Conductor ships one assistant kit, for Claude Code
 
 - Status: Accepted (owner decision of 2026-10-18, recorded on #36)
+- Amended by: ADR 0004 (2026-10-22): "one kit" is restated as "one core, generated
+  adapters"; the deletions stand.
 - Date: 2026-10-18
 - Deciders: repository owner
 - Task record: #36
