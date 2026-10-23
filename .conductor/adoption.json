@@ -6,7 +6,7 @@
         "Every task starts with `/task-start #N` on a record carrying `status:ready` and ends with `/task-finish`; between them your own practice runs. Approval mode `manual`: the owner files, readies and merges.",
         "Never merge by hand, mark a draft ready, approve, force-push, edit branch protection or push to `main` without a pull request; verification is the recorded commands run on the exact head, nothing inferred."
       ],
-      "discovery": "unverified; run the owner checklist's discovery step from a thread",
+      "discovery": "verified 2026-10-23 from a Claude Code project thread at main ec3b22a: conductor_init.py check reports verified; CLAUDE.md and AGENTS.md loaded; account skills task-start and task-finish listed; evidence on #48",
       "inputs": {
         "default_branch": "main",
         "integration_branch": "main",
