@@ -1,5 +1,27 @@
 # Initializer validation
 
+## 22 October 2026 — claude-code-projects adapter profile (#47)
+
+`conductor_init.py generate --profile claude-code-projects` and `check --profile
+claude-code-projects` added. The profile reads an adopted project's `.conductor/adoption.json`,
+the `PROJECT.md` facts and the pinned policy file, and writes the filled project-instructions
+text and an owner checklist under `.conductor/adapters/claude-code-projects/`, the three
+always-on lines in the `CLAUDE.md` managed section (kept by later `onboard` runs), and the
+text's digest, inputs and `discovery` field under `adapters.claude-code-projects` in the
+adoption record. The kit's `PROJECT-INSTRUCTIONS.template.md` is now generated from the
+helper's template by `tests/package_conductor_init.py`. `tests/test_conductor_init_projects.py`
+(8 tests) compares the four outputs with `tests/golden/claude-code-projects/`, asserts the
+field limit, the policy path and digest, the verification commands and the fallback boundary
+steps, checks that `check` names a changed record digest, an edited file, an edited `CLAUDE.md`
+section and changed inputs, and runs the helper against this repository expecting
+`unchanged` and `verified`. Suite: 80 tests.
+
+```sh
+python3 tests/package_conductor_init.py
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests
+git diff --check
+```
+
 ## 17 October 2026 — wrapper copies rule
 
 `tests/package_conductor_init.py` now fails when a kit listed in `NATIVE` lacks a native

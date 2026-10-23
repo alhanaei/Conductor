@@ -30,7 +30,7 @@ and data deliverables. This kit creates no runtime, hook, credential or integrat
 | [conductor-init](global/skills/conductor-init/SKILL.md) | Generate a native project initializer; optional personal installation to `~/.claude/skills/conductor-init/` only within that scope |
 | [LOCAL-SETUP.md](LOCAL-SETUP.md) | Local installation, discovery check and rollback procedure |
 | [CLOUD-SETUP.md](CLOUD-SETUP.md) | Cloud session, Remote Control and Projects (beta) differences |
-| [PROJECT-INSTRUCTIONS.template.md](PROJECT-INSTRUCTIONS.template.md) | Conductor brief for a project's **Project instructions** field; filled per project, recorded in the installation record |
+| [PROJECT-INSTRUCTIONS.template.md](PROJECT-INSTRUCTIONS.template.md) | Unfilled source of a project's **Project instructions** text, generated from the helper; the `claude-code-projects` profile fills it per project and records its digest (see [CLOUD-SETUP.md](CLOUD-SETUP.md#generating-the-project-instructions-the-claude-code-projects-profile)) |
 | [MANIFEST.md](MANIFEST.md) | Sources, version, pinning and placeholder contract |
 | `SHA256SUMS` | Digests of every other kit file |
 
