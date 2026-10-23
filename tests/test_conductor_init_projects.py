@@ -43,8 +43,16 @@ def fixture_from_repo(target):
         destination = target / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes((REPO / relative).read_bytes())
-    # The fixture starts before this adapter was generated: strip its record and lines.
+    # The fixture starts before this adapter was generated: strip its record and lines, and
+    # start in approval mode manual whatever this repository runs (ADR 0005), so the golden
+    # output and the mode tests do not move when the repository switches mode.
     adoption.pop("adapters", None)
+    adoption.pop("protection", None)
+    adoption["facts"] = {key: value for key, value in adoption["facts"].items() if key != "approval_mode"}
+    project = (REPO / "PROJECT.md").read_bytes()
+    project, project_section = initializer.append_block(project, initializer.project_record(adoption["facts"]))
+    (target / "PROJECT.md").write_bytes(project)
+    adoption["managed_blocks"]["PROJECT.md"] = sha(project_section)
     adoption["files"] = {key: value for key, value in adoption["files"].items()
                          if not key.startswith(initializer.ADAPTER_DIR + "/")}
     claude = (REPO / "CLAUDE.md").read_bytes()
@@ -219,7 +227,7 @@ class ProjectsProfileTests(unittest.TestCase):
         self.assertIn("push to `staging` or `main` without a pull request", lines[2])
         checklist = (self.target / entry["owner_checklist"]).read_text()
         for phrase in ("`CONDUCTOR_APPROVAL_MODE` to `auto`", "`CONDUCTOR_INTEGRATION_BRANCH` to `staging`",
-                       "Allow auto-merge", "On `staging` and `main`"):
+                       "Allow auto-merge", "on `staging` and `main`", "In GitHub, repository Settings"):
             self.assertIn(phrase, checklist)
         # The fact now drives the text: a rerun without the override is a no-op, check passes,
         # and a different integration branch is a named input mismatch.
