@@ -1,7 +1,7 @@
 # ADR 0005: Approval modes per project
 
-- Status: Accepted (owner decisions of 2026-10-23, recorded on #58 from the project thread
-  "Approval modes per project")
+- Status: Accepted (owner decisions of 2026-10-23, recorded on #58 and #59 from the project
+  thread "Approval modes per project")
 - Date: 2026-10-23
 - Deciders: repository owner
 - Task record: #59 (sub-task A of #58)
@@ -24,7 +24,9 @@ adapter tells threads to pause before any push, deploy or close. For a one-perso
 with assistants doing the work that is the heaviest part of the day. On 2026-10-23 the owner
 asked for "an Auto Approve mode while using issues and sub-issues", chosen per project at
 init, and after the staging question settled the boundary in one sentence: "let the top
-level to owner but rest do anything" (14:38 UTC).
+level to owner but rest do anything" (14:38 UTC). At 14:55 UTC the owner answered the three
+open questions: two modes are enough, auto-merge squashes, and a staging deploy runs only
+from an integration branch.
 
 Two facts constrain the design. Project threads and Codex cloud tasks have no hooks, so the
 only mechanical enforcement for them is GitHub's (ADR 0004 §6). And `shared/WORKFLOW.md` is
@@ -45,31 +47,34 @@ What inherits is the approval, not the facts. A sub-issue still carries its own 
 category and Ready facts (backlog workflow steps 3 and 4) and `linked-task` still checks
 them, together with the parent's state as PR #56 added.
 
-### 2. Three modes
+### 2. Two modes
 
-| Gate | `manual` (default) | `inherit` | `auto` |
-| --- | --- | --- | --- |
-| File a top-level record | owner | owner | owner |
-| Ready a top-level record | owner (`status:ready`) | owner | owner |
-| Priorities, queue order | owner | owner | owner |
-| File a sub-issue of an open record | owner | Planner, with the Ready facts and the native parent link | same |
-| Ready a sub-issue | owner | inherited: Planner applies `status:ready` when the parent carries it and the sub-issue's Ready facts are complete | same |
-| Push, open the pull request | task-finish (Implementer; not a gate) | same | same |
-| Merge a sub-issue's pull request | owner | owner | task-finish enables GitHub auto-merge into the integration branch; GitHub merges when the required checks are green |
-| Deploy to staging | owner | owner | CI, on merge to the integration branch, as a job named in the verification contract |
-| Edit CI configuration | per record's allowed paths | same | same, in a pull request |
-| Close a task | by `Closes #n` on merge | same | same |
-| Close a tracking parent | owner | owner | Planner, after the last child closes |
-| Promote integration branch to default branch | owner | owner | owner, one pull request per release or sprint |
-| Branch protection, required checks, repository variables | owner | owner | owner |
+| Gate | `manual` (default) | `auto` |
+| --- | --- | --- |
+| File a top-level record | owner | owner |
+| Ready a top-level record | owner (`status:ready`) | owner |
+| Priorities, queue order | owner | owner |
+| File a sub-issue of an open record | owner | Planner, with the Ready facts and the native parent link |
+| Ready a sub-issue | owner | inherited: Planner applies `status:ready` when the parent carries it and the sub-issue's Ready facts are complete |
+| Push, open the pull request | task-finish (Implementer; not a gate) | same |
+| Merge a sub-issue's pull request | owner | task-finish enables GitHub auto-merge into the integration branch; GitHub merges when the required checks are green |
+| Deploy to staging | owner | CI, on merge to the integration branch, as a job named in the verification contract |
+| Edit CI configuration | per record's allowed paths | same, in a pull request |
+| Close a task | by `Closes #n` on merge | same |
+| Close a tracking parent | owner | Planner, after the last child closes |
+| Promote integration branch to default branch | owner | owner, one pull request per release or sprint |
+| Branch protection, required checks, repository variables | owner | owner |
 
-`manual` is today's rule and the library default. `inherit` removes the per-sub-issue File
-and Ready clicks and keeps the merge click. `auto` delegates everything below the top level.
+`manual` is today's rule and the library default. `auto` delegates everything below the top
+level. The owner chose two modes over three on 2026-10-23: an intermediate mode that files
+and readies sub-issues but keeps the merge click was judged not worth a third setting.
 
 No mode lets an assistant merge by hand, approve a pull request as a merge authorization,
 push to a protected branch without a pull request, edit branch protection or required
 checks, or run a production deploy. "Auto" means GitHub merges on green and CI deploys on
-merge, not a thread. Auto-merge uses a merge commit, matching this repository's history.
+merge, not a thread. Auto-merge squashes: one commit per sub-issue on the integration
+branch, titled by the pull request, with the tested head SHA preserved in the pull request's
+verification ledger.
 
 ### 3. The integration branch
 
@@ -90,7 +95,7 @@ mode: it would skip `linked-task`, so work with no Ready record could land.
 
 ### 4. Where the mode is recorded
 
-- `PROJECT.md` facts block: `- Approval mode: manual | inherit | auto`, and
+- `PROJECT.md` facts block: `- Approval mode: manual | auto`, and
   `- Integration branch: <name>` when it differs from the default branch.
 - `.conductor/adoption.json`: `facts.approval_mode` and the adapter input
   `integration_branch`, filled by the initializer from `PROJECT.md`; defaults `manual` and
@@ -104,7 +109,7 @@ mode: it would skip `linked-task`, so work with no Ready record could land.
 
 ### 5. Enforcement
 
-- `linked-task` is the mechanical half of inheritance: in `inherit` and `auto` a
+- `linked-task` is the mechanical half of inheritance: in `auto` a
   `status:ready` sub-issue is accepted only if its parent carries `status:ready`, and a pull
   request must target the integration branch unless it is the owner's promotion. The check
   binds every runtime, including the two with no hooks.
@@ -124,8 +129,10 @@ mode: it would skip `linked-task`, so work with no Ready record could land.
 
 ## Alternatives considered
 
-- Two modes, `manual` and `auto`. Rejected for now: `inherit` costs one row in a table and is
-  the safe first step for a project that has not yet verified its branch protection.
+- Three modes, with an `inherit` step that files and readies sub-issues but keeps the merge
+  click. Rejected by the owner (2026-10-23 14:55 UTC): two modes are enough; a project that
+  has not yet verified its branch protection stays in `manual`, and the initializer refuses
+  `auto` until it has.
 - Delegate the top level too (the Planner files and readies parents). Rejected by the owner:
   the parent is where the owner's attention lands; readying it once is the whole of the
   owner's work in `auto`.
@@ -140,18 +147,19 @@ mode: it would skip `linked-task`, so work with no Ready record could land.
   runtime, and a project fact in `PROJECT.md` is what the initializer already reads.
 - Put the modes into `shared/WORKFLOW.md`. Rejected: it would force a policy release for a
   rule the Authority paragraph already accommodates, days after the re-pin of #45.
-- Squash merges for auto-merge. Rejected: this repository's history uses merge commits and
-  the ledger names tested SHAs that squashing would discard.
+- Merge commits for auto-merge, matching this repository's history so far. Rejected by the
+  owner (14:55 UTC) in favour of squash: one commit per sub-issue reads better on the
+  integration branch; the tested head SHA stays in the pull request's ledger.
 
 ## Consequences
 
 - New: this record; the "Amended by: ADR 0005" line under the Status of ADR 0003.
 - Changed in this record's pull request: `shared/workflows/backlog.md` (steps 2, 4 and 9 name
   the mode), `shared/workflows/roles.md` (what the Planner and Implementer may do below the
-  top level in `inherit` and `auto`), `MANIFEST.json` regenerated.
+  top level in `auto`), `MANIFEST.json` regenerated.
 - Follows, on its own records: the initializer, adoption record, Projects template, owner
-  checklist, `pr-policy.yml` and task-finish changes (#60); this repository running `inherit`
-  and then `auto` on `main` (#61, after #48).
+  checklist, `pr-policy.yml` and task-finish changes (#60); this repository running `auto`
+  on `main` (#61, after #48).
 - Unchanged: `shared/WORKFLOW.md` and its pinned digest, the verification contract, the owner
   gates for top-level records, deployment authority outside CI, GitHub identity.
 
@@ -166,6 +174,6 @@ mode other than `manual` sets it back by editing `PROJECT.md` and the repository
 
 #58 and its body (design version 2) and the owner-decision comment of 2026-10-23 14:38 UTC;
 #59 and its Gate Ready comment (owner's "ready #59", 14:52 UTC); the owner's messages in the
-project thread "Approval modes per project" on 2026-10-23 (14:23, 14:32, 14:36 to 14:39 and
-14:52 UTC); the project note "Approval modes per project — design" (version 2); the
+project thread "Approval modes per project" on 2026-10-23 (14:23, 14:32, 14:36 to 14:39,
+14:52 and 14:55 UTC); the project note "Approval modes per project — design" (version 2); the
 repository at `main` d79238d.

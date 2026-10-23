@@ -18,9 +18,8 @@ recorded in the project's own instructions; this file defines the dimensions and
    File, recorded in the record's first comment with its date and where it was given.
    Delegated agents and workflows propose records in their reports and never create them.
    Comments on existing records (findings, audit notes, verification results) need no
-   approval. A project's approval mode (`manual`, `inherit` or `auto`, recorded in its
-   project facts; `manual` when absent) may delegate one case: in `inherit` and `auto` the
-   Planner files a sub-task of an open, readied record directly, with its Ready facts and
+   approval. A project's approval mode (`manual` or `auto`, recorded in its project facts;
+   `manual` when absent) may delegate one case: in `auto` the Planner files a sub-task of an open, readied record directly, with its Ready facts and
    the native parent link, because the owner's approval of the parent covers it. A
    top-level record needs the owner in every mode.
 3. Work that relates to an open record is filed as a sub-task of that record, never as a
@@ -46,8 +45,8 @@ recorded in the project's own instructions; this file defines the dimensions and
    owner) approves, and the `status:ready` label is applied with a comment naming that
    approval. The pull-request check requires the label on the task a pull request closes.
    When the owner confirms a to-tickets granularity round, that confirmation readies
-   every slice in it, labelled together with one comment naming the round. In `inherit`
-   and `auto` the Planner readies a sub-task whose parent carries the label once its Ready
+   every slice in it, labelled together with one comment naming the round. In `auto` the
+   Planner readies a sub-task whose parent carries the label once its Ready
    facts are complete, with a comment naming the parent; the check accepts the label only
    while the parent is ready. A top-level record is readied by the owner in every mode.
 5. Priority is a project-defined ordered scale with written definitions, for example P0
@@ -74,9 +73,9 @@ recorded in the project's own instructions; this file defines the dimensions and
 9. Done follows the common workflow's Review to Done transition: the exact delivered identity, verification
    recorded against it, the required review (advisory, never a merge authorization), and
    the merge or artifact identity when acceptance requires it. Merge is the owner's gate,
-   never the Implementer's: in `manual` and `inherit` the owner merges; in `auto` the
-   Implementer enables the platform's auto-merge on the pull request against the project's
-   integration branch and the platform merges when the required checks are green, while
+   never the Implementer's: in `manual` the owner merges; in `auto` the Implementer enables
+   the platform's auto-merge (squash) on the pull request against the project's integration
+   branch and the platform merges when the required checks are green, while
    promotion of the integration branch into the default branch stays the owner's merge.
    A deploy to staging, where the project has one, runs in CI on that merge as a job the
    verification contract names, never from a session. Closing the task record is the last

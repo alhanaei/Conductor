@@ -8,7 +8,7 @@ their own, and a role never bypasses an owner gate or the project's platform con
 | Role | Holds | Does | Never |
 | --- | --- | --- | --- |
 | Owner (human) | the three owner gates: File, Ready, Merge, for every top-level record in every approval mode | sets priorities, reorders the queue, approves records, readies them, merges, chooses the project's approval mode and integration branch, owns branch protection and required checks | — |
-| Planner | the queue between the gates | proposes records with title and problem, grills them to Ready, splits them with the [to-tickets workflow](to-tickets.md), reviews pull requests advisory-only, keeps the Backlog issue; in `inherit` and `auto` files and readies sub-tasks of a readied parent and, in `auto`, closes a tracking parent after its last child | implements, pushes, files or readies a top-level record without the owner's approval, applies `status:ready` to a sub-task whose parent is not ready |
+| Planner | the queue between the gates | proposes records with title and problem, grills them to Ready, splits them with the [to-tickets workflow](to-tickets.md), reviews pull requests advisory-only, keeps the Backlog issue; in `auto` files and readies sub-tasks of a readied parent and closes a tracking parent after its last child | implements, pushes, files or readies a top-level record without the owner's approval, applies `status:ready` to a sub-task whose parent is not ready |
 | Implementer | one Ready record at a time | claims it by comment, works on a branch, drives the pull request to green, records verification against the exact head, stops at the Merge gate; in `auto` enables the platform's auto-merge against the integration branch | merges by hand, pushes to a protected branch without a pull request, edits branch protection, runs a deploy from the session, widens scope, starts a record that is not Ready |
 | Reviewer (optional) | an independent read of one pull request against its record | reports findings as advisory review comments | approves as a merge authorization, pushes to the branch |
 
@@ -24,11 +24,11 @@ keep them apart from the lifecycle workflow's phase gates (G0 to G5):
 | Merge | a pull request lands | Implementer | the merge itself |
 
 Everything between the gates is the assistants' work. A project's approval mode
-(`manual`, the default; `inherit`; `auto`, see ADR 0005 in the library's decision records)
-says how far the owner's approval of a top-level record reaches its sub-tasks: in `manual`
-every gate is the owner's click; in `inherit` the Planner files and readies sub-tasks of a
-readied parent; in `auto` the pull request also merges by the platform's auto-merge on
-green checks into the project's integration branch, and CI deploys staging on that merge.
+(`manual`, the default, or `auto`; see ADR 0005 in the library's decision records) says how
+far the owner's approval of a top-level record reaches its sub-tasks: in `manual` every gate
+is the owner's click; in `auto` the Planner files and readies sub-tasks of a readied parent,
+the pull request merges by the platform's squash auto-merge on green checks into the
+project's integration branch, and CI deploys staging on that merge.
 The owner's gates on top-level records, on promotion into the default branch and on the
 repository settings that enforce the checks hold in every mode. When the owner confirms a
 to-tickets granularity round, that confirmation is the Ready approval for every slice in

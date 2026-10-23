@@ -4,7 +4,7 @@
 - Amended by: ADR 0004 (2026-10-22): Claude Code Projects mode resumed; the comment
   amendments of #37 (rounds 3 to 5, roles, identity, Projects round, merge gate) recorded.
 - Amended by: ADR 0005 (2026-10-23): the three gates become the `manual` default of a
-  per-project approval mode; `inherit` and `auto` delegate everything below top-level records.
+  per-project approval mode; `auto` delegates everything below top-level records.
 - Date: 2026-10-18
 - Deciders: repository owner
 - Task record: #37
