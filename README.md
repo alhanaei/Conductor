@@ -16,7 +16,7 @@ This kit contains shared practice, templates and an explicitly invoked project-i
 
 ## Structure
 - `shared/workflows/`: complete backlog, roles, coding, analytics, review, handoff, policy-migration, project-lifecycle and to-tickets procedures
-- `shared/skills/`: minimal skill wrappers (`conductor-init`, `backlog-task`, `coding-task`, `analytics-task`, `independent-review`, `checkpoint-handoff`, `gate-review`, `grilling`, `to-tickets`); generate native copies only after discovery is verified
+- `shared/skills/`: the two task boundary skills (`task-start`, `task-finish`, with the `task_boundary.py` helper) and minimal skill wrappers (`conductor-init`, `backlog-task`, `independent-review`, `checkpoint-handoff`, `gate-review`, `grilling`, `to-tickets`); generate native copies only after discovery is verified
 - `shared/techniques/`: reusable practical methods (verification, grilling)
 - `shared/patterns/`: general architecture options; actual decisions remain project ADRs
 - `shared/harness/`: portable task/checkpoint schema, fictional examples and contract guidance
