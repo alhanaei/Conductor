@@ -160,3 +160,5 @@ not observed in this evaluation. An artifact's association with its declared Git
 depends on the independently reviewed distribution identity. Policy migrations and
 lifecycle transitions remain explicit review steps. Atomic individual writes do not
 provide a concurrent-writer lock or a crash-atomic multi-file transaction.
+
+<!-- throwaway change for the status:ready check test; this pull request is closed, never merged -->
