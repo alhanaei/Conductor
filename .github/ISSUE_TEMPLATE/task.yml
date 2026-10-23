@@ -7,8 +7,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Propose before filing: the title, the problem in one or two sentences, and why it
-        needs its own record. A part of tracked work is a sub-issue of its parent.
+        Propose before filing: the title, the problem in one or two sentences, and the open
+        issue this belongs to. Work related to an open issue is filed as its sub-issue, never
+        as a separate issue.
   - type: dropdown
     id: priority
     attributes:
@@ -40,7 +41,7 @@ body:
     id: parent
     attributes:
       label: Parent task
-      description: The issue this is a part of, or "none" when it stands alone.
+      description: The open issue this belongs to (it becomes the native sub-issue parent), or "none" with the reason it stands alone.
     validations:
       required: true
   - type: textarea

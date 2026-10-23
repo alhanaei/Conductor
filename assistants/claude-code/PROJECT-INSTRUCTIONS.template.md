@@ -30,8 +30,10 @@ Roles
 Tasks and ownership
 
 - Every thread starts from one labelled task record that carries `status:ready`. If no record
-  exists for what you were asked, propose the title and the problem in one or two sentences and
-  wait; do not file it. If the record is not ready, say so and stop.
+  exists for what you were asked, propose the title, the problem in one or two sentences and the
+  open record it belongs to, then wait; do not file it. The owner files work related to an open
+  record as a sub-issue of that record, never as a separate issue; a parent that only holds
+  sub-issues is a tracking record. If the record is not ready, say so and stop.
 - Before changing anything, record the claim on the task record: this project, the thread
   reference, the time and your role. Do not treat labels or a note as an exclusive lock.
 - Take exactly the task you were given. Anything found mid-task is proposed and left as a

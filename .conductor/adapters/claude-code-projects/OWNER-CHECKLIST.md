@@ -2,7 +2,7 @@
 
 Generated for policy commit `2a14788454aab84a5c4dbba1fcefc7f21697f07f`. Each step needs the owner's account or repository settings; a thread never changes them. Record the evidence for each on the task record.
 
-- [ ] Paste [.conductor/adapters/claude-code-projects/project-instructions.md](.conductor/adapters/claude-code-projects/project-instructions.md) into **Project settings > Memory > Project instructions** (5225 of 16000 characters) and record its SHA-256 `1f6f0a981e81db68855f64af95cbd1e395466b64e76dd4396a49b24235908d6f` on the task record.
+- [ ] Paste [.conductor/adapters/claude-code-projects/project-instructions.md](.conductor/adapters/claude-code-projects/project-instructions.md) into **Project settings > Memory > Project instructions** (5425 of 16000 characters) and record its SHA-256 `78c7551d0a64b5605ec8b053b7ba2a64ddee80f528caffbace2ae347710f9830` on the task record.
 - [ ] Enable the boundary skills `task-start` and `task-finish` on the claude.ai account from the kit's `global/skills/` and record the SHA-256 of each uploaded `SKILL.md` from the kit `SHA256SUMS`; repository skills do not load in a thread.
 - [ ] Create the Backlog issue, pin it, and keep it the only queue.
 - [ ] Set the repository variable `CONDUCTOR_BACKLOG_REVIEW_ISSUE` to that issue's number so the backlog review names it.

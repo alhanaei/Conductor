@@ -10,11 +10,11 @@
     "max_parallel_threads": 2
   },
   "owner_checklist": ".conductor/adapters/claude-code-projects/OWNER-CHECKLIST.md",
-  "owner_checklist_sha256": "edd7fd1a49f82716fbac162b04204fccae9cdf886710c7ebb93ef1343adcd5aa",
+  "owner_checklist_sha256": "be265c55c34daeefac972ed41697384edb3d54d757f6c83fa8e1738712eee250",
   "policy_commit": "2a14788454aab84a5c4dbba1fcefc7f21697f07f",
   "policy_sha256": "adefbfa603a3b050593035410ce07bbb42fd27ebbfa4ba0212d48fcbe7a4a0b2",
   "profile": "claude-code-projects",
   "project_instructions": ".conductor/adapters/claude-code-projects/project-instructions.md",
-  "project_instructions_chars": 5225,
-  "project_instructions_sha256": "1f6f0a981e81db68855f64af95cbd1e395466b64e76dd4396a49b24235908d6f"
+  "project_instructions_chars": 5425,
+  "project_instructions_sha256": "78c7551d0a64b5605ec8b053b7ba2a64ddee80f528caffbace2ae347710f9830"
 }
