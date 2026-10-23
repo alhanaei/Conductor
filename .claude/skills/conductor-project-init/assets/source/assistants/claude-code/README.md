@@ -7,8 +7,9 @@ Conductor is the canonical shared-practice library. This folder holds the thin C
 adapter: how Claude Code discovers instructions and skills, the installable templates, and
 the adoption record. It is the one kit Conductor distributes since ADR 0002 (the former sibling kit for another assistant is recoverable from the tag on the last multi-kit commit), laid out so that
 every assistant reads one project record; it carries the `conductor-init`,
-`conductor-handoff` and `project-verification` skills and a native copy of every shared
-task wrapper, checked for drift by the packaging test. Each actual
+`conductor-handoff` and `project-verification` skills, generated copies of the two task
+boundary skills and a native copy of every shared task wrapper, checked for drift by the
+packaging test. Each actual
 project repository owns its state, plans, issues, current task owner, checkpoints, code
 and data deliverables. This kit creates no runtime, hook, credential or integration.
 
@@ -20,8 +21,8 @@ and data deliverables. This kit creates no runtime, hook, credential or integrat
 | [project/CLAUDE.md](project/CLAUDE.md) | Thin project adapter → target repository root `CLAUDE.md`; imports the project `AGENTS.md` |
 | [conductor-handoff](global/skills/conductor-handoff/SKILL.md) | General skill → user `~/.claude/skills/conductor-handoff/` |
 | [project-verification](project/skills/project-verification/SKILL.md) | Project skill → repository `.claude/skills/project-verification/` |
-| [coding-task](global/skills/coding-task/SKILL.md) | General skill → user `~/.claude/skills/coding-task/`; native copy of the shared `coding-task` wrapper |
-| [analytics-task](global/skills/analytics-task/SKILL.md) | General skill → user `~/.claude/skills/analytics-task/`; native copy of the shared `analytics-task` wrapper |
+| [task-start](global/skills/task-start/SKILL.md) | General skill → user `~/.claude/skills/task-start/` (or enabled on the account for project threads); generated copy of the shared `task-start` boundary skill and its `scripts/task_boundary.py` helper |
+| [task-finish](global/skills/task-finish/SKILL.md) | General skill → user `~/.claude/skills/task-finish/`; generated copy of the shared `task-finish` boundary skill and the same helper |
 | [independent-review](global/skills/independent-review/SKILL.md) | General skill → user `~/.claude/skills/independent-review/`; native copy of the shared `independent-review` wrapper |
 | [gate-review](global/skills/gate-review/SKILL.md) | General skill → user `~/.claude/skills/gate-review/`; native copy of the shared `gate-review` wrapper for the lifecycle workflow |
 | [grilling](global/skills/grilling/SKILL.md) | General skill → user `~/.claude/skills/grilling/`; native copy of the shared `grilling` technique wrapper |
@@ -29,7 +30,7 @@ and data deliverables. This kit creates no runtime, hook, credential or integrat
 | [conductor-init](global/skills/conductor-init/SKILL.md) | Generate a native project initializer; optional personal installation to `~/.claude/skills/conductor-init/` only within that scope |
 | [LOCAL-SETUP.md](LOCAL-SETUP.md) | Local installation, discovery check and rollback procedure |
 | [CLOUD-SETUP.md](CLOUD-SETUP.md) | Cloud session, Remote Control and Projects (beta) differences |
-| [PROJECT-INSTRUCTIONS.template.md](PROJECT-INSTRUCTIONS.template.md) | Conductor brief for a project's **Project instructions** field; filled per project, recorded in the installation record |
+| [PROJECT-INSTRUCTIONS.template.md](PROJECT-INSTRUCTIONS.template.md) | Unfilled source of a project's **Project instructions** text, generated from the helper; the `claude-code-projects` profile fills it per project and records its digest (see [CLOUD-SETUP.md](CLOUD-SETUP.md#generating-the-project-instructions-the-claude-code-projects-profile)) |
 | [MANIFEST.md](MANIFEST.md) | Sources, version, pinning and placeholder contract |
 | `SHA256SUMS` | Digests of every other kit file |
 

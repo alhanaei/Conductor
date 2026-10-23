@@ -2,12 +2,21 @@
 """Regenerate/check distributed initializer assets and package identities."""
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMON = "shared/skills/conductor-init/"
+# Kit files whose text lives in the generator; regenerated here like the other copies.
+PROJECT_INSTRUCTIONS = "assistants/claude-code/PROJECT-INSTRUCTIONS.template.md"
+# Task boundary skills: written once in shared/skills, copied byte for byte into each kit
+# that carries them (task-start holds the helper source; task-finish gets a generated copy).
+BOUNDARY_SKILLS = ("task-start", "task-finish")
+BOUNDARY_HELPER = "shared/skills/task-start/scripts/task_boundary.py"
+BOUNDARY_KITS = ("assistants/claude-code/",)
 # Native distribution copies: kit prefix -> (skill folder, checksum file).
 NATIVE = {
     "assistants/claude-code/": ("assistants/claude-code/global/skills/conductor-init/",
@@ -94,12 +103,34 @@ def check_skill_resources(content):
         raise ValueError("Claude Code skill must name its native path and the AGENTS.md import")
 
 
+def generator_module():
+    """The canonical generator, imported for the text constants it carries."""
+    spec = importlib.util.spec_from_file_location("conductor_init_packaged", ROOT / (COMMON + "scripts/conductor_init.py"))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def project_instructions_template(generator):
+    """The kit's project-instructions template: heading block plus the generator's wrapped text."""
+    return (generator.PROJECT_INSTRUCTIONS_HEADING + generator.rewrap(generator.PROJECT_INSTRUCTIONS_TEMPLATE)).encode()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
     recipe = (ROOT / "shared/workflows/project-init.md").read_bytes()
-    outputs = {COMMON + "references/project-init.md": recipe}
+    outputs = {COMMON + "references/project-init.md": recipe,
+               PROJECT_INSTRUCTIONS: project_instructions_template(generator_module())}
+    helper = (ROOT / BOUNDARY_HELPER).read_bytes()
+    for skill in BOUNDARY_SKILLS:
+        source = (ROOT / f"shared/skills/{skill}/SKILL.md").read_bytes()
+        for kit in BOUNDARY_KITS:
+            outputs[f"{kit}{WRAPPER_SKILLS}{skill}/SKILL.md"] = source
+            outputs[f"{kit}{WRAPPER_SKILLS}{skill}/scripts/task_boundary.py"] = helper
+    outputs["shared/skills/task-finish/scripts/task_boundary.py"] = helper
     for folder, _ in NATIVE.values():
         outputs[folder + "references/project-init.md"] = recipe
         outputs[folder + "scripts/conductor_init.py"] = (ROOT / (COMMON + "scripts/conductor_init.py")).read_bytes()
@@ -110,8 +141,11 @@ def main():
 
     content.outputs = outputs
     check_skill_resources(content)
-    check_wrapper_copies(skill_names("shared/skills"),
-                         {prefix: skill_names(prefix + WRAPPER_SKILLS) for prefix in NATIVE})
+    kit_skills = {prefix: skill_names(prefix + WRAPPER_SKILLS) | {
+        key.split("/")[-2] for key in outputs
+        if key.startswith(prefix + WRAPPER_SKILLS) and key.endswith("/SKILL.md")}
+        for prefix in NATIVE}
+    check_wrapper_copies(skill_names("shared/skills"), kit_skills)
 
     native_counts = {}
     for prefix, (_, checksums) in NATIVE.items():
@@ -128,6 +162,7 @@ def main():
     keys.update(outputs)
     keys.update(("docs/project-initialization.md",))
     keys.discard("MANIFEST.json")
+    keys = {key for key in keys if key in outputs or (ROOT / key).is_file()}  # drop retired files
     manifest["version"] = "0.5.0-draft"
     manifest["files"] = {key: sha(content(key)) for key in sorted(keys)}
     outputs["MANIFEST.json"] = (json.dumps(manifest, indent=2) + "\n").encode()

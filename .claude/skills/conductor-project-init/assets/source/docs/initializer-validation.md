@@ -14,6 +14,28 @@ working tree at `HEAD`, so no historical commit needs to be reachable. Suite: 74
 84 root digests, 20 Claude Code kit digests, empty wrapper allowlist. Verification
 against the pull request head is recorded in the pull request ledger.
 
+## 22 October 2026 — claude-code-projects adapter profile (#47)
+
+`conductor_init.py generate --profile claude-code-projects` and `check --profile
+claude-code-projects` added. The profile reads an adopted project's `.conductor/adoption.json`,
+the `PROJECT.md` facts and the pinned policy file, and writes the filled project-instructions
+text and an owner checklist under `.conductor/adapters/claude-code-projects/`, the three
+always-on lines in the `CLAUDE.md` managed section (kept by later `onboard` runs), and the
+text's digest, inputs and `discovery` field under `adapters.claude-code-projects` in the
+adoption record. The kit's `PROJECT-INSTRUCTIONS.template.md` is now generated from the
+helper's template by `tests/package_conductor_init.py`. `tests/test_conductor_init_projects.py`
+(8 tests) compares the four outputs with `tests/golden/claude-code-projects/`, asserts the
+field limit, the policy path and digest, the verification commands and the fallback boundary
+steps, checks that `check` names a changed record digest, an edited file, an edited `CLAUDE.md`
+section and changed inputs, and runs the helper against this repository expecting
+`unchanged` and `verified`. Suite: 80 tests.
+
+```sh
+python3 tests/package_conductor_init.py
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests
+git diff --check
+```
+
 ## 17 October 2026 — wrapper copies rule
 
 `tests/package_conductor_init.py` now fails when a kit listed in `NATIVE` lacks a native
@@ -26,6 +48,19 @@ stale and per-kit cases and runs the rule on the repository itself. Suite: 72 te
 Allowlist at the first green run on `main`: the Codex kit for `coding-task`, `analytics-task`,
 `independent-review` and `backlog-task` (copies requested on #15); the Claude Code kit for
 `backlog-task` only, the other three having landed with PR #23.
+
+## 22 October 2026 — Task boundary skills (#46)
+
+`shared/skills/task-start/` and `shared/skills/task-finish/` carry the two task boundaries
+with one helper, `task-start/scripts/task_boundary.py` (Python 3 standard library, writes only
+under `<git-dir>/conductor-local/`). The packaging script copies both `SKILL.md` files and the
+helper byte for byte into `assistants/claude-code/global/skills/` and the helper into
+`task-finish/scripts/`, so the kit copies are generated, not hand-maintained; a hand edit fails
+the package check. `coding-task` and `analytics-task` are retired from `shared/`, the kit, the
+Codex allowlist and `MANIFEST.json`; the manifest now drops entries whose file no longer
+exists. `tests/test_task_boundary.py` covers the `status:ready` refusal, the claim file with its
+allowed paths, the evidence SHA check, the failed-check and dirty-tree stops and `--stopped`.
+Codex native copies of the two skills are allowlisted as a sprint 3 and 4 non-goal of #46.
 
 ## 12 October 2026 — Claude Code mapping added
 

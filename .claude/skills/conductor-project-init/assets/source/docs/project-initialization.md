@@ -132,6 +132,29 @@ previous pin. The record keeps the history under `migrations`. Rollback uses the
 migration's transaction. Personal and global adapters are moved by hand under the same
 decision. The full procedure is [shared/workflows/migration.md](../shared/workflows/migration.md).
 
+## Adapter profiles: always-on text outside Git
+
+Some runtimes read instruction text that is not a repository file, such as a Claude Code
+project's **Project instructions** field. An adapter profile generates that text from the
+adoption record instead of a source tree, so it needs no generated skill and no pinned
+source checkout: only `.conductor/adoption.json`, the facts that `PROJECT.md` shows, and the
+pinned policy file inside the project. The first profile is `claude-code-projects`:
+
+```sh
+python3 scripts/conductor_init.py generate --profile claude-code-projects --target /approved/project
+python3 scripts/conductor_init.py check --profile claude-code-projects --target /approved/project
+```
+
+`generate --profile` writes the filled text and an owner checklist under
+`.conductor/adapters/<profile>/`, appends the profile's three always-on lines to the native
+instruction file's managed section, and records the text's SHA-256, its inputs and a
+`discovery` field under `adapters.<profile>` in the adoption record; `--apply` writes, and a
+rerun is an exact no-op. `check --profile` regenerates and names every mismatch between the
+record, the files on disk and the managed section. Inputs the facts do not hold
+(`--default-branch`, `--max-parallel-threads`) have defaults, are recorded, and are compared
+by `check`. The procedure and the owner steps are in the Claude Code kit's
+[CLOUD-SETUP.md](../assistants/claude-code/CLOUD-SETUP.md#generating-the-project-instructions-the-claude-code-projects-profile).
+
 ## Reruns, rollback and limitations
 
 Identical reruns are exact no-ops. Missing essential facts or unsupported capabilities
@@ -181,5 +204,12 @@ Every suite builds its fixture from this package's own manifest-bound files at t
 current `HEAD`, so the packaging check must be current and no historical commit needs to
 be reachable. The suites use disposable software/analytics projects and cover both
 stages, preservation, repeatability, trust/path boundaries, lifecycle/ownership, the
-`shared/`-only snapshot, the recorded policy digest, migration and rollback. Tests are not
-installed into generated projects.
+`shared/`-only snapshot, the recorded policy digest, migration and rollback. The
+`claude-code-projects` tests build a fixture from this repository's own adoption record
+and compare the four outputs with `tests/golden/claude-code-projects/`; regenerate that
+fixture with `python3 tests/test_conductor_init_projects.py --write-golden` as a reviewed
+change when the pin or the template changes. Tests are not installed into generated
+projects.
+
+See the [validation record](initializer-validation.md) for actual test results and the
+independent forward evaluation's scope and limitations.

@@ -10,6 +10,7 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 import tempfile
+import textwrap
 import uuid
 
 
@@ -36,6 +37,128 @@ DEFAULT_PROFILE = "claude-code"
 LEGACY_ASSISTANT = "codex"
 # The pinned snapshot is the policy tree only: the common workflow and the files it links.
 SNAPSHOT_PREFIX = "shared/"
+
+# Adapter profiles generate always-on instruction text for a runtime from an existing
+# adoption record. They need no generated skill and no source tree: PROJECT.md facts,
+# .conductor/adoption.json and the pinned policy file inside the project are the inputs.
+ADAPTER_DIR = ".conductor/adapters"
+ADAPTER_PROFILES = {
+    "claude-code-projects": {
+        "label": "Claude Code Projects", "native_profile": "claude-code",
+        "instructions_limit": 16000,
+        "instructions": "project-instructions.md", "checklist": "OWNER-CHECKLIST.md",
+        "boundary_skills": ("task-start", "task-finish"),
+        "backlog_variable": "CONDUCTOR_BACKLOG_REVIEW_ISSUE",
+    },
+}
+ADAPTER_DEFAULTS = {"default_branch": "main", "max_parallel_threads": 2}
+
+# Source of the Claude Code Projects project-instructions text. The kit copy
+# assistants/claude-code/PROJECT-INSTRUCTIONS.template.md is generated from this constant
+# by tests/package_conductor_init.py; edit it here.
+PROJECT_INSTRUCTIONS_TEMPLATE = """\
+This project is {{PROJECT_NAME}}: {{ONE_LINE_GOAL}}. Work happens in {{REPOSITORY}} and the task
+records at {{TASK_RECORDS_URL}}. Shared practice is the pinned policy at
+`{{POLICY_SNAPSHOT_PATH}}` (SHA-256 `{{POLICY_SHA256}}`) inside the clone, plus the repository's
+`AGENTS.md` and `PROJECT.md`. Read them before dependent work; if the snapshot is missing or its
+digest differs, say so in your first message and stop.
+
+Roles
+
+- The coordinator is the Planner: it files and grills task records and proposes threads. A
+  thread is the Implementer of exactly one task. A thread asked to review a pull request is
+  the Reviewer and changes nothing. The owner alone files, readies and merges.
+
+Tasks and ownership
+
+- Every thread starts from one labelled task record that carries `status:ready`. If no record
+  exists for what you were asked, propose the title, the problem in one or two sentences
+  and the open record it belongs to, then wait; do not file it. The owner files work
+  related to an open record as a sub-issue of that record, never as a separate issue; a
+  parent that only holds sub-issues is a tracking record. If the record is not ready, say
+  so and stop.
+- Before changing anything, record the claim on the task record: this project, the thread
+  reference, the time and your role. Do not treat labels or a note as an exclusive lock.
+- Take exactly the task you were given. Anything found mid-task is proposed and left as a
+  comment on the record it belongs to.
+- Each task carries exactly one priority and exactly one category before it is worked.
+
+Task boundaries
+
+- Start with `/task-start #N` when that skill is in your skill list. Without it, do the same
+  by hand: refuse without `status:ready` on #N and name the missing Ready fact; post the claim
+  comment on #N (runtime, thread reference, time, role) before changing anything; branch from
+  `{{DEFAULT_BRANCH}}`; write `.git/conductor-local/claim.json` with the task number, the
+  branch and the allowed paths copied from the record, and stay inside those paths.
+- Finish with `/task-finish`, or `/task-finish --stopped` when blocked. Without the skill:
+  run the verification contract below on the exact head and write
+  `.git/conductor-local/verification.json` with the tested SHAs; open or update the pull
+  request with `Closes #N` and the ledger; update the checkpoint with branch, head, task and
+  next action; post the milestone on #N; list anything found mid-task under "Found and left"
+  on the record. When stopping, post the blocker and the next step and open no pull request.
+
+Branches and pull requests
+
+- Branch from `{{DEFAULT_BRANCH}}`. One branch and one pull request per thread, closing exactly
+  the task it names with `Closes #N`.
+- Open the pull request only when the task's acceptance is met and the verification below has
+  run on the exact head; fill the repository's pull request template, including the
+  verification table with tested SHAs.
+- Never merge, never mark a draft ready, never approve, force-push, rewrite history, change
+  CI configuration, or push to `{{DEFAULT_BRANCH}}`. Merge is the owner's gate. Commit and
+  push work in progress on long tasks; a resumed sandbox can lose uncommitted changes.
+
+Verification before done
+
+- Run, from the repository root: {{VERIFICATION_COMMANDS}}. Paste the result lines and the
+  tested SHA in your final message and in the pull request.
+- A claim without the recorded command is not verification. Do not infer commands from another
+  repository or from memory.
+
+When something is missing
+
+- If you cannot reach a repository, file, secret, service, connector, or the pinned policy, say
+  exactly what is missing in your first message and stop. Do not substitute, mock, or guess.
+- Pause for the owner before any deployment, spending, credential or access change,
+  publication outside GitHub, or destructive action.
+
+Checkpoints and memory
+
+- Before ending, or when context runs low, update `{{CHECKPOINT_PATH}}` with head SHA, checks
+  run, decisions, blocker, and next action, and post the milestone on the task record.
+- Decisions go to the task record or the repository's decision records; pitfalls go to the
+  repository's docs or `CLAUDE.md`. Project memory may hold reminders of them, but it is not
+  the record and can be pruned without loss.
+
+Coordination
+
+- Propose threads and wait for the owner's go-ahead before starting them, and run at most
+  {{MAX_PARALLEL_THREADS}} threads at a time. Parallel threads need distinct task records and
+  separate branches, and a conflict review for files, APIs, migrations, services, or data they
+  share.
+- Post when a thread finishes, is blocked, or needs the owner; do not narrate each step.
+"""
+
+PROJECT_INSTRUCTIONS_HEADING = """\
+# Project instructions template for Claude Code Projects
+
+Source template for the **Project settings > Memory > Project instructions** field of a Claude
+Code project (beta). Generated copy: the text below is `PROJECT_INSTRUCTIONS_TEMPLATE` in
+`shared/skills/conductor-init/scripts/conductor_init.py`, and `tests/package_conductor_init.py
+--write` regenerates this file; edit the generator, not this file. Do not fill it by hand: run
+`conductor_init.py generate --profile claude-code-projects --target <repo>` in an adopted
+repository. That fills every `{{PLACEHOLDER}}` from `PROJECT.md`, `.conductor/adoption.json` and
+the pinned policy, writes the text to `.conductor/adapters/claude-code-projects/` with an owner
+checklist, records the text's SHA-256 in `.conductor/adoption.json`, and refuses a text over the
+field's 16,000 characters. The field is not in Git: `check --profile claude-code-projects`
+compares the recorded digest with the generated text and the file on disk and names what
+differs. Repository rules stay in that repository's `CLAUDE.md`; shared policy stays the pinned
+snapshot named below. Project memory is notes Claude writes for itself, never policy.
+
+---
+
+"""
+
 
 
 def profile_for(capabilities):
@@ -479,16 +602,241 @@ def project_record(facts):
     return "\n".join(lines)
 
 
-def native_adapter(spec, previous):
-    """Thin native instruction section; project facts stay in the shared AGENTS.md."""
+def native_adapter(spec, previous, always_on=None):
+    """Thin native instruction section; project facts stay in the shared AGENTS.md.
+
+    always_on: the lines an adapter profile adds to this file (see always_on_lines)."""
     text = (previous or b"").decode()
     current = block(previous)
     outside = text.replace(current.decode(), "") if current else text
     imports = "" if re.search(r"^@AGENTS\.md\s*$", outside, re.M) else "@AGENTS.md\n\n"
-    return (f"# Conductor {spec['label']} adapter\n\n" + imports +
+    body = (f"# Conductor {spec['label']} adapter\n\n" + imports +
             "Project facts, policy binding and verification contract are in the imported `AGENTS.md` and in `PROJECT.md`; nothing is restated here.\n"
             f"Native skills: `{native_root(spec)}` for setup and `{spec['native_skills']}/project-verification` for recorded checks.\n"
             "Explicit task limits in `AGENTS.md` or the checkpoint take precedence over inherited commit, push, worktree or delegation defaults.")
+    if always_on:
+        body += "\n\n" + "\n".join(always_on)
+    return body
+
+
+def always_on_lines(sha, policy_sha256, default_branch):
+    """The three lines every session of an adapter profile reads; task-start prints the same."""
+    return (
+        f"Pinned policy: `{policy_path(sha)}` (SHA-256 `{policy_sha256}`); `PROJECT.md` holds the facts and the verification contract.",
+        "Every task starts with `/task-start #N` on a record carrying `status:ready` and ends with `/task-finish`; between them your own practice runs.",
+        f"Never merge, mark a draft ready, approve, force-push, change CI or push to `{default_branch}`; verification is the recorded commands run on the exact head, nothing inferred.",
+    )
+
+
+def policy_path(sha):
+    return ".conductor/policy/" + sha + "/shared/WORKFLOW.md"
+
+
+def recorded_always_on(adoption, spec):
+    """always_on lines for a native profile when the adoption record holds its adapter profile."""
+    for name, profile in ADAPTER_PROFILES.items():
+        entry = (adoption or {}).get("adapters", {}).get(name)
+        if entry and profile["native_profile"] == spec["name"]:
+            inputs = entry.get("inputs", {})
+            return always_on_lines(adoption["policy_commit"], entry["policy_sha256"],
+                                   inputs.get("default_branch", ADAPTER_DEFAULTS["default_branch"]))
+    return None
+
+
+def adoption_policy_sha256(target, adoption):
+    """Digest of the pinned policy file inside the project, cross-checked with the record."""
+    sha = adoption["policy_commit"]
+    data = read(target, policy_path(sha))
+    if data is None:
+        raise InitError(f"Pinned policy file missing: {policy_path(sha)}")
+    actual = digest(data)
+    recorded = adoption.get("policy_sha256") or adoption.get("files", {}).get(policy_path(sha))
+    if recorded and recorded != actual:
+        raise InitError(f"Pinned policy file differs from the adoption record: {policy_path(sha)}")
+    return actual
+
+
+def adapter_inputs(options):
+    inputs = dict(ADAPTER_DEFAULTS)
+    for key, value in (options or {}).items():
+        if key not in inputs:
+            raise InitError(f"Unknown adapter input: {key}")
+        if value is not None:
+            inputs[key] = value
+    if not re.fullmatch(r"[A-Za-z0-9._/-]+", str(inputs["default_branch"])):
+        raise InitError("default_branch must be a plain branch name")
+    if not isinstance(inputs["max_parallel_threads"], int) or inputs["max_parallel_threads"] < 1:
+        raise InitError("max_parallel_threads must be a positive integer")
+    return inputs
+
+
+def project_instructions(facts, sha, policy_sha256, inputs):
+    """The filled Claude Code Projects instructions text."""
+    commands = "; ".join(
+        f"`{check['command']}` from `{check['cwd']}` (expect: {check['expected']})"
+        for check in facts["verification"])
+    values = {
+        "PROJECT_NAME": facts["name"], "ONE_LINE_GOAL": facts["purpose"].rstrip("."),
+        "REPOSITORY": facts["repository"], "TASK_RECORDS_URL": ", ".join(facts["task_records"]),
+        "POLICY_SNAPSHOT_PATH": policy_path(sha), "POLICY_SHA256": policy_sha256,
+        "DEFAULT_BRANCH": inputs["default_branch"], "VERIFICATION_COMMANDS": commands,
+        "CHECKPOINT_PATH": facts["checkpoint"], "MAX_PARALLEL_THREADS": str(inputs["max_parallel_threads"]),
+    }
+    text = PROJECT_INSTRUCTIONS_TEMPLATE
+    for key, value in values.items():
+        text = text.replace("{{" + key + "}}", str(value))
+    left = re.findall(r"{{[A-Z_]+}}", text)
+    if left:
+        raise InitError("Unfilled project-instructions placeholders: " + ", ".join(sorted(set(left))))
+    return rewrap(text)
+
+
+def rewrap(text, width=96):
+    """Re-flow paragraphs and bullets after substitution so long values do not leave ragged lines."""
+    blocks = []
+    for paragraph in text.strip("\n").split("\n\n"):
+        items = []
+        for line in paragraph.splitlines():
+            if line.startswith("- ") or not items:
+                items.append(line)
+            else:
+                items[-1] += " " + line.strip()
+        wrapped = []
+        for item in items:
+            bullet = item.startswith("- ")
+            wrapped.append(textwrap.fill(item, width, subsequent_indent="  " if bullet else "",
+                                         break_long_words=False, break_on_hyphens=False))
+        blocks.append("\n".join(wrapped))
+    return "\n\n".join(blocks) + "\n"
+
+
+def owner_checklist(profile, facts, sha, policy_sha256, inputs, instructions_sha256, length):
+    """One-time owner steps the generator cannot do; each is recorded on the task record."""
+    paths = adapter_paths(profile)
+    skills = " and ".join(f"`{name}`" for name in profile["boundary_skills"])
+    checklist = "\n".join(f"- [ ] {item}" for item in (
+        f"Paste [{paths['instructions']}]({paths['instructions']}) into **Project settings > Memory > Project instructions** "
+        f"({length} of {profile['instructions_limit']} characters) and record its SHA-256 `{instructions_sha256}` on the task record.",
+        f"Enable the boundary skills {skills} on the claude.ai account from the kit's `global/skills/` "
+        "and record the SHA-256 of each uploaded `SKILL.md` from the kit `SHA256SUMS`; repository skills do not load in a thread.",
+        "Create the Backlog issue, pin it, and keep it the only queue.",
+        f"Set the repository variable `{profile['backlog_variable']}` to that issue's number so the backlog review names it.",
+        f"On `{inputs['default_branch']}`, require a pull request, turn **Do not allow bypassing** on, keep approvals off, "
+        "and require the `verify` and `linked-task` checks; merging stays the owner's own action.",
+        "From one new thread, have it quote its loaded memory files and its skill list, confirm "
+        f"`{policy_path(sha)}` resolves with SHA-256 `{policy_sha256}`, run "
+        f"`conductor_init.py check --profile {profile['name']} --target .`, and record the result and date under "
+        f"`adapters.{profile['name']}.discovery` in `.conductor/adoption.json`.",
+    ))
+    return (f"# Owner checklist: {profile['label']} adapter for {facts['name']}\n\n"
+            f"Generated for policy commit `{sha}`. Each step needs the owner's account or repository settings; "
+            "a thread never changes them. Record the evidence for each on the task record.\n\n" + checklist + "\n")
+
+
+def adapter_paths(profile):
+    base = ADAPTER_DIR + "/" + profile["name"]
+    return {"instructions": base + "/" + profile["instructions"], "checklist": base + "/" + profile["checklist"]}
+
+
+def adapter_profile(name):
+    spec = ADAPTER_PROFILES.get(name)
+    if not spec:
+        raise InitError("Unknown adapter profile; supported: " + ", ".join(sorted(ADAPTER_PROFILES)))
+    return dict(spec, name=name)
+
+
+def adapter_outputs(target, profile, adoption, inputs, strict=True):
+    """Everything the adapter profile emits for a target, and its record entry.
+
+    strict: refuse when a managed section was edited; a check reports it instead."""
+    native = dict(PROFILES[profile["native_profile"]], name=profile["native_profile"])
+    if native["name"] not in adoption.get("assistants", []):
+        raise InitError(f"{native['label']} has not onboarded this project; run generate and onboard first")
+    if strict:
+        managed_blocks_intact(target, adoption)
+    facts = adoption["facts"]
+    blockers = facts_blockers(target, facts)
+    if blockers:
+        raise InitError("; ".join(blockers))
+    sha = adoption["policy_commit"]
+    policy_sha256 = adoption_policy_sha256(target, adoption)
+    text = project_instructions(facts, sha, policy_sha256, inputs)
+    if len(text) > profile["instructions_limit"]:
+        raise InitError(f"Project instructions would be {len(text)} characters, over the {profile['instructions_limit']} field limit; "
+                        "shorten the facts or drop a rule with the owner")
+    paths = adapter_paths(profile)
+    instructions = text.encode()
+    checklist = owner_checklist(profile, facts, sha, policy_sha256, inputs, digest(instructions), len(text)).encode()
+    outputs = {paths["instructions"]: instructions, paths["checklist"]: checklist}
+    lines = always_on_lines(sha, policy_sha256, inputs["default_branch"])
+    outputs[native["native_instructions"]], section = append_block(
+        read(target, native["native_instructions"]), native_adapter(native, read(target, native["native_instructions"]), lines))
+    entry = {"profile": profile["name"], "policy_commit": sha, "policy_sha256": policy_sha256,
+             "inputs": inputs, "project_instructions": paths["instructions"], "project_instructions_sha256": digest(instructions),
+             "project_instructions_chars": len(text), "owner_checklist": paths["checklist"],
+             "owner_checklist_sha256": digest(checklist), "always_on_lines": list(lines),
+             "discovery": (adoption.get("adapters", {}).get(profile["name"], {}) or {}).get(
+                 "discovery", "unverified; run the owner checklist's discovery step from a thread")}
+    return outputs, entry, {native["native_instructions"]: digest(section)}
+
+
+def generate_adapter(target, name, options=None, apply=False):
+    """Emit an adapter profile's always-on text, owner checklist and record entry."""
+    target = Path(target)
+    profile = adapter_profile(name)
+    inputs = adapter_inputs(options)
+    if not read(target, ".conductor/adoption.json"):
+        return result("blocked", blockers=["No adoption record; onboard the project before generating an adapter"])
+    adoption = load(target, ".conductor/adoption.json")
+    outputs, entry, managed = adapter_outputs(target, profile, adoption, inputs)
+    hashes = dict(adoption.get("files", {}))
+    owned_outputs(target, {key: value for key, value in outputs.items() if key not in managed}, hashes)
+    updated = dict(adoption)
+    updated["adapters"] = dict(adoption.get("adapters", {}), **{profile["name"]: entry})
+    updated["managed_blocks"] = dict(adoption.get("managed_blocks", {}), **managed)
+    files = dict(hashes)
+    files.update({key: digest(value) for key, value in outputs.items() if key not in managed})
+    updated["files"] = files
+    outputs[".conductor/adoption.json"] = encoded(updated)
+    return apply_plan(target, outputs, apply)
+
+
+def check_adapter(target, name, options=None):
+    """Report every way the recorded adapter differs from what the project would generate now."""
+    target = Path(target)
+    profile = adapter_profile(name)
+    if not read(target, ".conductor/adoption.json"):
+        return result("blocked", blockers=["No adoption record"])
+    adoption = load(target, ".conductor/adoption.json")
+    entry = adoption.get("adapters", {}).get(profile["name"])
+    if not entry:
+        return result("blocked", blockers=[f"Adapter {profile['name']} is not recorded in .conductor/adoption.json; run generate --profile {profile['name']}"])
+    inputs = adapter_inputs(dict(entry.get("inputs", {}), **{k: v for k, v in (options or {}).items() if v is not None}))
+    outputs, expected, managed = adapter_outputs(target, profile, adoption, inputs, strict=False)
+    mismatches = []
+    for key in ("project_instructions_sha256", "owner_checklist_sha256", "policy_sha256", "project_instructions_chars", "inputs"):
+        if entry.get(key) != expected[key]:
+            mismatches.append(f"recorded {key} {entry.get(key)!r} differs from the generated value {expected[key]!r}")
+    for key in ("project_instructions", "owner_checklist"):
+        path = entry.get(key) or expected[key]
+        data = read(target, path)
+        if data is None:
+            mismatches.append(f"{key} file missing: {path}")
+        elif digest(data) != entry.get(key + "_sha256"):
+            mismatches.append(f"{key} file {path} (SHA-256 {digest(data)}) differs from the recorded digest {entry.get(key + '_sha256')}")
+    for key, expected_digest in managed.items():
+        current = block(read(target, key))
+        recorded = adoption.get("managed_blocks", {}).get(key)
+        if current is None:
+            mismatches.append(f"{key} has no managed section")
+        elif digest(current) != expected_digest:
+            mismatches.append(f"{key} managed section differs from the generated always-on lines")
+        elif recorded != expected_digest:
+            mismatches.append(f"{key} managed section digest is not the recorded one")
+    if mismatches:
+        return result("blocked", blockers=mismatches, adapter=profile["name"])
+    return result("verified", adapter=profile["name"], project_instructions_sha256=expected["project_instructions_sha256"],
+                  discovery=entry.get("discovery"))
 
 
 def adapter_body(sha, source_files, facts):
@@ -591,7 +939,7 @@ def onboard(target, facts, skill_root=None, apply=False):
     adapters = [("AGENTS.md", body), ("PROJECT.md", project)]
     if spec["native_instructions"] != "AGENTS.md":
         adapters.append((spec["native_instructions"],
-                         native_adapter(spec, read(target, spec["native_instructions"]))))
+                         native_adapter(spec, read(target, spec["native_instructions"]), recorded_always_on(old, spec))))
     outputs = {}
     managed = {}
     for key, text in adapters:
@@ -781,11 +1129,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="operation", required=True)
     first = sub.add_parser("generate")
-    first.add_argument("--source", type=Path, required=True)
-    first.add_argument("--source-sha", required=True)
-    first.add_argument("--capabilities", type=Path, required=True)
+    first.add_argument("--source", type=Path, help="Pinned Conductor source (stage one; not used with --profile)")
+    first.add_argument("--source-sha", help="Full commit SHA of the source (stage one)")
+    first.add_argument("--capabilities", type=Path, help="Verified native capability record (stage one)")
     first.add_argument("--manifest-sha")
     first.add_argument("--update", action="store_true", help="Reviewed generator update retaining the existing policy and capability pin")
+    fifth = sub.add_parser("check", help="Compare a recorded adapter profile with what the project generates now")
+    for command in (first, fifth):
+        command.add_argument("--profile", choices=sorted(ADAPTER_PROFILES),
+                             help="Adapter profile generated from the adoption record instead of a source tree")
+        command.add_argument("--default-branch", help="Branch threads start from (adapter profiles; default main)")
+        command.add_argument("--max-parallel-threads", type=int, help="Thread limit written into the instructions (adapter profiles; default 2)")
     second = sub.add_parser("onboard")
     second.add_argument("--facts", type=Path, required=True)
     second.add_argument("--skill-root", type=Path, help="Generated skill folder when more than one assistant has generated one")
@@ -796,14 +1150,25 @@ def main():
     fourth.add_argument("--source-sha", required=True)
     fourth.add_argument("--manifest-sha")
     fourth.add_argument("--skill-root", type=Path, help="Generated skill folder when more than one assistant has generated one")
-    for command in (first, second, third, fourth):
+    for command in (first, second, third, fourth, fifth):
         command.add_argument("--target", type=Path, required=True)
-        command.add_argument("--apply", action="store_true")
+        if command is not fifth:
+            command.add_argument("--apply", action="store_true")
     args = parser.parse_args()
     try:
-        if args.operation == "generate":
+        if args.operation == "generate" and args.profile:
+            response = generate_adapter(args.target, args.profile, {
+                "default_branch": args.default_branch, "max_parallel_threads": args.max_parallel_threads}, args.apply)
+        elif args.operation == "generate":
+            if not (args.source and args.source_sha and args.capabilities):
+                parser.error("generate needs --source, --source-sha and --capabilities, or --profile")
             response = generate(args.target, args.source, args.source_sha,
                                 json.loads(args.capabilities.read_text()), args.apply, args.manifest_sha, args.update)
+        elif args.operation == "check":
+            if not args.profile:
+                parser.error("check needs --profile")
+            response = check_adapter(args.target, args.profile, {
+                "default_branch": args.default_branch, "max_parallel_threads": args.max_parallel_threads})
         elif args.operation == "onboard":
             response = onboard(args.target, json.loads(args.facts.read_text()), args.skill_root, apply=args.apply)
         elif args.operation == "migrate":

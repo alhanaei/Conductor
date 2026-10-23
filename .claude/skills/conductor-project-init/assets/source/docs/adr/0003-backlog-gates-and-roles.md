@@ -1,6 +1,8 @@
 # ADR 0003: Three human gates, session roles and a single backlog queue
 
 - Status: Accepted (owner decision of 2026-10-18, recorded on #37)
+- Amended by: ADR 0004 (2026-10-22): Claude Code Projects mode resumed; the comment
+  amendments of #37 (rounds 3 to 5, roles, identity, Projects round, merge gate) recorded.
 - Date: 2026-10-18
 - Deciders: repository owner
 - Task record: #37

@@ -8,7 +8,7 @@
 - Lifecycle: Active
 - Authoritative tasks: [https://github.com/alhanaei/Conductor/issues](https://github.com/alhanaei/Conductor/issues), [https://github.com/alhanaei/Conductor/pulls](https://github.com/alhanaei/Conductor/pulls), [docs/contributing.md](docs/contributing.md)
 - Checkpoint: [.conductor/HANDOFF.md](.conductor/HANDOFF.md)
-- Architecture: "README.md (Structure section): shared/ holds canonical policy, workflows, skills, techniques, patterns, harness and templates; codex/ and assistants/claude-code/ hold thin assistant kits with generated copies of the initializer; docs/ holds usage, validation, contributing and release notes; tests/ holds the initializer test suites and packaging script."
+- Architecture: "README.md (Structure section): shared/ holds canonical policy, workflows, skills, techniques, patterns, harness and templates; assistants/claude-code/ holds the one distributed kit with generated copies of the initializer and the task boundary skills; docs/ holds usage, validation, contributing and release notes; tests/ holds the initializer test suites and packaging script."
 - Data Sources: "unknown"
 - Storage: "unknown"
 
