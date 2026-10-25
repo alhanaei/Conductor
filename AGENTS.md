@@ -119,7 +119,10 @@ labelled together with one comment naming the round.
 
 ## Task finish
 
-1. Commit everything that belongs to the task; push work in progress on long tasks.
+1. Commit everything that belongs to the task; push work in progress to the branch on long
+   tasks, never to a pull request. Open the pull request once, after the verification
+   contract passes locally: every push to an open pull request runs every check, billed by
+   the minute, so push again only for a review finding or a red check.
 2. Run the verification contract below on the exact head and record command, cwd, result
    and tested SHA. A claim without the recorded command is not verification.
 3. Open the pull request against the integration branch from the repository template:
