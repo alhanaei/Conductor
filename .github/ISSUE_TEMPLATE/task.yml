@@ -1,5 +1,5 @@
-# Project-owned template. Copy to .github/ISSUE_TEMPLATE/task.yml and replace the
-# priority and category options with the project's own scale and label names.
+# For a project created from this template, replace the priority, category and
+# assistant options with the project's own scale and label names.
 name: Task
 description: A bounded unit of work that can become Ready under the shared workflow.
 title: "[task] "
