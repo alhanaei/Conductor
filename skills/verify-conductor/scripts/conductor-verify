@@ -1,0 +1,306 @@
+#!/usr/bin/env bash
+# Verification scaffolding for Conductor. Not part of the policy and not run by CI.
+# CI remains .github/workflows/ci.yml. This helper keeps the actionlint binary and
+# any detection worktree out of the git worktree, and leaves proof files in
+# /tmp/conductor-verify-evidence/$CONDUCTOR_VERIFY_RUN_ID/.
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+DEFAULT_ROOT=$(cd "$SCRIPT_DIR/../../.." && pwd)
+
+usage() {
+  cat <<'EOF'
+Usage: conductor-verify <launch|doctor|drive|cleanup|evidence-path> [feature]
+
+Environment:
+  CONDUCTOR_VERIFY_RUN_ID   required. 1-64 characters: letters, digits, '.', '_', '-'.
+                            Must not contain '..'.
+  CONDUCTOR_VERIFY_ROOT     optional. Defaults to the repository that contains this script.
+
+The only drive feature this helper runs is verify-contract. Other features are
+driven by the commands in skills/verify-conductor/features/.
+EOF
+}
+
+if [[ $# -lt 1 || "$1" == "-h" || "$1" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+COMMAND=$1
+FEATURE=${2:-}
+
+RUN_ID=${CONDUCTOR_VERIFY_RUN_ID:-}
+if [[ ! "$RUN_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] || [[ "$RUN_ID" == *..* ]]; then
+  echo "conductor-verify: set CONDUCTOR_VERIFY_RUN_ID to 1-64 characters of letters, digits, '.', '_' or '-', not containing '..'" >&2
+  exit 2
+fi
+
+ROOT=${CONDUCTOR_VERIFY_ROOT:-$DEFAULT_ROOT}
+ROOT=$(cd "$ROOT" && pwd)
+SCRATCH=/tmp/conductor-verify-scratch/$RUN_ID
+EVIDENCE=/tmp/conductor-verify-evidence/$RUN_ID
+ACTIONLINT=$SCRATCH/actionlint
+WT=$SCRATCH/whitespace-worktree
+
+case "$SCRATCH" in
+  /tmp/conductor-verify-scratch/*) ;;
+  *) echo "conductor-verify: scratch path refused" >&2; exit 2 ;;
+esac
+case "$EVIDENCE" in
+  /tmp/conductor-verify-evidence/*) ;;
+  *) echo "conductor-verify: evidence path refused" >&2; exit 2 ;;
+esac
+
+remove_worktree() {
+  if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git -C "$ROOT" worktree remove --force "$WT" >/dev/null 2>&1 || true
+    git -C "$ROOT" worktree prune >/dev/null 2>&1 || true
+  fi
+  rm -rf "$WT"
+}
+
+cmd_launch() {
+  mkdir -p "$SCRATCH" "$EVIDENCE"
+  local log="$EVIDENCE/launch.txt"
+  {
+    echo "root: $ROOT"
+    echo "scratch: $SCRATCH"
+    echo "evidence: $EVIDENCE"
+    echo "head: $(git -C "$ROOT" rev-parse HEAD)"
+  } > "$log"
+  if [[ -x "$ACTIONLINT" ]] && [[ "$("$ACTIONLINT" -version | head -n 1)" == "1.7.7" ]]; then
+    echo "actionlint: already 1.7.7" >> "$log"
+  else
+    bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7 "$SCRATCH" >> "$log" 2>&1
+  fi
+  local ver
+  ver=$("$ACTIONLINT" -version | head -n 1)
+  if [[ "$ver" != "1.7.7" ]]; then
+    echo "launch: actionlint reported '$ver', expected 1.7.7" | tee -a "$log" >&2
+    return 1
+  fi
+  {
+    echo "ready: actionlint 1.7.7"
+    echo "head: $(git -C "$ROOT" rev-parse HEAD)"
+  } | tee "$SCRATCH/ready" | tee -a "$log"
+  echo "evidence: $EVIDENCE"
+}
+
+cmd_doctor() {
+  mkdir -p "$EVIDENCE"
+  local report="$EVIDENCE/doctor.txt"
+  : > "$report"
+  local ok=0
+  note() { printf '%s\n' "$1" | tee -a "$report"; }
+
+  if ! git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    note "doctor: not a git work tree: $ROOT"
+    return 1
+  fi
+  local sha
+  sha=$(git -C "$ROOT" rev-parse HEAD)
+  printf '%s\n' "$sha" > "$EVIDENCE/tested-sha.txt"
+  note "head: $sha"
+  note "root: $ROOT"
+
+  if [[ ! -f "$ROOT/AGENTS.md" ]] || ! grep -F -q 'Name: Conductor' "$ROOT/AGENTS.md"; then
+    note "doctor: AGENTS.md is not the Conductor policy page"
+    ok=1
+  fi
+  if [[ ! -f "$ROOT/AGENTS.md" ]] || ! grep -F -q 'Documentation only; no application runtime.' "$ROOT/AGENTS.md"; then
+    note "doctor: AGENTS.md does not state there is no application runtime"
+    ok=1
+  fi
+  if [[ ! -f "$ROOT/CLAUDE.md" ]] || [[ "$(cat "$ROOT/CLAUDE.md")" != "@AGENTS.md" ]]; then
+    note "doctor: CLAUDE.md is not @AGENTS.md"
+    ok=1
+  fi
+
+  local f
+  for f in \
+    .github/workflows/ci.yml \
+    .github/workflows/pr-policy.yml \
+    .github/workflows/backlog-review.yml \
+    skills/task-start/SKILL.md \
+    skills/task-finish/SKILL.md \
+    .github/ISSUE_TEMPLATE/task.yml \
+    .github/pull_request_template.md
+  do
+    if [[ ! -f "$ROOT/$f" ]]; then
+      note "doctor: missing $f"
+      ok=1
+    fi
+  done
+
+  if [[ -f "$ROOT/.github/workflows/ci.yml" ]]; then
+    if ! grep -F -q 'git diff --check' "$ROOT/.github/workflows/ci.yml"; then
+      note "doctor: ci.yml does not run git diff --check"
+      ok=1
+    fi
+    if ! grep -F -q 'actionlint/v1.7.7' "$ROOT/.github/workflows/ci.yml"; then
+      note "doctor: ci.yml does not pin actionlint 1.7.7"
+      ok=1
+    fi
+    if ! grep -F -q './actionlint -color' "$ROOT/.github/workflows/ci.yml"; then
+      note "doctor: ci.yml does not run actionlint -color"
+      ok=1
+    fi
+  fi
+
+  if [[ ! -x "$ACTIONLINT" ]]; then
+    note "doctor: actionlint missing; run launch"
+    ok=1
+  else
+    local ver
+    ver=$("$ACTIONLINT" -version | head -n 1)
+    note "actionlint: $ver"
+    if [[ "$ver" != "1.7.7" ]]; then
+      note "doctor: actionlint is not 1.7.7"
+      ok=1
+    fi
+  fi
+  if [[ ! -f "$SCRATCH/ready" ]]; then
+    note "doctor: launch ready file missing"
+    ok=1
+  fi
+
+  local porcelain
+  porcelain=$(git -C "$ROOT" status --porcelain)
+  if [[ -n "$porcelain" ]]; then
+    note "worktree: dirty"
+    printf '%s\n' "$porcelain" >> "$report"
+  else
+    note "worktree: clean"
+  fi
+
+  if [[ "$ok" -eq 0 ]]; then
+    note "doctor: ok"
+    return 0
+  fi
+  note "doctor: fail"
+  return 1
+}
+
+run_logged() {
+  local name=$1
+  shift
+  set +e
+  ( cd "$ROOT" && "$@" ) >"$EVIDENCE/$name.stdout" 2>"$EVIDENCE/$name.stderr"
+  RUN_LOGGED_CODE=$?
+  set -e
+  printf '%s\n' "$RUN_LOGGED_CODE" > "$EVIDENCE/$name.exit"
+  cat "$EVIDENCE/$name.stdout"
+  if [[ -s "$EVIDENCE/$name.stderr" ]]; then
+    cat "$EVIDENCE/$name.stderr" >&2
+  fi
+}
+
+detect_whitespace() {
+  remove_worktree
+  if ! git -C "$ROOT" worktree add --detach "$WT" HEAD >/dev/null; then
+    echo "verify-whitespace-detect: could not add a worktree at $WT" >&2
+    remove_worktree
+    return 1
+  fi
+  if ! printf 'verify-conductor probe \n' >> "$WT/README.md"; then
+    echo "verify-whitespace-detect: could not append the probe line" >&2
+    remove_worktree
+    return 1
+  fi
+  set +e
+  git -C "$WT" diff --check >"$EVIDENCE/verify-whitespace-detect.stdout" 2>"$EVIDENCE/verify-whitespace-detect.stderr"
+  local code=$?
+  set -e
+  printf '%s\n' "$code" > "$EVIDENCE/verify-whitespace-detect.exit"
+  cat "$EVIDENCE/verify-whitespace-detect.stdout"
+  if [[ -s "$EVIDENCE/verify-whitespace-detect.stderr" ]]; then
+    cat "$EVIDENCE/verify-whitespace-detect.stderr" >&2
+  fi
+  remove_worktree
+  if [[ "$code" -ne 2 ]]; then
+    echo "verify-whitespace-detect: expected exit 2, got $code" >&2
+    return 1
+  fi
+  if ! grep -F -q 'trailing whitespace.' "$EVIDENCE/verify-whitespace-detect.stdout"; then
+    echo "verify-whitespace-detect: expected a trailing whitespace finding" >&2
+    return 1
+  fi
+}
+
+drive_verify_contract() {
+  trap 'remove_worktree' RETURN
+  if ! cmd_doctor; then
+    echo fail > "$EVIDENCE/verify-contract.result"
+    return 1
+  fi
+  if [[ -n "$(git -C "$ROOT" status --porcelain)" ]]; then
+    echo "verify-contract: worktree dirty; refusing the clean-HEAD proof" | tee "$EVIDENCE/verify-contract.result.txt" >&2
+    echo fail > "$EVIDENCE/verify-contract.result"
+    return 1
+  fi
+
+  local failed=0
+  run_logged verify-whitespace git diff --check || true
+  if [[ "$RUN_LOGGED_CODE" -ne 0 ]]; then
+    echo "verify-whitespace: expected exit 0, got $RUN_LOGGED_CODE" >&2
+    failed=1
+  fi
+  if [[ -s "$EVIDENCE/verify-whitespace.stdout" || -s "$EVIDENCE/verify-whitespace.stderr" ]]; then
+    echo "verify-whitespace: expected no output" >&2
+    failed=1
+  fi
+
+  run_logged verify-workflows "$ACTIONLINT" -color || true
+  if [[ "$RUN_LOGGED_CODE" -ne 0 ]]; then
+    echo "verify-workflows: expected exit 0, got $RUN_LOGGED_CODE" >&2
+    failed=1
+  fi
+  if [[ -s "$EVIDENCE/verify-workflows.stdout" || -s "$EVIDENCE/verify-workflows.stderr" ]]; then
+    echo "verify-workflows: expected no output" >&2
+    failed=1
+  fi
+
+  if ! detect_whitespace; then
+    failed=1
+  fi
+
+  if [[ "$failed" -ne 0 ]]; then
+    echo fail > "$EVIDENCE/verify-contract.result"
+    return 1
+  fi
+  echo pass > "$EVIDENCE/verify-contract.result"
+  echo "verify-contract: pass"
+}
+
+cmd_drive() {
+  if [[ "$FEATURE" != "verify-contract" ]]; then
+    echo "conductor-verify: this helper drives verify-contract only. Follow skills/verify-conductor/features/${FEATURE:-<feature>}.md for the others." >&2
+    return 2
+  fi
+  drive_verify_contract
+}
+
+cmd_cleanup() {
+  remove_worktree
+  rm -rf "$SCRATCH"
+  if [[ -d "$SCRATCH" || -d "$WT" ]]; then
+    echo "cleanup: scratch still present at $SCRATCH" >&2
+    return 1
+  fi
+  echo "cleanup: scratch removed"
+  echo "evidence remains at $EVIDENCE"
+}
+
+cmd_evidence_path() {
+  printf '%s\n' "$EVIDENCE"
+}
+
+case "$COMMAND" in
+  launch) cmd_launch ;;
+  doctor) cmd_doctor ;;
+  drive) cmd_drive ;;
+  cleanup) cmd_cleanup ;;
+  evidence-path) cmd_evidence_path ;;
+  *) usage >&2; exit 2 ;;
+esac
