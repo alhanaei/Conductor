@@ -198,7 +198,7 @@ run_logged() {
 
 detect_whitespace() {
   remove_worktree
-  if ! git -C "$ROOT" worktree add --detach "$WT" HEAD >/dev/null; then
+  if ! git -C "$ROOT" worktree add --detach "$WT" HEAD >/dev/null 2>&1; then
     echo "verify-whitespace-detect: could not add a worktree at $WT" >&2
     remove_worktree
     return 1
