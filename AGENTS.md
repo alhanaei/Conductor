@@ -32,7 +32,9 @@ A session holds one role at a time and declares it in its claim comment.
 - Implementer (one thread, one task): claims one Ready record, works on one branch, drives one
   pull request to green and stops there.
 - Reviewer (a separate thread): reads one pull request against its record and reports findings
-  as advisory comments. Never pushes to the branch.
+  as advisory comments. Never pushes to the branch. Runs on a different runtime than the one
+  the Implementer's claim comment names (a Codex or Gemini review of a Claude pull request, a
+  Claude Reviewer thread of a Codex one).
 
 Delegating a bounded piece to a sub-agent or another assistant never transfers ownership or
 the role; the result returns through the delegating session and is verified before it is
@@ -132,7 +134,11 @@ labelled together with one comment naming the round.
    while the checks still run: GitHub refuses to arm it on a pull request that is already
    green, and then only the owner's click can land it. GitHub merges when `verify` and
    `linked-task` are green and the owner never clicks for a sub-issue. In `manual`, stop at
-   the Merge gate.
+   the Merge gate. A record labelled `review:required` (the Planner applies it at filing to
+   every P0, P1 and `kind:security` record; the owner may add or remove it elsewhere) keeps
+   `linked-task` red until the pull request body's Review line reads `Reviewer: <runtime or
+   login>, reviewed SHA: <head SHA>`, written by the Reviewer after reading that head (ADR
+   0007); any other record's review stays advisory.
 5. Post the milestone comment on the record: head SHA, checks, pull request, proposals, and
    anything still unpushed or local before calling it shared. Post it also when context or
    quota runs low, before the session ends. When stopping instead, post the blocker and the
