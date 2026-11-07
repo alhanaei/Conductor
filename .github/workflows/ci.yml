@@ -18,3 +18,5 @@ jobs:
         run: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
       - name: Lint the workflows
         run: ./actionlint -color
+      - name: Test the linked-task checker
+        run: python3 -m unittest discover -s tests -p 'test_*.py'

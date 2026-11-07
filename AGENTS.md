@@ -163,6 +163,7 @@ Run from the repository root on the exact head before any pull request or comple
 | --- | --- | --- |
 | Whitespace and conflict markers | `git diff --check`, `.` | no output, exit 0 |
 | Workflow lint | `actionlint`, `.` (actionlint 1.7.7, as `verify` installs it) | no output, exit 0 |
+| `linked-task` checker tests | `python3 -m unittest discover -s tests -p 'test_*.py'`, `.` | `OK`, exit 0 |
 
 A project created from this template replaces these rows with its own commands; `verify` in
 `.github/workflows/ci.yml` runs the same rows in CI.
