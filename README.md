@@ -5,7 +5,7 @@ coding assistants do the work and one owner keeps three decisions: what gets fil
 ready to build, and what lands on the default branch. Everything an assistant or GitHub reads
 at run time is in this repository; nothing is generated, pinned or copied.
 
-## The sixteen files
+## The eighteen files
 
 | Path | What it is |
 | --- | --- |
@@ -13,13 +13,14 @@ at run time is in this repository; nothing is generated, pinned or copied.
 | `CLAUDE.md` | `@AGENTS.md` |
 | `README.md` | This page: the file list and the adoption steps. |
 | `.gitignore` | Keeps local secrets (`.env`) and editor, OS and Python cache files out of the repository. |
-| `.github/workflows/pr-policy.yml` | The `linked-task` check: a pull request closes one task that carries one priority, one category and `status:ready`; in approval mode `auto` the task's parent is ready too. |
-| `.github/workflows/ci.yml` | The `verify` check: `git diff --check` and `actionlint`. A project with code replaces the steps with its own verification contract. |
+| `.github/workflows/pr-policy.yml` | The `linked-task` check: a pull request closes exactly one open task that carries one priority, one category and `status:ready`, and is neither owner-blocked nor tracking; in approval mode `auto` the task's parent is ready too; a `review:required` task holds the merge until the body records a review of the head. |
+| `.github/workflows/ci.yml` | The `verify` check: `git diff --check`, `actionlint` and the checker tests. A project with code replaces the steps with its own verification contract. |
+| `tests/test_pr_policy.py` | Standard-library regression tests that run the checker embedded in `pr-policy.yml` against faked `gh` answers; no network. |
 | `.github/workflows/backlog-review.yml` | Optional weekly read-only backlog report. |
 | `.github/ISSUE_TEMPLATE/task.yml` | The task form with the Ready facts. |
 | `.github/pull_request_template.md` | `Closes #n` and the verification ledger. |
 | `skills/task-start/SKILL.md`, `skills/task-finish/SKILL.md` | The two task boundaries as prose steps; upload them as account skills. |
-| `docs/adr/0002` to `0006` | Decision history. ADR 0006 records the shrink to this shape. |
+| `docs/adr/0002` to `0007` | Decision history. ADR 0006 records the shrink to this shape; ADR 0007 the review gate. |
 
 ## Adopting Conductor in a new project
 
