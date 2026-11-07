@@ -13,7 +13,7 @@ at run time is in this repository; nothing is generated, pinned or copied.
 | `CLAUDE.md` | `@AGENTS.md` |
 | `README.md` | This page: the file list and the adoption steps. |
 | `.gitignore` | Keeps local secrets (`.env`) and editor, OS and Python cache files out of the repository. |
-| `.github/workflows/pr-policy.yml` | The `linked-task` check: a pull request closes exactly one open task that carries one priority, one category and `status:ready`, and is neither owner-blocked nor tracking; in approval mode `auto` the task's parent is ready too; a `review:required` task holds the merge until the body records a review of the head; the head commit must belong to this pull request alone (one branch, one head, one pull request). |
+| `.github/workflows/pr-policy.yml` | The `linked-task` check: a pull request closes exactly one open task that carries one priority, one category and `status:ready`, and is neither owner-blocked nor tracking; in approval mode `auto` the task's parent is ready too; a `review:required` task holds the merge until the body records a review of the head; in `auto` a task above the assistant priority cap or in an owner-only category must have been readied by the owner; the head commit must belong to this pull request alone (one branch, one head, one pull request). |
 | `.github/workflows/ci.yml` | The `verify` check: `git diff --check`, `actionlint` and the checker tests. A project with code replaces the steps with its own verification contract. |
 | `tests/test_pr_policy.py` | Standard-library regression tests that run the checker embedded in `pr-policy.yml` against faked `gh` answers; no network. |
 | `.github/workflows/backlog-review.yml` | Optional weekly read-only backlog report. |
@@ -32,6 +32,12 @@ at run time is in this repository; nothing is generated, pinned or copied.
    the pinned backlog issue if you use the weekly report. `CONDUCTOR_REVIEW_REQUIRED_LABEL`
    renames the label that holds a merge until the pull request records an independent
    review of its head (default `review:required`, ADR 0007); leave it unset to keep the default.
+   In `auto`, `CONDUCTOR_ASSISTANT_PRIORITY_CAP` (default unset: no cap) is the highest
+   priority an assistant may ready, `CONDUCTOR_OWNER_CATEGORIES` (default unset: none) lists
+   the categories only the owner readies, and `CONDUCTOR_OWNER_LOGIN` (default the repository
+   owner) is the login whose `status:ready` counts as the owner's; `linked-task` then holds a
+   pull request whose task is above the cap or in the list until the owner has readied it
+   (ADR 0008). Conductor itself sets `P2` and `kind:security`.
 4. In GitHub, repository Settings, Branches: protect the default branch with a required
    pull request, "Do not allow bypassing" on, approvals off, required checks `verify` and
    `linked-task`. In Settings, General, Pull Requests: tick **Allow auto-merge** for `auto`.
