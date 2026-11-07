@@ -13,7 +13,7 @@ at run time is in this repository; nothing is generated, pinned or copied.
 | `CLAUDE.md` | `@AGENTS.md` |
 | `README.md` | This page: the file list and the adoption steps. |
 | `.gitignore` | Keeps local secrets (`.env`) and editor, OS and Python cache files out of the repository. |
-| `.github/workflows/pr-policy.yml` | The `linked-task` check: a pull request closes exactly one open task that carries one priority, one category and `status:ready`, and is neither owner-blocked nor tracking; in approval mode `auto` the task's parent is ready too; a `review:required` task holds the merge until the body records a review of the head. |
+| `.github/workflows/pr-policy.yml` | The `linked-task` check: a pull request closes exactly one open task that carries one priority, one category and `status:ready`, and is neither owner-blocked nor tracking; in approval mode `auto` the task's parent is ready too; a `review:required` task holds the merge until the body records a review of the head; the head commit must belong to this pull request alone (one branch, one head, one pull request). |
 | `.github/workflows/ci.yml` | The `verify` check: `git diff --check`, `actionlint` and the checker tests. A project with code replaces the steps with its own verification contract. |
 | `tests/test_pr_policy.py` | Standard-library regression tests that run the checker embedded in `pr-policy.yml` against faked `gh` answers; no network. |
 | `.github/workflows/backlog-review.yml` | Optional weekly read-only backlog report. |

@@ -73,9 +73,12 @@ NO_PARENT = ApiError(1, "gh: Not Found (HTTP 404)\n", '{"message":"Not Found","s
 class FakeGitHub:
     """Stands in for `subprocess.run` and answers the `gh` calls the checker makes."""
 
-    def __init__(self, body="Closes #42", files=("src/app.py",), issues=None, parents=None):
+    def __init__(self, body="Closes #42", files=("src/app.py",), issues=None, parents=None, head_pulls=None):
         self.body = body
         self.files = list(files)
+        # what `gh api repos/{repo}/commits/{sha}/pulls` answers for the head: a list of pull
+        # requests, or an ApiError; by default this pull request alone
+        self.head_pulls = [{"number": 7, "state": "open", "head": {"sha": HEAD}}] if head_pulls is None else head_pulls
         # issue number -> (labels, state)
         self.issues = dict(issues or {42: (["P2", "kind:chore", "status:ready"], "OPEN")})
         # issue number -> parent number, or an ApiError for the parent lookup; absent means 404
@@ -109,6 +112,11 @@ class FakeGitHub:
                 raise ApiError(1, "GraphQL: Could not resolve to an issue or pull request (HTTP 404)\n")
             labels, state = self.issues[number]
             return json.dumps({"labels": [{"name": name} for name in labels], "state": state})
+        if args[0] == "api" and re.fullmatch(r"repos/owner/repo/commits/[0-9a-f]{40}/pulls", args[1]):
+            assert args[1].split("/")[4] == HEAD, "the lookup must use the pull request head"
+            if isinstance(self.head_pulls, ApiError):
+                raise self.head_pulls
+            return json.dumps(self.head_pulls)
         match = re.fullmatch(r"repos/owner/repo/issues/(\d+)/parent", args[1]) if args[0] == "api" else None
         if match:
             parent = self.parents.get(int(match.group(1)), NO_PARENT)
@@ -282,6 +290,38 @@ class ReviewRequiredTests(PolicyTest):
 
     def test_unlabelled_task_needs_no_review_line(self):
         self.assertAccepted(FakeGitHub(body="Closes #42\n\n## Review\n\n- Reviewer: <runtime or login>, reviewed SHA: <40-hex>\n"))
+
+
+class SharedHeadTests(PolicyTest):
+    """One branch, one head, one pull request: a second open pull request at the same head
+    commit would let its green check run satisfy branch protection for this one."""
+
+    def _pull(self, number, state="open", sha=HEAD):
+        return {"number": number, "state": state, "head": {"sha": sha}}
+
+    def test_sole_pull_request_at_the_head_is_accepted(self):
+        output = self.assertAccepted(FakeGitHub())
+        self.assertIn(f"Head {HEAD} belongs to this pull request alone", output)
+
+    def test_second_open_pull_request_at_the_same_head_is_rejected(self):
+        fake = FakeGitHub(head_pulls=[self._pull(7), self._pull(8)])
+        output = self.assertRejected(fake, "also the head of open pull request #8")
+        self.assertIn("one branch, one head, one pull request", output)
+
+    def test_shared_head_is_rejected_even_on_the_record_only_path(self):
+        fake = FakeGitHub(body="Refs #42", files=["docs/adr/0008-example.md"], head_pulls=[self._pull(7), self._pull(9)])
+        self.assertRejected(fake, "also the head of open pull request #9")
+
+    def test_closed_pull_request_at_the_same_head_is_accepted(self):
+        self.assertAccepted(FakeGitHub(head_pulls=[self._pull(7), self._pull(8, state="closed")]))
+
+    def test_open_pull_request_that_merely_contains_the_commit_is_accepted(self):
+        self.assertAccepted(FakeGitHub(head_pulls=[self._pull(7), self._pull(8, sha=STALE)]))
+
+    def test_head_lookup_failure_fails_the_check(self):
+        fake = FakeGitHub(head_pulls=ApiError(1, "gh: Resource not accessible by integration (HTTP 403)\n"))
+        output = self.assertRejected(fake, f"Could not list the pull requests at head {HEAD}")
+        self.assertIn("HTTP 403", output)
 
 
 class RecordOnlyReferenceTests(PolicyTest):
