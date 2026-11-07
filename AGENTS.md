@@ -137,8 +137,10 @@ labelled together with one comment naming the round.
 4. In `auto`, enable GitHub auto-merge with squash as soon as the pull request is open,
    while the checks still run: GitHub refuses to arm it on a pull request that is already
    green, and then only the owner's click can land it. GitHub merges when `verify` and
-   `linked-task` are green and the owner never clicks for a sub-issue. In `manual`, stop at
-   the Merge gate. A record labelled `review:required` (the Planner applies it at filing to
+   `linked-task` are green and the owner never clicks for a sub-issue. The checks run on
+   the pull request head, not on the squash commit on `main`: when `main` moved under the
+   pull request, update the branch with `main` before auto-merge lands it. In `manual`, stop
+   at the Merge gate. A record labelled `review:required` (the Planner applies it at filing to
    every P0, P1 and `kind:security` record; the owner may add or remove it elsewhere) keeps
    `linked-task` red until the pull request body's Review line reads `Reviewer: <runtime or
    login>, reviewed SHA: <head SHA>`, written by the Reviewer after reading that head (ADR

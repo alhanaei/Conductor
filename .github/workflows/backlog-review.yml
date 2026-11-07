@@ -20,6 +20,7 @@ permissions:
 jobs:
   report:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
       PRIORITY_LABELS: ${{ vars.CONDUCTOR_PRIORITY_LABELS || 'P0,P1,P2,P3' }}
