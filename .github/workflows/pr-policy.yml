@@ -41,6 +41,9 @@ name: PR policy
 on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
+concurrency:
+  group: pr-policy-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 permissions:
   contents: read
   issues: read
@@ -48,6 +51,7 @@ permissions:
 jobs:
   linked-task:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
