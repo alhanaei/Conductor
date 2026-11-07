@@ -4,7 +4,10 @@
 # label), exactly one category and the owner's readiness label. When the task is a sub-issue,
 # its parent record is read too and must be open with one category and a priority, the
 # owner-blocked marker or the tracking label; only the API's HTTP 404 means "no parent", any
-# other lookup failure fails the check. The checker is tested by tests/test_pr_policy.py,
+# other lookup failure fails the check. The head commit must belong to this pull request
+# alone: a second open pull request at the same head fails the check on both, because
+# GitHub attaches check runs to commits and one green run would let either merge. The
+# checker is tested by tests/test_pr_policy.py,
 # which executes this very script with the gh calls replaced. Label names come from
 # repository variables so the project's own scale applies:
 #   CONDUCTOR_PRIORITY_LABELS   comma-separated, default "P0,P1,P2,P3"
@@ -83,6 +86,21 @@ jobs:
                   print(f"::error::Approval mode auto: pull requests target the integration branch '{integration}', not '{base_ref}'; only the promotion of '{integration}' into '{default_branch}' may target the default branch.")
                   sys.exit(1)
               print(f"Approval mode auto: base '{base_ref}' accepted" + (" (promotion)" if promotion else "") + ".")
+          # One branch, one head, one pull request. GitHub attaches check runs to commits, so a
+          # second open pull request at the same head commit would let its green run satisfy
+          # branch protection for this one (seen on #89 and #91).
+          pr_number, head_sha = os.environ["PR_NUMBER"], os.environ["HEAD_SHA"].lower()
+          run = subprocess.run(["gh", "api", f"repos/{repo}/commits/{head_sha}/pulls"], capture_output=True, text=True)
+          if run.returncode:
+              detail = run.stderr.strip() or run.stdout.strip() or "no output"
+              print(f"::error::Could not list the pull requests at head {head_sha} (gh api exit {run.returncode}): {detail}. Check that the workflow token has pull-requests: read and that api.github.com is reachable, then re-run the check.")
+              sys.exit(1)
+          others = sorted(p["number"] for p in json.loads(run.stdout)
+                          if p.get("state") == "open" and str(p["number"]) != pr_number and (p.get("head") or {}).get("sha", "").lower() == head_sha)
+          if others:
+              print(f"::error::Head {head_sha} is also the head of open pull request {', '.join('#' + str(n) for n in others)}; one branch, one head, one pull request: close the other pull request or push a distinct commit, since a green check on a shared commit would let either pull request merge.")
+              sys.exit(1)
+          print(f"Head {head_sha} belongs to this pull request alone.")
           body = json.loads(gh("pr", "view", os.environ["PR_NUMBER"], "--repo", repo, "--json", "body"))["body"] or ""
           numbers = sorted({int(n) for n in re.findall(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)", body, re.I)})
           closing = True  # False on the record-only "Refs #n" path, which only references its record
@@ -104,7 +122,7 @@ jobs:
           priorities = [p.strip() for p in os.environ["PRIORITY_LABELS"].split(",") if p.strip()]
           blocked, prefix = os.environ["BLOCKED_LABEL"], os.environ["CATEGORY_PREFIX"]
           tracking, ready = os.environ["TRACKING_LABEL"], os.environ["READY_LABEL"]
-          review_required, head_sha = os.environ["REVIEW_REQUIRED_LABEL"], os.environ["HEAD_SHA"].lower()
+          review_required = os.environ["REVIEW_REQUIRED_LABEL"]
 
           def review_problem():
               # The "## Review" section of the body, up to the next heading, must name the head.

@@ -128,8 +128,9 @@ labelled together with one comment naming the round.
 2. Run the verification contract below on the exact head and record command, cwd, result
    and tested SHA. A claim without the recorded command is not verification.
 3. Open the pull request against the integration branch from the repository template:
-   `Closes #n`, the verification ledger, merge danger, "Found and left". One branch and one
-   pull request per task.
+   `Closes #n`, the verification ledger, merge danger, "Found and left". One branch, one
+   head and one pull request per task: GitHub attaches check runs to commits, so a second
+   open pull request at the same head commit turns `linked-task` red on both.
 4. In `auto`, enable GitHub auto-merge with squash as soon as the pull request is open,
    while the checks still run: GitHub refuses to arm it on a pull request that is already
    green, and then only the owner's click can land it. GitHub merges when `verify` and
@@ -149,7 +150,8 @@ labelled together with one comment naming the round.
 
 Merge by hand; mark a draft ready; approve a pull request as a merge authorization;
 force-push or rewrite history; edit branch protection, required checks or repository
-variables; push to a protected branch without a pull request; apply `status:ready` to a
+variables; push to a protected branch without a pull request; open a second pull request at
+a head commit another open pull request already has; apply `status:ready` to a
 top-level record; start a record that is not Ready; widen scope; deploy, spend, change
 credentials or access, share non-public data, or publish outside GitHub from a session; skip,
 disable or quarantine a check to get green; rotate accounts or evade quotas; put credentials
