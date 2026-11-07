@@ -37,6 +37,18 @@
 #                               "Reviewer: <runtime or login>, reviewed SHA: <40-hex>"
 #                               whose SHA is the pull request head; a new push turns it red
 #                               again until the line is updated
+#   CONDUCTOR_ASSISTANT_PRIORITY_CAP
+#                               default unset (no cap). In auto (ADR 0008), the highest
+#                               priority an assistant may ready: a closed task whose priority
+#                               comes before the cap in CONDUCTOR_PRIORITY_LABELS must have
+#                               had its readiness label applied by the owner
+#   CONDUCTOR_OWNER_CATEGORIES  comma-separated category labels, default unset (none). In
+#                               auto, a closed task carrying one of them must have had its
+#                               readiness label applied by the owner
+#   CONDUCTOR_OWNER_LOGIN       default the repository owner: the login whose `labeled`
+#                               event on the issue timeline counts as the owner's Ready.
+#                               With neither threshold set the timeline is never read and
+#                               the check behaves as before ADR 0008
 name: PR policy
 on:
   pull_request:
@@ -64,6 +76,9 @@ jobs:
       APPROVAL_MODE: ${{ vars.CONDUCTOR_APPROVAL_MODE || 'manual' }}
       INTEGRATION_BRANCH: ${{ vars.CONDUCTOR_INTEGRATION_BRANCH || github.event.repository.default_branch }}
       REVIEW_REQUIRED_LABEL: ${{ vars.CONDUCTOR_REVIEW_REQUIRED_LABEL || 'review:required' }}
+      PRIORITY_CAP: ${{ vars.CONDUCTOR_ASSISTANT_PRIORITY_CAP }}
+      OWNER_CATEGORIES: ${{ vars.CONDUCTOR_OWNER_CATEGORIES }}
+      OWNER_LOGIN: ${{ vars.CONDUCTOR_OWNER_LOGIN || github.repository_owner }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       BASE_REF: ${{ github.event.pull_request.base.ref }}
@@ -127,6 +142,47 @@ jobs:
           blocked, prefix = os.environ["BLOCKED_LABEL"], os.environ["CATEGORY_PREFIX"]
           tracking, ready = os.environ["TRACKING_LABEL"], os.environ["READY_LABEL"]
           review_required = os.environ["REVIEW_REQUIRED_LABEL"]
+          # Thresholds in auto (ADR 0008): a task above the assistant priority cap or in an
+          # owner-only category must have been readied by the owner. Both default to unset,
+          # and then the timeline is never read.
+          priority_cap = os.environ.get("PRIORITY_CAP", "").strip()
+          owner_categories = [c.strip() for c in os.environ.get("OWNER_CATEGORIES", "").split(",") if c.strip()]
+          owner_login = os.environ.get("OWNER_LOGIN", "").strip()
+          thresholds = mode == "auto" and bool(priority_cap or owner_categories)
+          if priority_cap and priority_cap not in priorities:
+              print(f"::error::CONDUCTOR_ASSISTANT_PRIORITY_CAP must be one of the priority labels ({', '.join(priorities)}), not {priority_cap!r}")
+              sys.exit(1)
+          if thresholds and not owner_login:
+              print("::error::CONDUCTOR_OWNER_LOGIN is empty; the thresholds need the owner's login to compare the readiness label's actor against")
+              sys.exit(1)
+
+          def threshold_reasons(labels):
+              # Why the task's Ready is the owner's: its priority is before the cap, or its
+              # category is owner-only. Empty when the thresholds do not apply to it.
+              reasons = []
+              if priority_cap:
+                  above = [p for p in labels if p in priorities and priorities.index(p) < priorities.index(priority_cap)]
+                  if above:
+                      reasons.append(f"priority {above[0]} is above the assistant cap {priority_cap}")
+              listed = [label for label in labels if label in owner_categories]
+              if listed:
+                  reasons.append(f"category {listed[0]} is owner-only")
+              return reasons
+
+          def ready_actor(number):
+              # The login that applied the readiness label last, from the issue timeline. Any
+              # failure, or no such event, fails the check: it never passes by default.
+              run = subprocess.run(["gh", "api", "--paginate", "--slurp", f"repos/{repo}/issues/{number}/timeline"], capture_output=True, text=True)
+              if run.returncode:
+                  detail = run.stderr.strip() or run.stdout.strip() or "no output"
+                  print(f"::error::Could not read the timeline of task #{number} (gh api exit {run.returncode}): {detail}. Check that the workflow token has issues: read and that api.github.com is reachable, then re-run the check.")
+                  sys.exit(1)
+              events = [event for page in json.loads(run.stdout) for event in page]
+              labelled = [event for event in events if event.get("event") == "labeled" and (event.get("label") or {}).get("name") == ready]
+              if not labelled:
+                  print(f"::error::The timeline of task #{number} has no 'labeled' event for '{ready}'; the readiness label must be applied on the issue, not inherited or imported, for the owner's Ready to be checked.")
+                  sys.exit(1)
+              return ((labelled[-1].get("actor") or {}).get("login") or "").strip()
 
           def review_problem():
               # The "## Review" section of the body, up to the next heading, must name the head.
@@ -187,6 +243,14 @@ jobs:
                   if problem:
                       failed = True
                       print(f"::error::Task #{number} carries '{review_required}' and the pull request records no review of its head: {problem}")
+              reasons = threshold_reasons(labels) if thresholds and closing and not problems else []
+              if reasons:
+                  actor = ready_actor(number)
+                  if actor.lower() != owner_login.lower():
+                      failed = True
+                      print(f"::error::Task #{number} must be readied by the owner ({owner_login}): " + "; ".join(reasons) + f", and '{ready}' was last applied by {actor or 'an unknown actor'}. Only the owner readies a sub-issue above the cap or in an owner-only category (ADR 0008).")
+                  else:
+                      print(f"Task #{number} is above the assistant thresholds (" + "; ".join(reasons) + f") and was readied by the owner {actor}.")
               if problems:
                   failed = True
                   print(f"::error::Task #{number} is not ready: " + "; ".join(problems) + f" (labels: {', '.join(labels) or 'none'})")

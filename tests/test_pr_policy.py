@@ -40,6 +40,9 @@ DEFAULT_ENV = {
     "BASE_REF": "main",
     "HEAD_REF": "claude/feature",
     "REVIEW_REQUIRED_LABEL": "review:required",
+    "PRIORITY_CAP": "",
+    "OWNER_CATEGORIES": "",
+    "OWNER_LOGIN": "owner",
     "HEAD_SHA": HEAD,
 }
 
@@ -73,7 +76,7 @@ NO_PARENT = ApiError(1, "gh: Not Found (HTTP 404)\n", '{"message":"Not Found","s
 class FakeGitHub:
     """Stands in for `subprocess.run` and answers the `gh` calls the checker makes."""
 
-    def __init__(self, body="Closes #42", files=("src/app.py",), issues=None, parents=None, head_pulls=None):
+    def __init__(self, body="Closes #42", files=("src/app.py",), issues=None, parents=None, head_pulls=None, timelines=None):
         self.body = body
         self.files = list(files)
         # what `gh api repos/{repo}/commits/{sha}/pulls` answers for the head: a list of pull
@@ -83,6 +86,9 @@ class FakeGitHub:
         self.issues = dict(issues or {42: (["P2", "kind:chore", "status:ready"], "OPEN")})
         # issue number -> parent number, or an ApiError for the parent lookup; absent means 404
         self.parents = dict(parents or {})
+        # issue number -> list of timeline events (one page), or an ApiError; absent means an
+        # empty timeline
+        self.timelines = dict(timelines or {})
         self.calls = []
 
     def __call__(self, args, check=False, capture_output=False, text=False, **kwargs):
@@ -123,7 +129,17 @@ class FakeGitHub:
             if isinstance(parent, ApiError):
                 raise parent
             return json.dumps({"number": parent, "state": "open"})
+        match = re.fullmatch(r"repos/owner/repo/issues/(\d+)/timeline", args[-1]) if args[0] == "api" else None
+        if match:
+            assert args[1:3] == ["--paginate", "--slurp"], "the timeline must be read in full, as pages"
+            timeline = self.timelines.get(int(match.group(1)), [])
+            if isinstance(timeline, ApiError):
+                raise timeline
+            return json.dumps([timeline])  # --slurp: one array per page
         raise AssertionError(f"unexpected gh call: {args!r}")
+
+    def timeline_calls(self):
+        return [call for call in self.calls if call[0] == "gh" and call[1] == "api" and call[-1].endswith("/timeline")]
 
 
 def run_policy(fake, **env):
@@ -354,6 +370,118 @@ class RecordOnlyReferenceTests(PolicyTest):
         fake = FakeGitHub(body="Closes #42, refs #43", files=["docs/adr/0008-example.md"])
         output = self.assertAccepted(fake)
         self.assertNotIn("Record-only", output)
+
+
+def labeled(name, actor, **extra):
+    return {"event": "labeled", "label": {"name": name}, "actor": {"login": actor}, **extra}
+
+
+class ThresholdTests(PolicyTest):
+    """ADR 0008: in auto, a task above the assistant priority cap or in an owner-only category
+    must have had `status:ready` applied by the owner, read from the issue timeline."""
+
+    CAPPED = dict(APPROVAL_MODE="auto", PRIORITY_CAP="P2", OWNER_CATEGORIES="kind:security")
+
+    def _task(self, labels, timeline, **kwargs):
+        return FakeGitHub(issues={42: (labels, "OPEN")}, timelines={42: timeline}, **kwargs)
+
+    def test_capped_task_readied_by_the_owner_is_accepted(self):
+        fake = self._task(ready(priority="P1"), [labeled("status:ready", "owner")])
+        output = self.assertAccepted(fake, **self.CAPPED)
+        self.assertIn("priority P1 is above the assistant cap P2", output)
+        self.assertIn("readied by the owner owner", output)
+        self.assertEqual(len(fake.timeline_calls()), 1)
+
+    def test_capped_task_readied_by_another_login_is_rejected(self):
+        fake = self._task(ready(priority="P0"), [labeled("status:ready", "planner-bot")])
+        output = self.assertRejected(fake, "Task #42 must be readied by the owner (owner)", **self.CAPPED)
+        self.assertIn("priority P0 is above the assistant cap P2", output)
+        self.assertIn("last applied by planner-bot", output)
+
+    def test_owner_only_category_readied_by_another_login_is_rejected_at_any_priority(self):
+        fake = self._task(ready(priority="P3", category="kind:security"), [labeled("status:ready", "planner-bot")])
+        output = self.assertRejected(fake, "category kind:security is owner-only", **self.CAPPED)
+        self.assertIn("last applied by planner-bot", output)
+
+    def test_owner_only_category_readied_by_the_owner_is_accepted(self):
+        fake = self._task(ready(priority="P3", category="kind:security"), [labeled("status:ready", "owner")])
+        self.assertAccepted(fake, **self.CAPPED)
+
+    def test_the_last_labeled_event_counts(self):
+        # Readied by the Planner, unlabelled, then readied by the owner: the owner's Ready stands.
+        timeline = [labeled("status:ready", "planner-bot"), {"event": "unlabeled", "label": {"name": "status:ready"}, "actor": {"login": "owner"}},
+                    labeled("status:ready", "owner")]
+        self.assertAccepted(self._task(ready(priority="P1"), timeline), **self.CAPPED)
+        self.assertRejected(self._task(ready(priority="P1"), list(reversed(timeline))), "last applied by planner-bot", **self.CAPPED)
+
+    def test_other_labels_on_the_timeline_are_ignored(self):
+        timeline = [labeled("status:ready", "owner"), labeled("P1", "planner-bot"), {"event": "commented", "actor": {"login": "planner-bot"}}]
+        self.assertAccepted(self._task(ready(priority="P1"), timeline), **self.CAPPED)
+
+    def test_owner_login_comparison_ignores_case(self):
+        self.assertAccepted(self._task(ready(priority="P1"), [labeled("status:ready", "Owner")]), **self.CAPPED)
+
+    def test_task_at_or_below_the_cap_does_not_read_the_timeline(self):
+        for priority in ("P2", "P3"):
+            fake = self._task(ready(priority=priority), [labeled("status:ready", "planner-bot")])
+            self.assertAccepted(fake, **self.CAPPED)
+            self.assertEqual(fake.timeline_calls(), [], priority)
+
+    def test_variables_unset_leave_the_check_unchanged(self):
+        # No cap and no categories: a P0 task readied by anyone passes as before and the timeline
+        # is never read.
+        fake = self._task(ready(priority="P0", category="kind:security"), [labeled("status:ready", "planner-bot")])
+        output = self.assertAccepted(fake, APPROVAL_MODE="auto")
+        self.assertEqual(fake.timeline_calls(), [])
+        self.assertNotIn("threshold", output.lower())
+
+    def test_cap_alone_and_categories_alone_each_apply(self):
+        fake = self._task(ready(priority="P0"), [labeled("status:ready", "planner-bot")])
+        self.assertRejected(fake, "above the assistant cap P1", APPROVAL_MODE="auto", PRIORITY_CAP="P1")
+        fake = self._task(ready(priority="P0"), [labeled("status:ready", "planner-bot")])
+        self.assertAccepted(fake, APPROVAL_MODE="auto", OWNER_CATEGORIES="kind:security")
+        self.assertEqual(fake.timeline_calls(), [])
+
+    def test_manual_mode_does_not_evaluate_the_thresholds(self):
+        fake = self._task(ready(priority="P0", category="kind:security"), [labeled("status:ready", "planner-bot")])
+        self.assertAccepted(fake, APPROVAL_MODE="manual", PRIORITY_CAP="P2", OWNER_CATEGORIES="kind:security")
+        self.assertEqual(fake.timeline_calls(), [])
+
+    def test_timeline_lookup_failure_fails_the_check(self):
+        fake = self._task(ready(priority="P1"), ApiError(1, "gh: Resource not accessible by integration (HTTP 403)\n"))
+        output = self.assertRejected(fake, "Could not read the timeline of task #42", **self.CAPPED)
+        self.assertIn("HTTP 403", output)
+
+    def test_timeline_without_a_ready_event_fails_the_check(self):
+        fake = self._task(ready(priority="P1"), [labeled("P1", "owner"), {"event": "commented", "actor": {"login": "owner"}}])
+        self.assertRejected(fake, "has no 'labeled' event for 'status:ready'", **self.CAPPED)
+
+    def test_timeline_is_read_in_pages(self):
+        fake = self._task(ready(priority="P1"), [labeled("status:ready", "owner")])
+        self.assertAccepted(fake, **self.CAPPED)
+        self.assertEqual(fake.timeline_calls(), [["gh", "api", "--paginate", "--slurp", "repos/owner/repo/issues/42/timeline"]])
+
+    def test_unready_capped_task_reports_the_missing_label_without_reading_the_timeline(self):
+        fake = self._task(["P1", "kind:chore"], [labeled("status:ready", "planner-bot")])
+        self.assertRejected(fake, "missing the 'status:ready' label", **self.CAPPED)
+        self.assertEqual(fake.timeline_calls(), [])
+
+    def test_record_only_reference_does_not_evaluate_the_thresholds(self):
+        fake = FakeGitHub(body="Refs #42", files=["docs/adr/0008-example.md"], issues={42: (ready(priority="P1"), "OPEN")},
+                          timelines={42: [labeled("status:ready", "planner-bot")]})
+        self.assertAccepted(fake, **self.CAPPED)
+        self.assertEqual(fake.timeline_calls(), [])
+
+    def test_cap_outside_the_priority_labels_is_rejected(self):
+        self.assertRejected(FakeGitHub(), "CONDUCTOR_ASSISTANT_PRIORITY_CAP must be one of the priority labels", APPROVAL_MODE="auto", PRIORITY_CAP="P9")
+
+    def test_empty_owner_login_with_thresholds_is_rejected(self):
+        self.assertRejected(FakeGitHub(), "CONDUCTOR_OWNER_LOGIN is empty", APPROVAL_MODE="auto", PRIORITY_CAP="P2", OWNER_LOGIN="")
+
+    def test_custom_priority_scale_orders_the_cap(self):
+        fake = FakeGitHub(issues={42: (["prio/high", "kind:chore", "status:ready"], "OPEN")}, timelines={42: [labeled("status:ready", "planner-bot")]})
+        self.assertRejected(fake, "priority prio/high is above the assistant cap prio/low", APPROVAL_MODE="auto",
+                            PRIORITY_LABELS="prio/high,prio/low", PRIORITY_CAP="prio/low")
 
 
 if __name__ == "__main__":
