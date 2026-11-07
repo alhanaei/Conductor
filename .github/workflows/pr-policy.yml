@@ -25,6 +25,13 @@
 #   CONDUCTOR_INTEGRATION_BRANCH
 #                               the branch task pull requests land on; default the
 #                               repository's default branch
+#   CONDUCTOR_REVIEW_REQUIRED_LABEL
+#                               default "review:required" (ADR 0007). When the task a pull
+#                               request closes carries it, the check fails until the body's
+#                               "## Review" section has a line
+#                               "Reviewer: <runtime or login>, reviewed SHA: <40-hex>"
+#                               whose SHA is the pull request head; a new push turns it red
+#                               again until the line is updated
 name: PR policy
 on:
   pull_request:
@@ -47,6 +54,8 @@ jobs:
       RECORD_PATHS: ${{ vars.CONDUCTOR_RECORD_PATHS || 'docs/adr/,.conductor/HANDOFF.md' }}
       APPROVAL_MODE: ${{ vars.CONDUCTOR_APPROVAL_MODE || 'manual' }}
       INTEGRATION_BRANCH: ${{ vars.CONDUCTOR_INTEGRATION_BRANCH || github.event.repository.default_branch }}
+      REVIEW_REQUIRED_LABEL: ${{ vars.CONDUCTOR_REVIEW_REQUIRED_LABEL || 'review:required' }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
       BASE_REF: ${{ github.event.pull_request.base.ref }}
       HEAD_REF: ${{ github.event.pull_request.head.ref }}
@@ -88,6 +97,19 @@ jobs:
           priorities = [p.strip() for p in os.environ["PRIORITY_LABELS"].split(",") if p.strip()]
           blocked, prefix = os.environ["BLOCKED_LABEL"], os.environ["CATEGORY_PREFIX"]
           tracking, ready = os.environ["TRACKING_LABEL"], os.environ["READY_LABEL"]
+          review_required, head_sha = os.environ["REVIEW_REQUIRED_LABEL"], os.environ["HEAD_SHA"].lower()
+
+          def review_problem():
+              # The "## Review" section of the body, up to the next heading, must name the head.
+              section = re.search(r"^##\s+Review\s*$(.*?)(?=^##\s|\Z)", body, re.M | re.S)
+              lines = re.findall(r"^\s*(?:[-*]\s*)?Reviewer:\s*(.+?),\s*reviewed SHA:\s*([0-9a-fA-F]{40})\s*$", section.group(1) if section else "", re.M)
+              if not lines:
+                  return "no 'Reviewer: <runtime or login>, reviewed SHA: <40-hex>' line under '## Review' in the pull request body"
+              reviewers = [who.strip() for who, sha in lines if sha.lower() == head_sha]
+              if not reviewers:
+                  return f"the Review line names SHA {lines[-1][1]}, not the head {head_sha}; review the head and update the line"
+              print(f"Review of head {head_sha} recorded by {', '.join(reviewers)}.")
+              return None
 
           def labels_of(number):
               issue = json.loads(gh("issue", "view", str(number), "--repo", repo, "--json", "labels,state"))
@@ -119,6 +141,11 @@ jobs:
               problems = label_problems(labels)
               if ready not in labels and tracking not in labels:
                   problems.append(f"missing the '{ready}' label (owner gate Ready)")
+              if review_required in labels:
+                  problem = review_problem()
+                  if problem:
+                      failed = True
+                      print(f"::error::Task #{number} carries '{review_required}' and the pull request records no review of its head: {problem}")
               if problems:
                   failed = True
                   print(f"::error::Task #{number} is not ready: " + "; ".join(problems) + f" (labels: {', '.join(labels) or 'none'})")

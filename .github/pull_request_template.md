@@ -18,7 +18,9 @@ Closes #
 
 ## Review
 
-- Independent reviewer and reviewed SHA (advisory; merge remains the integrator's gate):
+- Reviewer: <runtime or login>, reviewed SHA: <40-hex>
+  (a runtime other than the Implementer's; advisory, except that when the task carries
+  `review:required` the `linked-task` check holds the merge until this line names the head)
 
 ## Found and left
 

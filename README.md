@@ -28,7 +28,9 @@ at run time is in this repository; nothing is generated, pinned or copied.
    contract to the project's own commands.
 3. In GitHub, repository Settings, Secrets and variables, Actions, Variables: set
    `CONDUCTOR_APPROVAL_MODE` to `manual` or `auto`, and `CONDUCTOR_BACKLOG_REVIEW_ISSUE` to
-   the pinned backlog issue if you use the weekly report.
+   the pinned backlog issue if you use the weekly report. `CONDUCTOR_REVIEW_REQUIRED_LABEL`
+   renames the label that holds a merge until the pull request records an independent
+   review of its head (default `review:required`, ADR 0007); leave it unset to keep the default.
 4. In GitHub, repository Settings, Branches: protect the default branch with a required
    pull request, "Do not allow bypassing" on, approvals off, required checks `verify` and
    `linked-task`. In Settings, General, Pull Requests: tick **Allow auto-merge** for `auto`.

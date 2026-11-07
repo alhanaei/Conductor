@@ -5,6 +5,9 @@
   amendments of #37 (rounds 3 to 5, roles, identity, Projects round, merge gate) recorded.
 - Amended by: ADR 0005 (2026-10-23): the three gates become the `manual` default of a
   per-project approval mode; `auto` delegates everything below top-level records.
+- Amended by: ADR 0007 (2026-11-07): the Reviewer runs on a different runtime than the
+  Implementer, and for records labelled `review:required` the review becomes a gate held by
+  the `linked-task` check; it stays advisory for the rest.
 - Date: 2026-10-18
 - Deciders: repository owner
 - Task record: #37
