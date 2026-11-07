@@ -1,6 +1,6 @@
 ---
 name: task-finish
-description: Close a claimed task - run the verification contract on the exact head, open the pull request with Closes #n and the ledger, arm squash auto-merge in approval mode auto, post the milestone on the record and list what was found and left; --stopped records a blocker instead
+description: Close a claimed task - run the verification contract on the exact head, open the pull request with Closes #n and the ledger, arm squash auto-merge in approval mode auto, post the milestone on the record, list what was found and left, and hand off on the record before the session ends; --stopped records a blocker instead
 ---
 
 # Task finish
@@ -38,6 +38,24 @@ evidence that matches the exact head is a stopped finish, never a done one.
 7. Drive the pull request to green: on a red check or a review finding, fix on the same
    branch and push; the ledger is updated to the new head. A pull request that waits on the
    owner says so in one comment.
+8. Hand off on the record as the last step of the session, in every role and on the stopped
+   path too. Gather every fact from GitHub and `git` (the record, its pull requests, `git
+   log`, `git status`), never from memory or chat; write `unknown` for what is not known.
+   Post one comment on #n and release the claim with it:
+
+   ```
+   **Handoff.** <role> on <runtime>, <reference>, <UTC time>. Branch `<branch>` at
+   `<head SHA>`. Merged: <pull request and merge SHA | none>. Pushed, unmerged: <pull
+   request or branch and head | none>. Decisions: <one line each | none>. Blockers: <open
+   blockers | none>. Found and left: <one line each | none>. Next step: <one sentence a
+   fresh session can execute>. Claim released.
+   ```
+
+9. When #n is a tracking or top-level parent, the handoff is its closing report and lists
+   every child as `#<child>: pull request #<pr>, merge SHA <sha>`, with the verification
+   evidence, decisions, found and left, and the next record to open. Refuse to post it, and
+   name the child, while any child is open or a child's pull request is unmerged. In
+   approval mode `auto` close the parent with the report; in `manual` leave it to the owner.
 
 Stop and ask the owner when the pull request would close a task other than the claimed one,
 or when a verification row needs a tool the session cannot install.

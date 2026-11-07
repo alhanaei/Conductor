@@ -84,6 +84,9 @@ covers unless its scope or risk changed.
 - A claim ends with a release comment naming the head and the next step. A record passes to
   another session only after that release or the owner's reassignment; a session that changes
   role releases first and claims again.
+- A session that ends before its task is done hands off on its record with the `task-finish`
+  skill: one comment with head, merged and unmerged work, blockers and the next step, which
+  is where the next session starts.
 - Anything found mid-task is proposed and left: a comment on the record it belongs to, or a
   line on the Backlog issue with a suggested priority. Scope changes only on the owner's word.
 - When the last child of a tracking or top-level parent closes, the Planner posts a handoff
