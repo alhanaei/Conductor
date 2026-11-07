@@ -1,6 +1,6 @@
 ---
 name: task-start
-description: Claim one readied task at the start of a session - refuse without status:ready, post the claim comment on the record, branch from the integration branch, record the baseline and keep the task's allowed paths in view
+description: Claim one readied task at the start of a session - refuse without status:ready, post the claim comment on the record, branch from the integration branch, pick up from the newest handoff comment, record the baseline and keep the task's allowed paths in view
 ---
 
 # Task start
@@ -10,7 +10,9 @@ record into a claimed, bounded piece of work. Between this and `task-finish` the
 own practice runs. This skill grants no authority; the task record and the platform do.
 
 1. Read the project's `AGENTS.md`, then the record #n with its comments, through your own
-   GitHub access. Do not describe the task from memory.
+   GitHub access. Pick up from the newest handoff comment on #n: its head SHA, what is
+   merged or unmerged, blockers and next step are the starting state. Do not describe the
+   task from memory.
 2. Refuse when #n is not open or lacks the `status:ready` label: say which Ready fact is
    missing and stop. The owner (or, for a sub-issue in approval mode `auto`, the Planner)
    applies the label; never add it yourself. Refuse when the record carries an `agent:*`
