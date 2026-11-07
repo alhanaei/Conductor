@@ -81,8 +81,10 @@ covers unless its scope or risk changed.
   parent (`kind:tracking`, no priority) when a record only holds sub-issues. Work related to
   an open record is filed as its sub-issue, never as a sibling, with the native parent link. A
   record stands alone only when no open record covers it.
-- An optional `agent:claude`, `agent:codex` or `agent:gemini` label says which assistant may
-  claim a record; no label means any assistant.
+- An optional `agent:claude`, `agent:codex`, `agent:gemini` or `agent:grok` label says which
+  assistant may claim a record; no label means any assistant. Grok is a Planner and Reviewer
+  runtime only, and readies or reviews solely as `grok-conductor[bot]` through the App's
+  installation token, never through a connector that acts as the owner (ADR 0009).
 - Selection: the highest open priority, oldest first within it. Labels, assignees and comments
   are descriptive, not locks; an ambiguous claim pauses conflicting writes. A missing update is
   stale or unknown, not proof the claimant has stopped.

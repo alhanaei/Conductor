@@ -8,6 +8,9 @@
 - Task record: #97 (top-level record); this file lands with its sub-issue #98
 - Amends: ADR 0005 (approval mode `auto` gains two thresholds above which the Ready gate on a
   sub-issue returns to the owner; everything else in the mode stands)
+- Amended by: ADR 0009 (2026-11-07): the identity §5 leaves open is Grok, acting as
+  `grok-conductor[bot]` through an installation token, as Planner and Reviewer within the
+  thresholds; the actor test is no longer a no-op for records Grok readies
 - Roles: decision grilled by the Planner (project coordinator); this record written by the
   Implementer (a project thread)
 
