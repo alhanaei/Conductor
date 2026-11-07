@@ -7,6 +7,8 @@
 - Task record: #59 (sub-task A of #58)
 - Amends: ADR 0003 (the three owner gates become the `manual` default; a project may delegate
   everything below its top-level records)
+- Amended by: ADR 0008 (approval mode `auto` gains an assistant priority cap and owner-only
+  categories above which the Ready gate on a sub-issue returns to the owner)
 - Roles: decision grilled by the Planner (project coordinator); this record written by the
   Implementer (a project thread)
 
