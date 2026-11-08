@@ -12,6 +12,12 @@ Closes #
 | --- | --- | --- | --- |
 | | | | |
 
+One row per numbered acceptance criterion of the record, filled before the pull request opens:
+
+| Acceptance criterion | Evidence | Result (passed / failed / not run) | Tested SHA |
+| --- | --- | --- | --- |
+| 1. | | | |
+
 ## Merge danger
 
 - Door: two-way (one revert commit undoes it, no data or external effect) or one-way (migration, published artifact, external call, deletion, credential or access change). State which and why.

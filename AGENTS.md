@@ -142,7 +142,9 @@ labelled together with one comment naming the round.
 3. Open the pull request against the integration branch from the repository template:
    `Closes #n`, the verification ledger, merge danger, "Found and left". One branch, one
    head and one pull request per task: GitHub attaches check runs to commits, so a second
-   open pull request at the same head commit turns `linked-task` red on both.
+   open pull request at the same head commit turns `linked-task` red on both. A record with
+   sub-issues gets `Refs #n` in its pull request, not a closing keyword, so it stays open until
+   the Planner's closing report; `linked-task` is unchanged.
 4. In `auto`, enable GitHub auto-merge with squash as soon as the pull request is open,
    while the checks still run: GitHub refuses to arm it on a pull request that is already
    green, and then only the owner's click can land it. GitHub merges when `verify` and
@@ -153,7 +155,8 @@ labelled together with one comment naming the round.
    every P0, P1 and `kind:security` record; the owner may add or remove it elsewhere) keeps
    `linked-task` red until the pull request body's Review line reads `Reviewer: <runtime or
    login>, reviewed SHA: <head SHA>`, written by the Reviewer after reading that head (ADR
-   0007); any other record's review stays advisory.
+   0007); any other record's review stays advisory: it follows the merge on `main`, by a
+   runtime other than the Implementer's; findings become its sub-issues or Backlog lines.
 5. Post the milestone comment on the record: head SHA, checks, pull request, proposals, and
    anything still unpushed or local before calling it shared. Post it also when context or
    quota runs low, before the session ends. When stopping instead, post the blocker and the
