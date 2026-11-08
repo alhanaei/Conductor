@@ -20,7 +20,9 @@ evidence that matches the exact head is a stopped finish, never a done one.
    repository's template: `Closes #n`; what changed and why; the verification ledger with
    tested SHAs; merge danger (two-way or one-way door, blast radius); review line; a "Found
    and left" block with every finding outside the task's scope, one line each with a
-   suggested priority. Nothing found mid-task is done here.
+   suggested priority. Fill the criterion-to-evidence table from the record's numbered
+   acceptance criteria, one row each with evidence, result and tested SHA, before the pull
+   request opens. Nothing found mid-task is done here.
 4. When the project's approval mode is `auto` and the task is a sub-issue of a readied
    parent, enable GitHub auto-merge with squash on the pull request; GitHub merges it when
    `verify` and `linked-task` are green. Never merge by hand; in `manual` the owner merges.
