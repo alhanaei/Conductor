@@ -24,6 +24,7 @@ WORKFLOW = ROOT / ".github" / "workflows" / "pr-policy.yml"
 
 HEAD = "a" * 40
 STALE = "b" * 40
+PAGE = 30  # the REST API's default page size
 
 DEFAULT_ENV = {
     "GITHUB_REPOSITORY": "owner/repo",
@@ -33,7 +34,7 @@ DEFAULT_ENV = {
     "CATEGORY_PREFIX": "kind:",
     "TRACKING_LABEL": "kind:tracking",
     "READY_LABEL": "status:ready",
-    "RECORD_PATHS": "docs/adr/,.conductor/HANDOFF.md",
+    "RECORD_PATHS": "docs/adr/",
     "APPROVAL_MODE": "manual",
     "INTEGRATION_BRANCH": "main",
     "DEFAULT_BRANCH": "main",
@@ -118,11 +119,14 @@ class FakeGitHub:
                 raise ApiError(1, "GraphQL: Could not resolve to an issue or pull request (HTTP 404)\n")
             labels, state = self.issues[number]
             return json.dumps({"labels": [{"name": name} for name in labels], "state": state})
-        if args[0] == "api" and re.fullmatch(r"repos/owner/repo/commits/[0-9a-f]{40}/pulls", args[1]):
-            assert args[1].split("/")[4] == HEAD, "the lookup must use the pull request head"
+        if args[0] == "api" and re.fullmatch(r"repos/owner/repo/commits/[0-9a-f]{40}/pulls", args[-1]):
+            assert args[-1].split("/")[4] == HEAD, "the lookup must use the pull request head"
+            assert args[1:3] == ["--paginate", "--slurp"], "the pull requests at the head must be read in full, as pages"
             if isinstance(self.head_pulls, ApiError):
                 raise self.head_pulls
-            return json.dumps(self.head_pulls)
+            # --slurp: one array per page, 30 items each as the API pages by default
+            pages = [self.head_pulls[i:i + PAGE] for i in range(0, len(self.head_pulls), PAGE)] or [[]]
+            return json.dumps(pages)
         match = re.fullmatch(r"repos/owner/repo/issues/(\d+)/parent", args[1]) if args[0] == "api" else None
         if match:
             parent = self.parents.get(int(match.group(1)), NO_PARENT)
@@ -186,6 +190,50 @@ class ClosingTaskTests(PolicyTest):
 
     def test_missing_task_link_is_rejected(self):
         self.assertRejected(FakeGitHub(body="No task here."), "must name the task it closes")
+
+    def test_quoted_closing_keywords_do_not_count(self):
+        # The motivating cases: #92 and #94 (2026-11-07) went red on a closing keyword that the
+        # body only quoted. Plain text names #10; the code span and the blockquote name nothing.
+        body = "Closes #10\n\nThe check rejects a body with `closes #11` in it.\n\n> fixes #12 was the old wording\n"
+        fake = FakeGitHub(body=body, issues={10: (ready(), "OPEN"), 11: (ready(), "OPEN"), 12: (ready(), "OPEN")})
+        output = self.assertAccepted(fake)
+        self.assertIn("Task #10 is ready", output)
+        self.assertEqual([call[3] for call in fake.calls if call[1] == "issue"], ["10"])
+
+    def test_fenced_code_blocks_are_quoted_text(self):
+        body = "Closes #42\n\n```\nCloses #43\nresolves #44\n```\n\n~~~text\nfixes #45\n~~~\n"
+        self.assertAccepted(FakeGitHub(body=body))
+
+    def test_unterminated_fence_quotes_to_the_end_of_the_body(self):
+        self.assertAccepted(FakeGitHub(body="Closes #42\n\n```\nCloses #43\n"))
+
+    def test_double_backtick_span_holding_a_backtick_is_quoted_text(self):
+        self.assertAccepted(FakeGitHub(body="Closes #42\n\nWrite `` `closes #43` `` in the hint.\n"))
+
+    def test_plain_keyword_after_a_quoted_one_still_counts(self):
+        fake = FakeGitHub(body="`closes #43`\n\n> fixes #44\n\nCloses #42\n")
+        self.assertAccepted(fake)
+        fake = FakeGitHub(body="`closes #42`\n\n> fixes #42\n")
+        self.assertRejected(fake, "must name the task it closes")
+
+    def test_quoted_keyword_naming_a_second_task_no_longer_splits_the_pull_request(self):
+        fake = FakeGitHub(body="Closes #42\n\n`Closes #43`", issues={42: (ready(), "OPEN"), 43: (ready(), "OPEN")})
+        self.assertAccepted(fake)
+        fake = FakeGitHub(body="Closes #42 and closes #43\n\n`fixes #44`", issues={42: (ready(), "OPEN"), 43: (ready(), "OPEN")})
+        self.assertRejected(fake, "names 2 distinct tasks (#42, #43)")
+
+    def test_quoted_reference_does_not_count_on_the_record_only_path(self):
+        fake = FakeGitHub(body="Refs #42\n\n`refs #43`", files=["docs/adr/0008-example.md"])
+        self.assertAccepted(fake)
+
+    def test_nonexistent_task_is_one_error_line_with_the_gh_output(self):
+        # `gh issue view` on a number that is no issue exits nonzero; the check reports it,
+        # never a traceback.
+        fake = FakeGitHub(body="Closes #4242")
+        output = self.assertRejected(fake, "Could not read task #4242 (gh issue view exit 1)")
+        self.assertIn("Could not resolve to an issue or pull request (HTTP 404)", output)
+        self.assertNotIn("Traceback", output)
+        self.assertEqual(output.count("::error::"), 1)
 
     def test_two_distinct_closing_tasks_are_rejected(self):
         fake = FakeGitHub(body="Closes #42 and closes #43", issues={42: (ready(), "OPEN"), 43: (ready(), "OPEN")})
@@ -328,6 +376,20 @@ class SharedHeadTests(PolicyTest):
         fake = FakeGitHub(body="Refs #42", files=["docs/adr/0008-example.md"], head_pulls=[self._pull(7), self._pull(9)])
         self.assertRejected(fake, "also the head of open pull request #9")
 
+    def test_second_open_pull_request_on_the_second_page_is_rejected(self):
+        # More than one page of pull requests at the head, the other open one past the first
+        # page: an unpaginated lookup would stop at 30 and pass.
+        pulls = [self._pull(7)] + [self._pull(100 + i, state="closed") for i in range(PAGE)] + [self._pull(8)]
+        self.assertGreater(len(pulls), PAGE)
+        fake = FakeGitHub(head_pulls=pulls)
+        self.assertRejected(fake, "also the head of open pull request #8")
+        self.assertEqual([call for call in fake.calls if call[-1].endswith("/pulls")],
+                         [["gh", "api", "--paginate", "--slurp", f"repos/owner/repo/commits/{HEAD}/pulls"]])
+
+    def test_many_closed_pull_requests_at_the_head_are_still_accepted(self):
+        pulls = [self._pull(7)] + [self._pull(100 + i, state="closed") for i in range(PAGE + 5)]
+        self.assertAccepted(FakeGitHub(head_pulls=pulls))
+
     def test_closed_pull_request_at_the_same_head_is_accepted(self):
         self.assertAccepted(FakeGitHub(head_pulls=[self._pull(7), self._pull(8, state="closed")]))
 
@@ -341,8 +403,13 @@ class SharedHeadTests(PolicyTest):
 
 
 class RecordOnlyReferenceTests(PolicyTest):
+    def test_default_record_paths_name_no_handoff_file(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        self.assertNotIn(".conductor/HANDOFF.md", text)
+        self.assertIn("vars.CONDUCTOR_RECORD_PATHS || 'docs/adr/'", text)
+
     def test_record_only_files_may_reference_the_task(self):
-        fake = FakeGitHub(body="Refs #42", files=["docs/adr/0008-example.md", ".conductor/HANDOFF.md"])
+        fake = FakeGitHub(body="Refs #42", files=["docs/adr/0008-example.md", "docs/adr/README.md"])
         output = self.assertAccepted(fake)
         self.assertIn("Record-only pull request", output)
 

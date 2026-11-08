@@ -1,12 +1,15 @@
 # Project-owned template. Copy to .github/workflows/pr-policy.yml.
-# Checks that a pull request names exactly one task it closes and that the task is open and
-# Ready: it carries exactly one priority (neither the owner-blocked marker nor the tracking
+# Checks that a pull request names exactly one task it closes (a closing keyword inside an
+# inline code span, a fenced code block or a blockquote line is quoted text and does not
+# count) and that the task is open and Ready: it carries exactly one priority (neither the owner-blocked marker nor the tracking
 # label), exactly one category and the owner's readiness label. When the task is a sub-issue,
 # its parent record is read too and must be open with one category and a priority, the
 # owner-blocked marker or the tracking label; only the API's HTTP 404 means "no parent", any
 # other lookup failure fails the check. The head commit must belong to this pull request
-# alone: a second open pull request at the same head fails the check on both, because
-# GitHub attaches check runs to commits and one green run would let either merge. The
+# alone: a second open pull request at the same head, on any page of the commit's pull
+# request list, fails the check on both, because GitHub attaches check runs to commits and
+# one green run would let either merge. Every failure the checker can meet, a missing task
+# among them, is reported as one "::error::" line, never a traceback. The
 # checker is tested by tests/test_pr_policy.py,
 # which executes this very script with the gh calls replaced. Label names come from
 # repository variables so the project's own scale applies:
@@ -17,10 +20,9 @@
 #   CONDUCTOR_READY_LABEL       default "status:ready" (the owner gate Ready, applied with
 #                               a comment naming the approval; required on the task a
 #                               pull request closes or references)
-#   CONDUCTOR_RECORD_PATHS      comma-separated path prefixes, default
-#                               "docs/adr/,.conductor/HANDOFF.md"; a pull request whose
-#                               changed files all match may reference its task with
-#                               "Refs #n" instead of closing one
+#   CONDUCTOR_RECORD_PATHS      comma-separated path prefixes, default "docs/adr/"; a
+#                               pull request whose changed files all match may reference
+#                               its task with "Refs #n" instead of closing one
 #   CONDUCTOR_APPROVAL_MODE     "manual" (default) or "auto" (ADR 0005), the project's
 #                               `Approval mode` fact. In auto, a sub-issue's parent must
 #                               carry the readiness label too (the owner readied the parent
@@ -72,7 +74,7 @@ jobs:
       CATEGORY_PREFIX: ${{ vars.CONDUCTOR_CATEGORY_PREFIX || 'kind:' }}
       TRACKING_LABEL: ${{ vars.CONDUCTOR_TRACKING_LABEL || 'kind:tracking' }}
       READY_LABEL: ${{ vars.CONDUCTOR_READY_LABEL || 'status:ready' }}
-      RECORD_PATHS: ${{ vars.CONDUCTOR_RECORD_PATHS || 'docs/adr/,.conductor/HANDOFF.md' }}
+      RECORD_PATHS: ${{ vars.CONDUCTOR_RECORD_PATHS || 'docs/adr/' }}
       APPROVAL_MODE: ${{ vars.CONDUCTOR_APPROVAL_MODE || 'manual' }}
       INTEGRATION_BRANCH: ${{ vars.CONDUCTOR_INTEGRATION_BRANCH || github.event.repository.default_branch }}
       REVIEW_REQUIRED_LABEL: ${{ vars.CONDUCTOR_REVIEW_REQUIRED_LABEL || 'review:required' }}
@@ -109,26 +111,39 @@ jobs:
           # second open pull request at the same head commit would let its green run satisfy
           # branch protection for this one (seen on #89 and #91).
           pr_number, head_sha = os.environ["PR_NUMBER"], os.environ["HEAD_SHA"].lower()
-          run = subprocess.run(["gh", "api", f"repos/{repo}/commits/{head_sha}/pulls"], capture_output=True, text=True)
+          # The list is paged (30 per page by default): read every page, or a second open pull
+          # request past the first page would go unseen.
+          run = subprocess.run(["gh", "api", "--paginate", "--slurp", f"repos/{repo}/commits/{head_sha}/pulls"], capture_output=True, text=True)
           if run.returncode:
               detail = run.stderr.strip() or run.stdout.strip() or "no output"
               print(f"::error::Could not list the pull requests at head {head_sha} (gh api exit {run.returncode}): {detail}. Check that the workflow token has pull-requests: read and that api.github.com is reachable, then re-run the check.")
               sys.exit(1)
-          others = sorted(p["number"] for p in json.loads(run.stdout)
+          pulls = [p for page in json.loads(run.stdout) for p in page]
+          others = sorted(p["number"] for p in pulls
                           if p.get("state") == "open" and str(p["number"]) != pr_number and (p.get("head") or {}).get("sha", "").lower() == head_sha)
           if others:
               print(f"::error::Head {head_sha} is also the head of open pull request {', '.join('#' + str(n) for n in others)}; one branch, one head, one pull request: close the other pull request or push a distinct commit, since a green check on a shared commit would let either pull request merge.")
               sys.exit(1)
           print(f"Head {head_sha} belongs to this pull request alone.")
           body = json.loads(gh("pr", "view", os.environ["PR_NUMBER"], "--repo", repo, "--json", "body"))["body"] or ""
-          numbers = sorted({int(n) for n in re.findall(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)", body, re.I)})
+
+          def unquoted(text):
+              # Only plain text names a task. A closing keyword inside a fenced code block, an
+              # inline code span or a blockquote line is quoted (a template hint, an example, a
+              # pasted log) and is dropped before the keywords are counted (seen on #92 and #94).
+              text = re.sub(r"^[ \t]{0,3}(`{3,}|~{3,})[^\n]*\n.*?(?:^[ \t]{0,3}\1[ \t]*$|\Z)", " ", text, flags=re.M | re.S)
+              text = re.sub(r"(`+)(?!`).*?(?<!`)\1(?!`)", " ", text, flags=re.S)
+              return re.sub(r"^[ \t]{0,3}>.*$", " ", text, flags=re.M)
+
+          plain = unquoted(body)
+          numbers = sorted({int(n) for n in re.findall(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)", plain, re.I)})
           closing = True  # False on the record-only "Refs #n" path, which only references its record
           record_paths = [p.strip() for p in os.environ["RECORD_PATHS"].split(",") if p.strip()]
           if not numbers and record_paths:
               files = [f["path"] for f in json.loads(gh("pr", "view", os.environ["PR_NUMBER"], "--repo", repo, "--json", "files"))["files"]]
               record_only = bool(files) and all(any(f == p or f.startswith(p) for p in record_paths) for f in files)
               if record_only:
-                  numbers = sorted({int(n) for n in re.findall(r"\brefs?\s+#(\d+)", body, re.I)})
+                  numbers = sorted({int(n) for n in re.findall(r"\brefs?\s+#(\d+)", plain, re.I)})
                   if numbers:
                       closing = False
                       print(f"Record-only pull request ({', '.join(files)}): accepting the referenced task.")
@@ -197,7 +212,14 @@ jobs:
               return None
 
           def labels_of(number):
-              issue = json.loads(gh("issue", "view", str(number), "--repo", repo, "--json", "labels,state"))
+              # A task that cannot be read (deleted, a typo in the number, a permission or
+              # transport failure) is one "::error::" line with gh's output, not a traceback.
+              run = subprocess.run(["gh", "issue", "view", str(number), "--repo", repo, "--json", "labels,state"], capture_output=True, text=True)
+              if run.returncode:
+                  detail = run.stderr.strip() or run.stdout.strip() or "no output"
+                  print(f"::error::Could not read task #{number} (gh issue view exit {run.returncode}): {detail}. Check that the pull request body names an existing issue of {repo} and that the workflow token has issues: read, then re-run the check.")
+                  sys.exit(1)
+              issue = json.loads(run.stdout)
               return [label["name"] for label in issue["labels"]], issue["state"]
 
           def label_problems(labels, closing_task=False):
