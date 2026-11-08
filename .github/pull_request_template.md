@@ -2,6 +2,7 @@
 ## Task
 
 Closes #
+<!-- One task only: the body names no other task after a closing keyword, not even quoted in code or a blockquote. -->
 
 ## What changed and why
 
